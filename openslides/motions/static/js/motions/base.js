@@ -142,10 +142,11 @@ angular.module('OpenSlidesApp.motions', ['OpenSlidesApp.users', 'OpenSlidesApp.m
                     return this.getVersion(versionId).text;
                 },
                 getTextWithLineBreaks: function (versionId) {
-                    var html = this.getVersion(versionId).text,
-                        withBreaks = lineNumberingService.insertLineNumbers(html);
-
-                    return withBreaks;
+                    var html = this.getVersion(versionId).text;
+                    return lineNumberingService.insertLineNumbers(html);
+                },
+                setTextStrippingLineBreaks: function (versionId, text) {
+                    this.text = lineNumberingService.stripLineNumbers(text);
                 },
                 getReason: function (versionId) {
                     return this.getVersion(versionId).reason;

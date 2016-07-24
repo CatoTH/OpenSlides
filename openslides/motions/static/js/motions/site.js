@@ -634,6 +634,28 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
                     $scope.version = motion.active_version;
                 });
         };
+
+        $scope.motionInlineSave = function () {
+            motion.setTextStrippingLineBreaks(motion.active_version, $scope.lineBrokenText)
+
+            Motion.inject(motion);
+            // save change motion object on server
+            Motion.save(motion, { method: 'PATCH' }).then(
+                function(success) {
+                    $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
+                },
+                function (error) {
+                    // save error: revert all changes by restore
+                    // (refresh) original motion object from server
+                    Motion.refresh(motion);
+                    var message = '';
+                    for (var e in error.data) {
+                        message += e + ': ' + error.data[e] + ' ';
+                    }
+                    $scope.alert = {type: 'danger', msg: message, show: true};
+                }
+            );
+        };
     }
 ])
 

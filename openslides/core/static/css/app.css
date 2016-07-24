@@ -354,6 +354,20 @@ img {
     display: none;
 }
 
+.os-line-number {
+    user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+}
+.os-line-number:after {
+    user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+}
 
 /** Projector sidebar column **/
 
