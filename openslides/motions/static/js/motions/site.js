@@ -550,9 +550,10 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
     'Tag',
     'User',
     'Workflow',
+    'Editor',
     'Config',
     'motion',
-    function($scope, $http, ngDialog, MotionForm, Motion, Category, Mediafile, Tag, User, Workflow, Config, motion) {
+    function($scope, $http, ngDialog, MotionForm, Motion, Category, Mediafile, Tag, User, Workflow, Editor, Config, motion) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -563,6 +564,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
+        $scope.tinymceOptions = Editor.getOptions(null, true);
+        $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
 
         // open edit dialog
         $scope.openDialog = function (motion) {

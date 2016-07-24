@@ -225,6 +225,11 @@
   <div class="row">
     <div class="col-sm-8">
       <h3 translate>Text</h3>
+
+      <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText" class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+
+      <h3>Normal:</h3>
+
       <div ng-bind-html="motion.getTextWithLineBreaks(version) | trusted" class="motion-text line-numbers-{{ lineNumberMode }}"></div>
 
       <!-- reason -->
