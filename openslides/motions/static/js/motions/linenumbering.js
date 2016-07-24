@@ -285,6 +285,18 @@ angular.module('OpenSlidesApp.motions.lineNumbering', [])
         }
     };
 
+    this._stripLineNumbers = function (node) {
+
+        for (var i = 0; i < node.childNodes.length; i++) {
+            if (this._isOsLineBreakNode(node.childNodes[i]) || this._isOsLineNumberNode(node.childNodes[i])) {
+                node.removeChild(node.childNodes[i]);
+                i--;
+            } else {
+                this._stripLineNumbers(node.childNodes[i]);
+            }
+        }
+    };
+
     this._nodesToHtml = function (nodes) {
         var root = document.createElement('div');
         for (var i in nodes) {
@@ -305,6 +317,13 @@ angular.module('OpenSlidesApp.motions.lineNumbering', [])
         var newRoot = this._insertLineNumbersToNode(root, this.lineLength);
 
         return newRoot.innerHTML;
+    };
+
+    this.stripLineNumbers = function (html) {
+        var root = document.createElement('div');
+        root.innerHTML = html;
+        this._stripLineNumbers(root);
+        return root.innerHTML;
     };
 });
 
