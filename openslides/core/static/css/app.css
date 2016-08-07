@@ -295,8 +295,16 @@ img {
     width: auto;
     margin-top: 20px;
     background: #fff;
-    padding: 20px;
     border: 1px solid #d3d3d3;
+}
+
+.col1 .details .line-number-setter {
+    margin: 20px;
+}
+
+.col1 .details .line-number-setter .btn-group-label {
+    display: inline-block;
+    margin-right: 20px;
 }
 
 .col1 ul, .col1 ol {
@@ -520,8 +528,31 @@ img {
     padding: 5px 15px;
 }
 
+.col2 .message .panel-heading {
+    padding: 3px 15px;
+}
+
 .col2 .message .panel-body {
     padding: 10px 15px;
+}
+
+.col2 .message .projectorbtn {
+    float: left;
+    width: auto;
+    margin: 5px 10px 5px 0px;
+}
+
+.col2 .message .innermessage {
+    float: left;
+    width: 180px;
+    max-width: 170px;
+    overflow: hidden;
+}
+
+.col2 .message .panel-input {
+    width: 228px;
+    float: left;
+    margin-top: 10px;
 }
 
 .col2 .countdown_timer {
