@@ -303,14 +303,19 @@ angular.module('OpenSlidesApp.motions.lineNumbering', [])
         return root.innerHTML;
     };
 
-    this.insertLineNumbers = function (html, lineLength) {
+    this.insertLineNumbersNode = function (html, lineLength) {
         var root = document.createElement('div');
         root.innerHTML = html;
 
         this._currentInlineOffset = 0;
         this._currentLineNumber = 1;
         this._prependLineNumberToFirstText = true;
-        var newRoot = this._insertLineNumbersToNode(root, lineLength);
+
+        return this._insertLineNumbersToNode(root, lineLength);
+    };
+
+    this.insertLineNumbers = function (html, lineLength) {
+        var newRoot = this.insertLineNumbersNode(html, lineLength);
 
         return newRoot.innerHTML;
     };

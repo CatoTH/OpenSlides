@@ -18,6 +18,7 @@ module.exports = function(config) {
       'openslides/static/js/openslides-libs.js',
       'node_modules/angular-mocks/angular-mocks.js',
       'openslides/motions/static/js/motions/linenumbering.js',
+      'openslides/motions/static/js/motions/diff.js',
       'tests/karma/*/*.test.js'
     ],
 

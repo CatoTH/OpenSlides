@@ -2,7 +2,11 @@
 
 "use strict";
 
-angular.module('OpenSlidesApp.motions', ['OpenSlidesApp.users', 'OpenSlidesApp.motions.lineNumbering'])
+angular.module('OpenSlidesApp.motions', [
+  'OpenSlidesApp.users',
+  'OpenSlidesApp.motions.lineNumbering',
+  'OpenSlidesApp.motions.diff'
+])
 
 .factory('WorkflowState', [
     'DS',
