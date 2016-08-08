@@ -7,7 +7,6 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 /**
  * TO DO
  * - Selecting the last line
- * - Move line numbers outside of the current block element before extraction for better results
  * - <ol start="number">
  *
  */
@@ -19,7 +18,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 
 
     this.getLineNumberNode = function(fragment, lineNumber) {
-        return fragment.querySelector('span.os-line-number.line-number-' + lineNumber);
+        return fragment.querySelector('os-linebreak.os-line-number.line-number-' + lineNumber);
     };
 
     this._getNodeContextTrace = function(node) {
@@ -30,6 +29,24 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             currNode = currNode.parentNode;
         }
         return context;
+    };
+
+    this._insertInternalLineMarkers = function(fragment) {
+        if (fragment.querySelectorAll('OS-LINEBREAK').length > 0) {
+            // Prevent duplicate calls
+            return;
+        }
+        var lineNumbers = fragment.querySelectorAll('span.os-line-number');
+        for (var i = 0; i < lineNumbers.length; i++) {
+            var insertBefore = lineNumbers[i];
+            while (insertBefore.parentNode.nodeType != DOCUMENT_FRAGMENT_NODE && insertBefore.parentNode.childNodes[0] == insertBefore) {
+                insertBefore = insertBefore.parentNode;
+            }
+            var lineMarker = document.createElement('OS-LINEBREAK');
+            lineMarker.setAttribute('data-line-number', lineNumbers[i].getAttribute('data-line-number'));
+            lineMarker.setAttribute('class', lineNumbers[i].getAttribute('class'));
+            insertBefore.parentNode.insertBefore(lineMarker, insertBefore);
+        }
     };
 
   /*
@@ -88,27 +105,31 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node))) {
             return ''
         }
+        if (node.nodeName == 'OS-LINEBREAK') {
+            return ''
+        }
         if (node.nodeName == 'BR') {
             var br = '<BR';
-            for (var i = 0; i < node.attributes.length; i++) {
+            for (i = 0; i < node.attributes.length; i++) {
                 var attr = node.attributes[i];
                 br += " " + attr.name + "=\"" + attr.value + "\"";
             }
             return br + '>';
-        } else {
-            var html = this._serializeTag(node);
-            for (var i = 0; i < node.childNodes.length; i++) {
-                if (node.childNodes[i].nodeType == TEXT_NODE) {
-                    html += node.childNodes[i].nodeValue;
-                } else if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
-                  !lineNumberingService._isOsLineBreakNode(node.childNodes[i]))) {
-                    html += this._serializeDom(node.childNodes[i], stripLineNumbers);
-                }
-            }
-            html += '</' + node.nodeName + '>';
-
-            return html;
         }
+
+        var html = this._serializeTag(node);
+        for (var i = 0; i < node.childNodes.length; i++) {
+            if (node.childNodes[i].nodeType == TEXT_NODE) {
+                html += node.childNodes[i].nodeValue;
+            } else if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) && !lineNumberingService._isOsLineBreakNode(node.childNodes[i]))) {
+                html += this._serializeDom(node.childNodes[i], stripLineNumbers);
+            }
+        }
+        if (node.nodeType != DOCUMENT_FRAGMENT_NODE) {
+            html += '</' + node.nodeName + '>';
+        }
+
+        return html;
     };
 
     /**
@@ -116,6 +137,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
      */
     this._serializePartialDomToChild = function(node, toChildTrace, stripLineNumbers) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
+            return ''
+        }
+        if (node.nodeName == 'OS-LINEBREAK') {
             return ''
         }
 
@@ -139,6 +163,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
         }
         if (!found) {
+            console.trace();
             throw "Inconsistency or invalid call of this function detected";
         }
         return html;
@@ -151,6 +176,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
             return ''
         }
+        if (node.nodeName == 'OS-LINEBREAK') {
+            return ''
+        }
+
         var html = '';
         for (var i = 0, found = false; i < node.childNodes.length; i++) {
             if (node.childNodes[i] == fromChildTrace[0]) {
@@ -172,6 +201,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
         }
         if (!found) {
+            console.trace();
             throw "Inconsistency or invalid call of this function detected";
         }
         if (node.nodeType != DOCUMENT_FRAGMENT_NODE) {
@@ -195,6 +225,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
     /**
      * Returns the HTML snippet between two given line numbers.
      *
+     * Hint:
+     * - The last line (toLine) is not included anymore, as the number refers to the line breaking element
+     *
      * In addition to the HTML snippet, additional information is provided regarding the most specific DOM element
      * that contains the whole section specified by the line numbers (like a P-element if only one paragraph is selected
      * or the most outer DIV, if multiple sections selected).
@@ -217,9 +250,11 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
      * - previousHtmlEndSnippet: A HTML snippet that closes all open tags from previousHtml
      * - followingHtml:     The HTML after the selected area
      * - followingHtmlStartSnippet: A HTML snippet that opens all HTML tags necessary to render "followingHtml"
-     * 
+     *
      */
-    this.extractRangeByLineNumbers = function(fragment, fromLine, toLine, debug) {
+    this.extractRangeByLineNumbers = function(fragment, fromLine, toLine) {
+        this._insertInternalLineMarkers(fragment);
+
         var fromLineNode = this.getLineNumberNode(fragment, fromLine),
             toLineNode = this.getLineNumberNode(fragment, toLine),
             ancestorData = this._getCommonAncestor(fromLineNode, toLineNode);
@@ -256,7 +291,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 
         var found = false;
         for (var i = 0; i < fromChildTraceRel.length && !found; i++) {
-            if (lineNumberingService._isOsLineNumberNode(fromChildTraceRel[i])) {
+            if (fromChildTraceRel[i].nodeName == 'OS-LINEBREAK') {
                 found = true;
             } else {
                 innerContextStart += this._serializeTag(fromChildTraceRel[i]);
@@ -264,7 +299,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         }
         found = false;
         for (i = 0; i < toChildTraceRel.length && !found; i++) {
-            if (lineNumberingService._isOsLineNumberNode(toChildTraceRel[i])) {
+            if (toChildTraceRel[i].nodeName == 'OS-LINEBREAK') {
                 found = true;
             } else {
                 innerContextEnd = '</' + toChildTraceRel[i].nodeName + '>' + innerContextEnd;

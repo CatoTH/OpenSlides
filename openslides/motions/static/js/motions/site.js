@@ -582,7 +582,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
             lineFrom: 1,
             lineTo: 2,
-            html: ''
+            html: '',
+            reviewingHtml: ''
         };
 
         // open edit dialog
@@ -704,7 +705,28 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         };
 
         $scope.saveAmendment = function() {
-            console.log($scope.amendmentCreating.html);
+            var html = motion.getTextWithLineBreaks(motion.active_version),
+                fragment = diffService.htmlToFragment(html),
+                lineData = diffService.extractRangeByLineNumbers(
+                    fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
+                );
+
+            console.log(lineData);
+            var reviewingHtml = lineData.previousHtml + lineData.previousHtmlEndSnippet;
+
+            reviewingHtml += '<section><h3>Old:</h3><div style="color: red;">';
+            reviewingHtml += lineData.outerContextStart + lineData.innerContextStart +
+                    lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
+            reviewingHtml += '</div></section>';
+
+            reviewingHtml += '<section><h3>New:</h3><div style="color: green;">';
+            reviewingHtml += $scope.amendmentCreating.html;
+            reviewingHtml += '</div></section>';
+
+            reviewingHtml += lineData.followingHtmlStartSnippet + lineData.followingHtml;
+
+            $scope.amendmentCreating.reviewingHtml = reviewingHtml;
+            $scope.amendmentCreating.mode = 3;
         };
     }
 ])

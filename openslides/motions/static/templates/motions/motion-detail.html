@@ -276,6 +276,13 @@
         <button type="button" ng-click="saveAmendment()">Save</button>
       </section>
 
+      <section class="amendment-show" ng-show="amendmentCreating.mode == 3">
+        <h3>Reviewing the amendment</h3>
+
+        <div ng-bind-html="amendmentCreating.reviewingHtml | trusted"
+           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+      </section>
+
       <h3 translate>Text</h3>
 
       <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText" class="motion-text line-numbers-{{ lineNumberMode }}"></div>
