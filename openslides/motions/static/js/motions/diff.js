@@ -68,6 +68,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
     };
 
     this._serializeTag = function(node) {
+        if (node.nodeType == DOCUMENT_FRAGMENT_NODE) {
+            return '';
+        }
         var html = '<' + node.nodeName;
         for (var i = 0; i < node.attributes.length; i++) {
           var attr = node.attributes[i];
@@ -77,25 +80,29 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         return html;
     };
 
-    this._serializeDom = function(node) {
+    this._serializeDom = function(node, stripLineNumbers) {
         if (node.nodeType == TEXT_NODE) {
             return node.nodeValue;
         }
-        if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
+        if (stripLineNumbers && (
+            lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node))) {
             return ''
         }
         if (node.nodeName == 'BR') {
-            return '<BR>';
+            var br = '<BR';
+            for (var i = 0; i < node.attributes.length; i++) {
+                var attr = node.attributes[i];
+                br += " " + attr.name + "=\"" + attr.value + "\"";
+            }
+            return br + '>';
         } else {
             var html = this._serializeTag(node);
             for (var i = 0; i < node.childNodes.length; i++) {
                 if (node.childNodes[i].nodeType == TEXT_NODE) {
                     html += node.childNodes[i].nodeValue;
-                } else if (
-                  !lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
-                  !lineNumberingService._isOsLineBreakNode(node.childNodes[i])
-                ) {
-                    html += this._serializeDom(node.childNodes[i]);
+                } else if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
+                  !lineNumberingService._isOsLineBreakNode(node.childNodes[i]))) {
+                    html += this._serializeDom(node.childNodes[i], stripLineNumbers);
                 }
             }
             html += '</' + node.nodeName + '>';
@@ -107,7 +114,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
     /**
      * Implementation hint: the first element of "toChildTrace" array needs to be a child element of "node"
      */
-    this._serializePartialDomToChild = function(node, toChildTrace) {
+    this._serializePartialDomToChild = function(node, toChildTrace, stripLineNumbers) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
             return ''
         }
@@ -120,23 +127,27 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 var remainingTrace = toChildTrace;
                 remainingTrace.shift();
                 if (!lineNumberingService._isOsLineNumberNode(node.childNodes[i])) {
-                    html += this._serializePartialDomToChild(node.childNodes[i], remainingTrace);
+                    html += this._serializePartialDomToChild(node.childNodes[i], remainingTrace, stripLineNumbers);
                 }
             } else if (node.childNodes[i].nodeType == TEXT_NODE) {
                 html += node.childNodes[i].nodeValue;
             } else {
-                if (
-                  !lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
-                  !lineNumberingService._isOsLineBreakNode(node.childNodes[i])
-                ) {
-                    html += this._serializeDom(node.childNodes[i]);
+                if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
+                  !lineNumberingService._isOsLineBreakNode(node.childNodes[i]))) {
+                    html += this._serializeDom(node.childNodes[i], stripLineNumbers);
                 }
             }
+        }
+        if (!found) {
+            throw "Inconsistency or invalid call of this function detected";
         }
         return html;
     };
 
-    this._serializePartialDomFromChild = function(node, fromChildTrace) {
+    /**
+     * Implementation hint: the first element of "toChildTrace" array needs to be a child element of "node"
+     */
+    this._serializePartialDomFromChild = function(node, fromChildTrace, stripLineNumbers) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
             return ''
         }
@@ -147,17 +158,15 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 var remainingTrace = fromChildTrace;
                 remainingTrace.shift();
                 if (!lineNumberingService._isOsLineNumberNode(node.childNodes[i])) {
-                    html += this._serializePartialDomFromChild(node.childNodes[i], remainingTrace);
+                    html += this._serializePartialDomFromChild(node.childNodes[i], remainingTrace, stripLineNumbers);
                 }
             } else if (found) {
                 if (node.childNodes[i].nodeType == TEXT_NODE) {
                     html += node.childNodes[i].nodeValue;
                 } else {
-                    if (
-                      !lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
-                      !lineNumberingService._isOsLineBreakNode(node.childNodes[i])
-                    ) {
-                        html += this._serializeDom(node.childNodes[i]);
+                    if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
+                      !lineNumberingService._isOsLineBreakNode(node.childNodes[i]))) {
+                        html += this._serializeDom(node.childNodes[i], stripLineNumbers);
                     }
                 }
             }
@@ -165,7 +174,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         if (!found) {
             throw "Inconsistency or invalid call of this function detected";
         }
-        html += '</' + node.nodeName + '>';
+        if (node.nodeType != DOCUMENT_FRAGMENT_NODE) {
+            html += '</' + node.nodeName + '>';
+        }
         return html;
     };
 
@@ -202,55 +213,80 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
      * - innerContextStart: A string that opens all necessary tags between the ancestor
      *                      and the beginning of the selection (e.g. <LI>)
      * - innerContextEnd:   A string that closes all tags after the end of the selection to the ancestor (e.g. </LI>)
+     * - previousHtml:      The HTML before the selected area begins (including line numbers)
+     * - previousHtmlEndSnippet: A HTML snippet that closes all open tags from previousHtml
+     * - followingHtml:     The HTML after the selected area
+     * - followingHtmlStartSnippet: A HTML snippet that opens all HTML tags necessary to render "followingHtml"
+     * 
      */
     this.extractRangeByLineNumbers = function(fragment, fromLine, toLine, debug) {
         var fromLineNode = this.getLineNumberNode(fragment, fromLine),
             toLineNode = this.getLineNumberNode(fragment, toLine),
             ancestorData = this._getCommonAncestor(fromLineNode, toLineNode);
 
-        var fromChildTrace = ancestorData.trace1,
-            toChildTrace = ancestorData.trace2,
+        var fromChildTraceRel = ancestorData.trace1,
+            fromChildTraceAbs = this._getNodeContextTrace(fromLineNode),
+            toChildTraceRel = ancestorData.trace2,
+            toChildTraceAbs = this._getNodeContextTrace(toLineNode),
             ancestor = ancestorData.commonAncestor,
             html = '',
             outerContextStart = '',
             outerContextEnd = '',
             innerContextStart = '',
-            innerContextEnd = '';
+            innerContextEnd = '',
+            previousHtmlEndSnippet = '',
+            followingHtmlStartSnippet = '';
+
+
+        fromChildTraceAbs.shift();
+        var previousHtml = this._serializePartialDomToChild(fragment, fromChildTraceAbs, false);
+        toChildTraceAbs.shift();
+        var followingHtml = this._serializePartialDomFromChild(fragment, toChildTraceAbs, false);
+
+        var currNode = fromLineNode.parentNode;
+        while (currNode.parentNode) {
+            previousHtmlEndSnippet += '</' + currNode.nodeName + '>';
+            currNode = currNode.parentNode;
+        }
+        currNode = toLineNode.parentNode;
+        while (currNode.parentNode) {
+            followingHtmlStartSnippet = this._serializeTag(currNode) + followingHtmlStartSnippet;
+            currNode = currNode.parentNode;
+        }
 
         var found = false;
-        for (var i = 0; i < fromChildTrace.length && !found; i++) {
-            if (lineNumberingService._isOsLineNumberNode(fromChildTrace[i])) {
+        for (var i = 0; i < fromChildTraceRel.length && !found; i++) {
+            if (lineNumberingService._isOsLineNumberNode(fromChildTraceRel[i])) {
                 found = true;
             } else {
-                innerContextStart += this._serializeTag(fromChildTrace[i]);
+                innerContextStart += this._serializeTag(fromChildTraceRel[i]);
             }
         }
         found = false;
-        for (i = 0; i < toChildTrace.length && !found; i++) {
-            if (lineNumberingService._isOsLineNumberNode(toChildTrace[i])) {
+        for (i = 0; i < toChildTraceRel.length && !found; i++) {
+            if (lineNumberingService._isOsLineNumberNode(toChildTraceRel[i])) {
                 found = true;
             } else {
-                innerContextEnd = '</' + toChildTrace[i].nodeName + '>' + innerContextEnd;
+                innerContextEnd = '</' + toChildTraceRel[i].nodeName + '>' + innerContextEnd;
             }
         }
 
         found = false;
         for (i = 0; i < ancestor.childNodes.length; i++) {
-            if (ancestor.childNodes[i] == fromChildTrace[0]) {
+            if (ancestor.childNodes[i] == fromChildTraceRel[0]) {
                 found = true;
-                fromChildTrace.shift();
-                html += this._serializePartialDomFromChild(ancestor.childNodes[i], fromChildTrace);
-            } else if (ancestor.childNodes[i] == toChildTrace[0]) {
+                fromChildTraceRel.shift();
+                html += this._serializePartialDomFromChild(ancestor.childNodes[i], fromChildTraceRel, true);
+            } else if (ancestor.childNodes[i] == toChildTraceRel[0]) {
                 found = false;
-                toChildTrace.shift();
-                html += this._serializePartialDomToChild(ancestor.childNodes[i], toChildTrace);
+                toChildTraceRel.shift();
+                html += this._serializePartialDomToChild(ancestor.childNodes[i], toChildTraceRel, true);
             } else if (found == true) {
-                html += this._serializeDom(ancestor.childNodes[i]);
+                html += this._serializeDom(ancestor.childNodes[i], true);
             }
         }
         
-        var currNode = ancestor;
-
+        currNode = ancestor;
         while (currNode.parentNode) {
             outerContextStart = this._serializeTag(currNode) + outerContextStart;
             outerContextEnd += '</' + currNode.nodeName + '>';
@@ -263,7 +299,11 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             'outerContextStart': outerContextStart,
             'outerContextEnd': outerContextEnd,
             'innerContextStart': innerContextStart,
-            'innerContextEnd': innerContextEnd
+            'innerContextEnd': innerContextEnd,
+            'previousHtml': previousHtml,
+            'previousHtmlEndSnippet': previousHtmlEndSnippet,
+            'followingHtml': followingHtml,
+            'followingHtmlStartSnippet': followingHtmlStartSnippet
         };
     };
 });

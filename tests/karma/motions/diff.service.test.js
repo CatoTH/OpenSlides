@@ -78,11 +78,11 @@ describe('linenumbering', function () {
           greatParent = lineNo.parentNode.parentNode,
           lineTrace = [lineNo.parentNode, lineNo];
 
-      var pre = diffService._serializePartialDomToChild(greatParent, lineTrace);
+      var pre = diffService._serializePartialDomToChild(greatParent, lineTrace, true);
       expect(pre).toBe('<UL class="ul-class"><LI class="li-class">Line 6 ');
 
       lineTrace = [lineNo.parentNode, lineNo];
-      var post = diffService._serializePartialDomFromChild(greatParent, lineTrace);
+      var post = diffService._serializePartialDomFromChild(greatParent, lineTrace, true);
       expect(post).toBe('Line 7' + '</LI>' +
             '<LI class="li-class"><UL>' +
               '<LI>Level 2 LI 8</LI>' +
@@ -96,7 +96,7 @@ describe('linenumbering', function () {
           greatParent = lineNo.parentNode.parentNode.parentNode,
           lineTrace = [lineNo.parentNode.parentNode, lineNo.parentNode, lineNo];
 
-      var pre = diffService._serializePartialDomToChild(greatParent, lineTrace);
+      var pre = diffService._serializePartialDomToChild(greatParent, lineTrace, true);
       expect(pre).toBe('<LI class="li-class"><UL><LI>Level 2 LI 8</LI><LI>');
     });
 
@@ -115,6 +115,8 @@ describe('linenumbering', function () {
       expect(diff.outerContextEnd).toBe('</UL>');
       expect(diff.innerContextStart).toBe('<LI class="li-class">');
       expect(diff.innerContextEnd).toBe('</LI></UL></LI>');
+      expect(diff.previousHtmlEndSnippet).toBe('</LI></UL>');
+      expect(diff.followingHtmlStartSnippet).toBe('<UL class="ul-class"><LI class="li-class"><UL><LI>');
     });
 
     it('extracts lines from a more complex example', function () {
@@ -126,6 +128,8 @@ describe('linenumbering', function () {
       expect(diff.outerContextEnd).toBe('');
       expect(diff.innerContextStart).toBe('<P>');
       expect(diff.innerContextEnd).toBe('</LI></UL>');
+      expect(diff.previousHtmlEndSnippet).toBe('</P>');
+      expect(diff.followingHtmlStartSnippet).toBe('<UL><LI>');
     });
 
   });
