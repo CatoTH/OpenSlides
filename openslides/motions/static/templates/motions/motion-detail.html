@@ -220,6 +220,11 @@
             <i class="fa fa-bar-chart fa-lg"></i>
             <translate>New vote</translate>
           </button>
+
+        <button ng-click="toggleAmendmentCreateMode()" class="btn btn-default btn-sm">
+          <i class="fa fa-bar-chart fa-lg"></i>
+          <translate>Create amendment</translate>
+        </button>
       </div>
     </div>
   </div>
@@ -251,6 +256,26 @@
       </div>
     </div>
     <div class="col-sm-8">
+
+      <section class="amendment-create" ng-show="amendmentCreating.mode == 1">
+        <h2>Enter affected line numbers</h2>
+        <label>
+          From: <input type="number" ng-model="amendmentCreating.lineFrom">
+        </label>
+        <label>
+          To: <input type="number" ng-model="amendmentCreating.lineTo">
+        </label>
+        <button type="button" ng-click="startCreatingAmendmentHtml()">Start</button>
+      </section>
+
+      <section class="amendment-create" ng-show="amendmentCreating.mode == 2">
+        <h2>Modify the section</h2>
+
+        <div ui-tinymce="tinymceOptions" ng-model="amendmentCreating.html" class="motion-text"></div>
+
+        <button type="button" ng-click="saveAmendment()">Save</button>
+      </section>
+
       <h3 translate>Text</h3>
 
       <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText" class="motion-text line-numbers-{{ lineNumberMode }}"></div>

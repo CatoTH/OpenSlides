@@ -2,7 +2,7 @@
 
 'use strict';
 
-angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
+angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlidesApp.motions.diff'])
 
 .config([
     'mainMenuProvider',
@@ -562,7 +562,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
     'Editor',
     'Config',
     'motion',
-    function($scope, $http, ngDialog, MotionForm, Motion, Category, Mediafile, Tag, User, Workflow, Editor, Config, motion) {
+    'diffService',
+    function($scope, $http, ngDialog, MotionForm, Motion, Category, Mediafile, Tag, User, Workflow, Editor, Config,
+             motion, diffService) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -575,6 +577,13 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
         $scope.tinymceOptions = Editor.getOptions(null, true);
         $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
+
+        $scope.amendmentCreating = {
+            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
+            lineFrom: 1,
+            lineTo: 2,
+            html: ''
+        };
 
         // open edit dialog
         $scope.openDialog = function (motion) {
@@ -664,6 +673,38 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions'])
                     $scope.alert = {type: 'danger', msg: message, show: true};
                 }
             );
+        };
+
+        $scope.toggleAmendmentCreateMode = function() {
+            if ($scope.amendmentCreating.mode == 0) {
+                $scope.amendmentCreating.mode = 1;
+            } else {
+                $scope.amendmentCreating.mode = 0;
+            }
+        };
+
+        $scope.startCreatingAmendmentHtml = function() {
+            if ($scope.amendmentCreating.lineFrom > 0 && $scope.amendmentCreating.lineTo > 0) {
+                var html = motion.getTextWithLineBreaks(motion.active_version),
+                    fragment = diffService.htmlToFragment(html),
+                    lineData = diffService.extractRangeByLineNumbers(
+                        fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
+                    );
+                console.log(html);
+
+                var diffhtml = lineData.outerContextStart + lineData.innerContextStart +
+                    lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
+
+                console.log(lineData);
+                console.log(diffhtml);
+
+                $scope.amendmentCreating.html = diffhtml;
+                $scope.amendmentCreating.mode = 2;
+            }
+        };
+
+        $scope.saveAmendment = function() {
+            console.log($scope.amendmentCreating.html);
         };
     }
 ])
