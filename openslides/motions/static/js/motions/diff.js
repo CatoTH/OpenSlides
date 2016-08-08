@@ -5,7 +5,10 @@
 angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumbering'])
 
 /**
- * Current limitations of this implementation:
+ * TO DO
+ * - Selecting the last line
+ * - Move line numbers outside of the current block element before extraction for better results
+ * - <ol start="number">
  *
  */
 
@@ -101,6 +104,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         }
     };
 
+    /**
+     * Implementation hint: the first element of "toChildTrace" array needs to be a child element of "node"
+     */
     this._serializePartialDomToChild = function(node, toChildTrace) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
             return ''
@@ -156,8 +162,23 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 }
             }
         }
+        if (!found) {
+            throw "Inconsistency or invalid call of this function detected";
+        }
         html += '</' + node.nodeName + '>';
         return html;
+    };
+
+    this.htmlToFragment = function(html) {
+        var fragment = document.createDocumentFragment(),
+            div = document.createElement('DIV');
+        div.innerHTML = html;
+        while (div.childElementCount) {
+            var child = div.childNodes[0];
+            div.removeChild(child);
+            fragment.appendChild(child);
+        }
+        return fragment;
     };
 
     /**
@@ -213,6 +234,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
         }
 
+        found = false;
         for (i = 0; i < ancestor.childNodes.length; i++) {
             if (ancestor.childNodes[i] == fromChildTrace[0]) {
                 found = true;
@@ -229,7 +251,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         
         var currNode = ancestor;
 
-        while (currNode.parentNode && currNode.parentNode.nodeType != DOCUMENT_FRAGMENT_NODE) {
+        while (currNode.parentNode) {
             outerContextStart = this._serializeTag(currNode) + outerContextStart;
             outerContextEnd += '</' + currNode.nodeName + '>';
             currNode = currNode.parentNode;
