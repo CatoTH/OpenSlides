@@ -575,16 +575,6 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
-        $scope.tinymceOptions = Editor.getOptions(null, true);
-        $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
-
-        $scope.amendmentCreating = {
-            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
-            lineFrom: 1,
-            lineTo: 2,
-            html: '',
-            reviewingHtml: ''
-        };
 
         // open edit dialog
         $scope.openDialog = function (motion) {
@@ -654,14 +644,54 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 });
         };
 
+
+        // Inline editing functions
+        $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
+        var inlineEditor = null,
+            normalizeInlineHtml = function(text) {
+                text = text.replace(/ contenteditable="false"/g, "");
+                text = text.replace(/ \/>/g, ">");
+                return text;
+            },
+            normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
+
+        $scope.lineBrokenTextChanged = false;
+        $scope.motionInlineSmallChange = true;
+
+        $scope.tinymceOptions = Editor.getOptions(null, true);
+        $scope.tinymceOptions.entities = "160,nbsp,38,amp,34,quot,162,cent,8364,euro,163,pound,165,yen,169,copy," +
+            "174,reg,8482,trade,8240,permil,60,lt,62,gt,8804,le,8805,ge,176,deg,8722,minus";
+        $scope.tinymceOptions.setup = function(editor) {
+            inlineEditor = editor;
+            editor.on("change", function() {
+                $scope.$apply(function () {
+                    var text = normalizeInlineHtml(editor.getContent());
+                    text = text.replace(/ \/>/g, ">");
+                    $scope.lineBrokenTextChanged = (text != normalizedOriginalInlineHtml);
+                    /*
+                    console.log("==========");
+                    console.log(originalLineBrokenTextCmp.length, originalLineBrokenTextCmp);
+                    console.log(text.length, text);
+                    */
+                });
+            });
+        };
+
         $scope.motionInlineSave = function () {
-            motion.setTextStrippingLineBreaks(motion.active_version, $scope.lineBrokenText)
+            if (!motion.isAllowed('update')) {
+                throw "No permission to update motion";
+            }
+
+            var newInlineHtml = normalizeInlineHtml(inlineEditor.getContent());
+            motion.setTextStrippingLineBreaks(motion.active_version, newInlineHtml);
 
             Motion.inject(motion);
             // save change motion object on server
             Motion.save(motion, { method: 'PATCH' }).then(
                 function(success) {
                     $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
+                    normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
+                    $scope.lineBrokenTextChanged = false;
                 },
                 function (error) {
                     // save error: revert all changes by restore
@@ -674,6 +704,17 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                     $scope.alert = {type: 'danger', msg: message, show: true};
                 }
             );
+        };
+
+
+        // Amendment creation functions
+
+        $scope.amendmentCreating = {
+            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
+            lineFrom: 1,
+            lineTo: 2,
+            html: '',
+            reviewingHtml: ''
         };
 
         $scope.toggleAmendmentCreateMode = function() {

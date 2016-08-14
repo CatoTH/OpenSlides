@@ -312,6 +312,42 @@ img {
 }
 
 
+.motion-save-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 40px;
+    width: 100%;
+    background: #002c42;
+    color: #999;
+    text-align: center;
+    padding: 5px;
+    z-index: 10;
+    display: none;
+}
+.motion-save-toolbar.visible {
+    display: block;
+}
+
+.motion-save-toolbar .changed-hint {
+    float: left;
+    line-height: 16px;
+    width: 200px;
+}
+
+.motion-save-toolbar label {
+    font-weight: normal;
+    line-height: 16px;
+    width: 200px;
+    float: right;
+    text-align: left;
+    padding-left: 16px;
+}
+
+.motion-save-toolbar label input {
+    margin-left: -16px;
+}
+
 /*** Line numbers ***/
 .motion-text.line-numbers-outside {
     padding-left: 50px;
