@@ -24,7 +24,7 @@ describe('linenumbering', function () {
               '<li>' + noMarkup(9) + 'Level 2 LI 9</li>' +
             '</ul></li>' +
           '</ul>' +
-          '<p>' + noMarkup(10) + 'Line 10' + brMarkup(11) + 'Line 11</p>');
+          '<p>' + noMarkup(10) + 'Line 10 ' + brMarkup(11) + 'Line 11</p>');
     diffService._insertInternalLineMarkers(baseHtmlDom1);
 
     baseHtmlDom2 = diffService.htmlToFragment('<p><span class="os-line-number line-number-1" data-line-number="1" contenteditable="false">&nbsp;</span>Single text line</p>\
@@ -135,5 +135,12 @@ describe('linenumbering', function () {
       expect(diff.followingHtmlStartSnippet).toBe('<UL>');
     });
 
+  });
+
+  describe('extraction of lines', function () {
+    it('locates line number nodes', function () {
+      var merged = diffService.replaceLines(baseHtmlDom1, '<p>Replaced a UL by a P</p>', 6, 9);
+      expect(merged).toBe('<P>Line 1 Line 2Line <STRONG>3<BR>Line 4 Line</STRONG> 5</P><P>Replaced a UL by a P</P><LI>Level 2 LI 9</LI><P>Line 10 Line 11</P><UL class="ul-class"><LI class="li-class"><UL></UL></LI></UL>');
+    });
   });
 });

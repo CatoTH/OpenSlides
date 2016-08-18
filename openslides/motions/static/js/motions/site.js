@@ -664,16 +664,14 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.tinymceOptions.setup = function(editor) {
             inlineEditor = editor;
             editor.on("change", function() {
-                $scope.$apply(function () {
-                    var text = normalizeInlineHtml(editor.getContent());
-                    text = text.replace(/ \/>/g, ">");
-                    $scope.lineBrokenTextChanged = (text != normalizedOriginalInlineHtml);
-                    /*
-                    console.log("==========");
-                    console.log(originalLineBrokenTextCmp.length, originalLineBrokenTextCmp);
-                    console.log(text.length, text);
-                    */
-                });
+                var text = normalizeInlineHtml(editor.getContent());
+                text = text.replace(/ \/>/g, ">");
+                $scope.lineBrokenTextChanged = (text != normalizedOriginalInlineHtml);
+                /*
+                console.log("==========");
+                console.log(originalLineBrokenTextCmp.length, originalLineBrokenTextCmp);
+                console.log(text.length, text);
+                */
             });
         };
 

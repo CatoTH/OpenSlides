@@ -340,7 +340,37 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             'followingHtml': followingHtml,
             'followingHtmlStartSnippet': followingHtmlStartSnippet
         };
+
     };
+
+    this.replaceLines = function (fragment, newHTML, fromLine, toLine) {
+        var data = this.extractRangeByLineNumbers(fragment, fromLine, toLine),
+            previousHtml = data.previousHtml + data.previousHtmlEndSnippet,
+            previousFragment = this.htmlToFragment(previousHtml),
+            followingHtml = data.followingHtml + data.followingHtmlStartSnippet,
+            followingFragment = this.htmlToFragment(followingHtml),
+            newFragment = this.htmlToFragment(newHTML),
+            child;
+
+        var merged = document.createDocumentFragment();
+        while (previousFragment.children.length > 0) {
+            child = previousFragment.children[0];
+            previousFragment.removeChild(child);
+            merged.appendChild(child);
+        }
+        while (newFragment.children.length > 0) {
+            child = newFragment.children[0];
+            newFragment.removeChild(child);
+            merged.appendChild(child);
+        }
+        while (followingFragment.children.length > 0) {
+            child = followingFragment.children[0];
+            followingFragment.removeChild(child);
+            merged.appendChild(child);
+        }
+
+        return this._serializeDom(merged, true);
+    }
 });
 
 
