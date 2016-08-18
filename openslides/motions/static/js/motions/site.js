@@ -717,7 +717,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         };
 
         $scope.toggleAmendmentCreateMode = function() {
-            if ($scope.amendmentCreating.mode == 0) {
+            if ($scope.amendmentCreating.mode === 0) {
                 $scope.amendmentCreating.mode = 1;
             } else {
                 $scope.amendmentCreating.mode = 0;

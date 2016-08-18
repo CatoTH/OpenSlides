@@ -103,10 +103,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         }
         if (stripLineNumbers && (
             lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node))) {
-            return ''
+            return '';
         }
         if (node.nodeName == 'OS-LINEBREAK') {
-            return ''
+            return '';
         }
         if (node.nodeName == 'BR') {
             var br = '<BR';
@@ -137,10 +137,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
      */
     this._serializePartialDomToChild = function(node, toChildTrace, stripLineNumbers) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
-            return ''
+            return '';
         }
         if (node.nodeName == 'OS-LINEBREAK') {
-            return ''
+            return '';
         }
 
         var html = this._serializeTag(node);
@@ -174,10 +174,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
      */
     this._serializePartialDomFromChild = function(node, fromChildTrace, stripLineNumbers) {
         if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
-            return ''
+            return '';
         }
         if (node.nodeName == 'OS-LINEBREAK') {
-            return ''
+            return '';
         }
 
         var html = '';
@@ -316,7 +316,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 found = false;
                 toChildTraceRel.shift();
                 html += this._serializePartialDomToChild(ancestor.childNodes[i], toChildTraceRel, true);
-            } else if (found == true) {
+            } else if (found === true) {
                 html += this._serializeDom(ancestor.childNodes[i], true);
             }
         }
@@ -343,16 +343,51 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 
     };
 
+    this._replaceLinesMergeNodeArrays = function(nodes1, nodes2) {
+        if (nodes1.length === 0) {
+            return nodes2;
+        }
+        if (nodes2.length === 0) {
+            return nodes1;
+        }
+
+        var out = [];
+        for (var i = 0; i < nodes1.length - 1; i++) {
+            out.push(nodes1[i]);
+        }
+
+        out.push(nodes1[nodes1.length - 1]);
+        out.push(nodes2[0]);
+
+        for (i = 1; i < nodes2.length; i++) {
+            out.push(nodes2[i]);
+        }
+
+        /*
+        if (node1.nodeName != node2.nodeName) {
+            return null;
+        }
+        var newNode = node1.ownerDocument.createElement(node1.nodeName);
+        for (var i = 0; i < node1.attributes.length; i++) {
+            var attr = node1.attributes[i];
+            newNode.setAttribute(attr.name, attr.value);
+        }
+        return newNode;
+        */
+        return out;
+    };
+
     this.replaceLines = function (fragment, newHTML, fromLine, toLine) {
         var data = this.extractRangeByLineNumbers(fragment, fromLine, toLine),
             previousHtml = data.previousHtml + data.previousHtmlEndSnippet,
             previousFragment = this.htmlToFragment(previousHtml),
-            followingHtml = data.followingHtml + data.followingHtmlStartSnippet,
+            followingHtml = data.followingHtmlStartSnippet + data.followingHtml,
             followingFragment = this.htmlToFragment(followingHtml),
             newFragment = this.htmlToFragment(newHTML),
             child;
 
         var merged = document.createDocumentFragment();
+
         while (previousFragment.children.length > 0) {
             child = previousFragment.children[0];
             previousFragment.removeChild(child);
@@ -368,9 +403,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             followingFragment.removeChild(child);
             merged.appendChild(child);
         }
+        //var merged = this._replaceLinesAttemptMerge(lastOfPrevious, firstOfReplaced);
 
         return this._serializeDom(merged, true);
-    }
+    };
 });
 
 

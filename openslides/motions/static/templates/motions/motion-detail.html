@@ -232,9 +232,11 @@
 
 <div class="details">
   <div class="row">
-    <div class="pull-right line-number-setter">
-      <div class="btn-group-label"><translate>Line numbering:</translate></div>
+    <div class="line-number-setter {{ lineNumberMode }}">
       <div class="btn-group" data-toggle="buttons">
+        <div class="btn btn-default disabled">
+          <i class="fa fa-list-ol" aria-hidden="true"></i>
+        </div>
         <label class="btn btn-default" ng-class="{active: (lineNumberMode == 'none')}"
                ng-click="lineNumberMode = 'none';">
           <input type="radio" name="lineNumberMode" value="none" ng-model="lineNumberMode"
@@ -255,7 +257,7 @@
         </label>
       </div>
     </div>
-    <div class="col-sm-8">
+    <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
 
       <section class="amendment-create" ng-show="amendmentCreating.mode == 1">
         <h2>Enter affected line numbers</h2>
@@ -282,8 +284,6 @@
         <div ng-bind-html="amendmentCreating.reviewingHtml | trusted"
            class="motion-text line-numbers-{{ lineNumberMode }}"></div>
       </section>
-
-      <h3 translate>Text</h3>
 
       <div ng-if="motion.isAllowed('update')">
         <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText"
