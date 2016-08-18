@@ -688,6 +688,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             Motion.save(motion, { method: 'PATCH' }).then(
                 function(success) {
                     $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
+                    inlineEditor.setContent($scope.lineBrokenText);
                     normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
                     $scope.lineBrokenTextChanged = false;
                 },
