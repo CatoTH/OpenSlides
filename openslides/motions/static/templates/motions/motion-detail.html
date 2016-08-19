@@ -220,11 +220,6 @@
             <i class="fa fa-bar-chart fa-lg"></i>
             <translate>New vote</translate>
           </button>
-
-        <button ng-click="toggleAmendmentCreateMode()" class="btn btn-default btn-sm">
-          <i class="fa fa-bar-chart fa-lg"></i>
-          <translate>Create amendment</translate>
-        </button>
       </div>
     </div>
   </div>
@@ -270,32 +265,6 @@
     </div>
 
     <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
-
-      <section class="amendment-create" ng-show="amendmentCreating.mode == 1">
-        <h2>Enter affected line numbers</h2>
-        <label>
-          From: <input type="number" ng-model="amendmentCreating.lineFrom">
-        </label>
-        <label>
-          To: <input type="number" ng-model="amendmentCreating.lineTo">
-        </label>
-        <button type="button" ng-click="startCreatingAmendmentHtml()">Start</button>
-      </section>
-
-      <section class="amendment-create" ng-show="amendmentCreating.mode == 2">
-        <h2>Modify the section</h2>
-
-        <div ui-tinymce="tinymceOptions" ng-model="amendmentCreating.html" class="motion-text"></div>
-
-        <button type="button" ng-click="saveAmendment()">Save</button>
-      </section>
-
-      <section class="amendment-show" ng-show="amendmentCreating.mode == 3">
-        <h3>Reviewing the amendment</h3>
-
-        <div ng-bind-html="amendmentCreating.reviewingHtml | trusted"
-           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
-      </section>
 
       <div ng-if="inlineEditing.allowed">
         <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText"
