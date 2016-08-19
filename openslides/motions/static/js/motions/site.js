@@ -666,6 +666,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 text = text.replace(/ \/>/g, ">");
                 return text;
             },
+            originalInlineHtml = $scope.lineBrokenText,
             normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
 
         $scope.inlineEditingActive = false;
@@ -682,11 +683,6 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 var text = normalizeInlineHtml(editor.getContent());
                 text = text.replace(/ \/>/g, ">");
                 $scope.lineBrokenTextChanged = (text != normalizedOriginalInlineHtml);
-                /*
-                console.log("==========");
-                console.log(originalLineBrokenTextCmp.length, originalLineBrokenTextCmp);
-                console.log(text.length, text);
-                */
             });
         };
 
@@ -698,6 +694,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.disableInlineEditing = function() {
             inlineEditor.setMode("readonly");
             $scope.inlineEditingActive = false;
+            $scope.lineBrokenTextChanged = false;
+            $scope.lineBrokenText = originalInlineHtml;
+            inlineEditor.setContent(originalInlineHtml);
         };
 
         $scope.motionInlineSave = function () {
@@ -714,6 +713,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 function(success) {
                     $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
                     inlineEditor.setContent($scope.lineBrokenText);
+                    originalInlineHtml = $scope.lineBrokenText;
                     normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
                     $scope.lineBrokenTextChanged = false;
                     $scope.inlineEditingActive = false;
