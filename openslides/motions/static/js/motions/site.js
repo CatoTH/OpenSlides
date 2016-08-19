@@ -588,6 +588,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
+        $scope.lineBrokenText = motion.getTextWithLineBreaks($scope.version);
 
         // open edit dialog
         $scope.openDialog = function (motion) {
@@ -638,6 +639,14 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         // show specific version
         $scope.showVersion = function (version) {
             $scope.version = version.id;
+            $scope.lineBrokenText = motion.getTextWithLineBreaks($scope.version);
+            $scope.inlineEditing.allowed = (motion.isAllowed('update') && $scope.version == motion.getVersion(-1).id);
+            $scope.inlineEditing.changed = false;
+            $scope.inlineEditing.active = false;
+            $scope.inlineEditing.originalHtml = $scope.lineBrokenText;
+            $scope.inlineEditing.originalHtmlNormalized = normalizeInlineHtml($scope.lineBrokenText);
+            $scope.inlineEditing.editor.setContent($scope.inlineEditing.originalHtml);
+            $scope.inlineEditing.editor.setMode("readonly");
         };
         // permit specific version
         $scope.permitVersion = function (version) {
@@ -659,65 +668,69 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
 
         // Inline editing functions
-        $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
-        var inlineEditor = null,
-            normalizeInlineHtml = function(text) {
-                text = text.replace(/ contenteditable="false"/g, "");
-                text = text.replace(/ \/>/g, ">");
-                return text;
-            },
-            originalInlineHtml = $scope.lineBrokenText,
-            normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
+        var normalizeInlineHtml = function(text) {
+            text = text.replace(/ contenteditable="false"/g, "");
+            text = text.replace(/ \/>/g, ">");
+            return text;
+        };
+        $scope.inlineEditing = {
+            allowed: (motion.isAllowed('update') && $scope.version == motion.getVersion(-1).id),
+            active: false,
+            changed: false,
+            trivialChange: false,
+            trivialChangeAllowed: false,
+            editor: null,
+            originalHtml: $scope.lineBrokenText,
+            originalHtmlNormalized: normalizeInlineHtml($scope.lineBrokenText)
+        };
+        window.setInterval(function() { console.log($scope.inlineEditing.trivialChange)}, 1000);
 
-        $scope.inlineEditingActive = false;
-        $scope.lineBrokenTextChanged = false;
-        $scope.motionInlineSmallChange = true;
+        if (motion.state.versioning && Config.get('motions_allow_disable_versioning').value) {
+            $scope.inlineEditing.trivialChange = true;
+            $scope.inlineEditing.trivialChangeAllowed = true;
+        }
 
         $scope.tinymceOptions = Editor.getOptions(null, true);
         $scope.tinymceOptions.readonly = 1;
         $scope.tinymceOptions.entities = "160,nbsp,38,amp,34,quot,162,cent,8364,euro,163,pound,165,yen,169,copy," +
             "174,reg,8482,trade,8240,permil,60,lt,62,gt,8804,le,8805,ge,176,deg,8722,minus";
         $scope.tinymceOptions.setup = function(editor) {
-            inlineEditor = editor;
+            $scope.inlineEditing.editor = editor;
             editor.on("change", function() {
                 var text = normalizeInlineHtml(editor.getContent());
                 text = text.replace(/ \/>/g, ">");
-                $scope.lineBrokenTextChanged = (text != normalizedOriginalInlineHtml);
+                $scope.inlineEditing.changed = (text != $scope.inlineEditing.originalHtmlNormalized);
             });
         };
 
         $scope.enableInlineEditing = function() {
-            inlineEditor.setMode("design");
-            $scope.inlineEditingActive = true;
+            $scope.inlineEditing.editor.setMode("design");
+            $scope.inlineEditing.active = true;
         };
 
         $scope.disableInlineEditing = function() {
-            inlineEditor.setMode("readonly");
-            $scope.inlineEditingActive = false;
-            $scope.lineBrokenTextChanged = false;
-            $scope.lineBrokenText = originalInlineHtml;
-            inlineEditor.setContent(originalInlineHtml);
+            $scope.inlineEditing.editor.setMode("readonly");
+            $scope.inlineEditing.active = false;
+            $scope.inlineEditing.changed = false;
+            $scope.lineBrokenText = $scope.inlineEditing.originalHtml;
+            $scope.inlineEditing.editor.setContent($scope.inlineEditing.originalHtml);
         };
 
         $scope.motionInlineSave = function () {
-            if (!motion.isAllowed('update')) {
+            if (!$scope.inlineEditing.allowed) {
                 throw "No permission to update motion";
             }
 
-            var newInlineHtml = normalizeInlineHtml(inlineEditor.getContent());
+            var newInlineHtml = normalizeInlineHtml($scope.inlineEditing.editor.getContent());
             motion.setTextStrippingLineBreaks(motion.active_version, newInlineHtml);
+            motion.disable_versioning = $scope.inlineEditing.trivialChange;
+            console.log(motion.disable_versioning);
 
             Motion.inject(motion);
             // save change motion object on server
             Motion.save(motion, { method: 'PATCH' }).then(
                 function(success) {
-                    $scope.lineBrokenText = motion.getTextWithLineBreaks(motion.active_version);
-                    inlineEditor.setContent($scope.lineBrokenText);
-                    originalInlineHtml = $scope.lineBrokenText;
-                    normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
-                    $scope.lineBrokenTextChanged = false;
-                    $scope.inlineEditingActive = false;
-                    inlineEditor.setMode("readonly");
+                    $scope.showVersion(motion.getVersion(-1));
                 },
                 function (error) {
                     // save error: revert all changes by restore
