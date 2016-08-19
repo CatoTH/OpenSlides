@@ -655,10 +655,12 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             },
             normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
 
+        $scope.inlineEditingActive = false;
         $scope.lineBrokenTextChanged = false;
         $scope.motionInlineSmallChange = true;
 
         $scope.tinymceOptions = Editor.getOptions(null, true);
+        $scope.tinymceOptions.readonly = 1;
         $scope.tinymceOptions.entities = "160,nbsp,38,amp,34,quot,162,cent,8364,euro,163,pound,165,yen,169,copy," +
             "174,reg,8482,trade,8240,permil,60,lt,62,gt,8804,le,8805,ge,176,deg,8722,minus";
         $scope.tinymceOptions.setup = function(editor) {
@@ -673,6 +675,16 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 console.log(text.length, text);
                 */
             });
+        };
+
+        $scope.enableInlineEditing = function() {
+            inlineEditor.setMode("design");
+            $scope.inlineEditingActive = true;
+        };
+
+        $scope.disableInlineEditing = function() {
+            inlineEditor.setMode("readonly");
+            $scope.inlineEditingActive = false;
         };
 
         $scope.motionInlineSave = function () {
@@ -691,6 +703,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                     inlineEditor.setContent($scope.lineBrokenText);
                     normalizedOriginalInlineHtml = normalizeInlineHtml($scope.lineBrokenText);
                     $scope.lineBrokenTextChanged = false;
+                    $scope.inlineEditingActive = false;
+                    inlineEditor.setMode("readonly");
                 },
                 function (error) {
                     // save error: revert all changes by restore

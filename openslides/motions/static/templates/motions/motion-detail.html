@@ -232,6 +232,17 @@
 
 <div class="details">
   <div class="row">
+    <div class="pull-right inline-editing-activator">
+      <button ng-if="!inlineEditingActive" ng-click="enableInlineEditing()" class="btn btn-sm btn-default">
+        <i class="fa fa-toggle-off"></i>
+        <translate>Inline editing inactive</translate>
+      </button>
+      <button ng-if="inlineEditingActive" ng-click="disableInlineEditing()" class="btn btn-sm btn-default">
+        <i class="fa fa-toggle-on"></i>
+        <translate>Inline editing active</translate>
+      </button>
+    </div>
+
     <div class="line-number-setter {{ lineNumberMode }}">
       <div class="btn-group" data-toggle="buttons">
         <div class="btn btn-default disabled">
@@ -257,6 +268,7 @@
         </label>
       </div>
     </div>
+
     <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
 
       <section class="amendment-create" ng-show="amendmentCreating.mode == 1">
@@ -290,12 +302,11 @@
            class="motion-text line-numbers-{{ lineNumberMode }}"></div>
 
         <div class="motion-save-toolbar" ng-class="{ 'visible': lineBrokenTextChanged }">
-          <div class="changed-hint" translate>The text has been changed.<br>
-            Please save to make the changes permanent.</div>
-          <button type="button" ng-click="motionInlineSave()" class="btn btn-default">Speichern</button>
+          <div class="changed-hint" translate>The text has been changed.</div>
+          <button type="button" ng-click="motionInlineSave()" class="btn btn-primary">Save</button>
           <label>
             <input type="checkbox" ng-model="motionInlineSmallChange" value="1">
-            <span translate>Small change only<br>(do not create a new version)</span>
+            <span translate>Trivial change</span>
           </label>
         </div>
       </div>

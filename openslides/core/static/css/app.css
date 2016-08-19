@@ -304,9 +304,13 @@ img {
     margin-left: 13px;
 }
 
-.col1 .details .line-number-setter .btn.disabled{
+.col1 .details .line-number-setter .btn.disabled {
     cursor: default;
     opacity: 1;
+}
+
+.col1 .details .inline-editing-activator {
+    margin-right: 13px;
 }
 
 .col1 ul, .col1 ol {
@@ -317,33 +321,41 @@ img {
 .motion-save-toolbar {
     position: fixed;
     bottom: 0;
-    left: 0;
-    height: 40px;
-    width: 100%;
-    background: #002c42;
-    color: #999;
+    left: 50%;
+    height: 75px;
+    width: 300px;
+    background: rgba(242, 222, 222, 0.9);
+    color: black;
     text-align: center;
     padding: 5px;
     z-index: 10;
     display: none;
+    border: 1px solid #d3d3d3;
+    margin-left: -150px;
+    border-bottom: none;
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.75);
+    box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.75);
 }
 .motion-save-toolbar.visible {
     display: block;
 }
 
 .motion-save-toolbar .changed-hint {
-    float: left;
+    display: block;
     line-height: 16px;
-    width: 200px;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
 
 .motion-save-toolbar label {
     font-weight: normal;
     line-height: 16px;
-    width: 200px;
-    float: right;
     text-align: left;
     padding-left: 16px;
+    margin-top: 5px;
+    margin-left: 15px;
 }
 
 .motion-save-toolbar label input {
