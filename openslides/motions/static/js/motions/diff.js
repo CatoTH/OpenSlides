@@ -4,6 +4,13 @@
 
 angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumbering'])
 
+/**
+ * TO DO
+ * - Selecting the last line
+ * - <ol start="number">
+ *
+ */
+
 .service('diffService', function (lineNumberingService) {
     var ELEMENT_NODE = 1,
         TEXT_NODE = 3,
@@ -334,9 +341,16 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             'followingHtml': followingHtml,
             'followingHtmlStartSnippet': followingHtmlStartSnippet
         };
-
     };
 
+    /*
+     * This functions merges to arrays of nodes. The last element of nodes1 and the first element of nodes2
+     * are merged, if they are of the same type.
+     *
+     * This is done recursively until a TEMPLATE-Tag is is found, which was inserted in this.replaceLines.
+     * Using a TEMPLATE-Tag is a rather dirty hack, as it is allowed inside of any other element, including <ul>.
+     *
+     */
     this._replaceLinesMergeNodeArrays = function(nodes1, nodes2) {
         if (nodes1.length === 0) {
             return nodes2;
@@ -345,61 +359,65 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             return nodes1;
         }
 
+        var mergableElements = ['UL', 'OL'];
+
         var out = [];
         for (var i = 0; i < nodes1.length - 1; i++) {
             out.push(nodes1[i]);
         }
 
-        out.push(nodes1[nodes1.length - 1]);
-        out.push(nodes2[0]);
+        var lastNode = nodes1[nodes1.length - 1],
+            firstNode = nodes2[0];
+        if (lastNode.nodeName == firstNode.nodeName) {
+            var newNode = lastNode.ownerDocument.createElement(lastNode.nodeName);
+            for (i = 0; i < lastNode.attributes.length; i++) {
+                var attr = lastNode.attributes[i];
+                newNode.setAttribute(attr.name, attr.value);
+            }
+            var children = this._replaceLinesMergeNodeArrays(lastNode.childNodes, firstNode.childNodes);
+            for (i = 0; i < children.length; i++) {
+                newNode.appendChild(children[i]);
+            }
+            out.push(newNode);
+        } else {
+            if (lastNode.nodeName != 'TEMPLATE') {
+                out.push(lastNode);
+            }
+            if (firstNode.nodeName != 'TEMPLATE') {
+                out.push(firstNode);
+            }
+        }
 
         for (i = 1; i < nodes2.length; i++) {
             out.push(nodes2[i]);
         }
 
-        /*
-        if (node1.nodeName != node2.nodeName) {
-            return null;
-        }
-        var newNode = node1.ownerDocument.createElement(node1.nodeName);
-        for (var i = 0; i < node1.attributes.length; i++) {
-            var attr = node1.attributes[i];
-            newNode.setAttribute(attr.name, attr.value);
-        }
-        return newNode;
-        */
         return out;
     };
 
     this.replaceLines = function (fragment, newHTML, fromLine, toLine) {
         var data = this.extractRangeByLineNumbers(fragment, fromLine, toLine),
-            previousHtml = data.previousHtml + data.previousHtmlEndSnippet,
+            previousHtml = data.previousHtml + '<TEMPLATE></TEMPLATE>' + data.previousHtmlEndSnippet,
             previousFragment = this.htmlToFragment(previousHtml),
-            followingHtml = data.followingHtmlStartSnippet + data.followingHtml,
+            followingHtml = data.followingHtmlStartSnippet + '<TEMPLATE></TEMPLATE>' + data.followingHtml,
             followingFragment = this.htmlToFragment(followingHtml),
-            newFragment = this.htmlToFragment(newHTML),
-            child;
+            newFragment = this.htmlToFragment(newHTML);
 
-        var merged = document.createDocumentFragment();
+        var merged = this._replaceLinesMergeNodeArrays(previousFragment.childNodes, newFragment.childNodes);
+        merged = this._replaceLinesMergeNodeArrays(merged, followingFragment.childNodes);
 
-        while (previousFragment.children.length > 0) {
-            child = previousFragment.children[0];
-            previousFragment.removeChild(child);
-            merged.appendChild(child);
+        var mergedFragment = document.createDocumentFragment();
+        for (var i = 0; i < merged.length; i++) {
+            mergedFragment.appendChild(merged[i]);
         }
-        while (newFragment.children.length > 0) {
-            child = newFragment.children[0];
-            newFragment.removeChild(child);
-            merged.appendChild(child);
-        }
-        while (followingFragment.children.length > 0) {
-            child = followingFragment.children[0];
-            followingFragment.removeChild(child);
-            merged.appendChild(child);
-        }
-        //var merged = this._replaceLinesAttemptMerge(lastOfPrevious, firstOfReplaced);
 
-        return this._serializeDom(merged, true);
+        var forgottenTemplates = mergedFragment.querySelectorAll("TEMPLATE");
+        for (i = 0; i < forgottenTemplates.length; i++) {
+            var el = forgottenTemplates[i];
+            el.parentNode.removeChild(el);
+        }
+
+        return this._serializeDom(mergedFragment, true);
     };
 });
 

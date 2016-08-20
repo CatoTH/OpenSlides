@@ -1000,6 +1000,70 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 }
             );
         };
+
+        // Amendment creation functions
+
+        $scope.tinymceAmendmentOptions = Editor.getOptions(null, true);
+        $scope.amendmentCreating = {
+            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
+            lineFrom: 1,
+            lineTo: 2,
+            html: '',
+            reviewingHtml: ''
+        };
+
+        $scope.toggleAmendmentCreateMode = function () {
+            if ($scope.amendmentCreating.mode === 0) {
+                $scope.amendmentCreating.mode = 1;
+            } else {
+                $scope.amendmentCreating.mode = 0;
+            }
+        };
+
+        $scope.startCreatingAmendmentHtml = function () {
+            if ($scope.amendmentCreating.lineFrom > 0 && $scope.amendmentCreating.lineTo > 0) {
+                var html = motion.getTextWithLineBreaks(motion.active_version),
+                    fragment = diffService.htmlToFragment(html),
+                    lineData = diffService.extractRangeByLineNumbers(
+                        fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
+                    );
+                console.log(html);
+
+                var diffhtml = lineData.outerContextStart + lineData.innerContextStart +
+                    lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
+
+                console.log(lineData);
+                console.log(diffhtml);
+
+                $scope.amendmentCreating.html = diffhtml;
+                $scope.amendmentCreating.mode = 2;
+            }
+        };
+
+        $scope.saveAmendment = function () {
+            var html = motion.getTextWithLineBreaks(motion.active_version),
+                fragment = diffService.htmlToFragment(html),
+                lineData = diffService.extractRangeByLineNumbers(
+                    fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
+                );
+
+            console.log(lineData);
+            var reviewingHtml = lineData.previousHtml + lineData.previousHtmlEndSnippet;
+
+            reviewingHtml += '<section><h3>Old:</h3><div style="color: red;">';
+            reviewingHtml += lineData.outerContextStart + lineData.innerContextStart +
+                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
+            reviewingHtml += '</div></section>';
+
+            reviewingHtml += '<section><h3>New:</h3><div style="color: green;">';
+            reviewingHtml += $scope.amendmentCreating.html;
+            reviewingHtml += '</div></section>';
+
+            reviewingHtml += lineData.followingHtmlStartSnippet + lineData.followingHtml;
+
+            $scope.amendmentCreating.reviewingHtml = reviewingHtml;
+            $scope.amendmentCreating.mode = 3;
+        };
     }
 ])
 

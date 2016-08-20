@@ -15,7 +15,7 @@ describe('linenumbering', function () {
     diffService = _diffService_;
 
     baseHtmlDom1 = diffService.htmlToFragment('<p>' +
-          noMarkup(1) + 'Line 1 ' + brMarkup(2) + 'Line 2' +
+          noMarkup(1) + 'Line 1 ' + brMarkup(2) + 'Line 2 ' +
           brMarkup(3) + 'Line <strong>3<br>' + noMarkup(4) + 'Line 4 ' + brMarkup(5) + 'Line</strong> 5</p>' +
           '<ul class="ul-class">' +
             '<li class="li-class">' + noMarkup(6) + 'Line 6 ' + brMarkup(7) + 'Line 7' + '</li>' +
@@ -149,14 +149,18 @@ describe('linenumbering', function () {
 
     it('replaces LIs by a P', function () {
       var merged = diffService.replaceLines(baseHtmlDom1, '<p>Replaced a UL by a P</p>', 6, 9);
-      expect(merged).toBe('<P>Line 1 Line 2Line <STRONG>3<BR>Line 4 Line</STRONG> 5</P><P>Replaced a UL by a P</P><UL class="ul-class"><LI class="li-class"><UL><LI>Level 2 LI 9</LI></UL></LI></UL><P>Line 10 Line 11</P>');
+      expect(merged).toBe('<P>Line 1 Line 2 Line <STRONG>3<BR>Line 4 Line</STRONG> 5</P><P>Replaced a UL by a P</P><UL class="ul-class"><LI class="li-class"><UL><LI>Level 2 LI 9</LI></UL></LI></UL><P>Line 10 Line 11</P>');
     });
-    /*
+
     it('replaces LIs by another LI', function () {
       var merged = diffService.replaceLines(baseHtmlDom1, '<UL class="ul-class"><LI>A new LI</LI></UL>', 6, 9);
-      expect(merged).toBe('');
+      expect(merged).toBe('<P>Line 1 Line 2 Line <STRONG>3<BR>Line 4 Line</STRONG> 5</P><UL class="ul-class"><LI>A new LI<UL><LI>Level 2 LI 9</LI></UL></LI></UL><P>Line 10 Line 11</P>');
     });
-    */
+
+    it('breaks up a paragraph into two', function() {
+      var merged = diffService.replaceLines(baseHtmlDom1, '<P>Replaced Line 10</P><P>Inserted Line 11 </P>', 10, 11);
+      expect(merged).toBe('<P>Line 1 Line 2 Line <STRONG>3<BR>Line 4 Line</STRONG> 5</P><UL class="ul-class"><LI class="li-class">Line 6 Line 7</LI><LI class="li-class"><UL><LI>Level 2 LI 8</LI><LI>Level 2 LI 9</LI></UL></LI></UL><P>Replaced Line 10</P><P>Inserted Line 11 Line 11</P>');
+    });
 
   });
 });
