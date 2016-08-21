@@ -302,10 +302,30 @@ angular.module('OpenSlidesApp.motions', [
     }
 ])
 
+.factory('MotionChangeRecommendation', [
+    'DS',
+    'jsDataModel',
+    function (DS, jsDataModel) {
+        return DS.defineResource({
+            name: 'motions/motionchangerecommendation',
+            useClass: jsDataModel,
+            /*
+            belongsTo: {
+                    'motions/motion': {
+                        localField: 'motion',
+                        localKey: 'motion_id',
+                    }
+                }
+             */
+        });
+    }
+])
+
 .run([
     'Motion',
     'Category',
-    function(Motion, Category) {}
+    'MotionChangeRecommendation',
+    function(Motion, Category, MotionChangeRecommendation) {}
 ])
 
 

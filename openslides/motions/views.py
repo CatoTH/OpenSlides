@@ -21,10 +21,11 @@ from openslides.utils.views import PDFView, SingleObjectMixin
 from .access_permissions import (
     CategoryAccessPermissions,
     MotionAccessPermissions,
+    MotionChangeRecommendationAccessPermissions,
     WorkflowAccessPermissions,
 )
 from .exceptions import WorkflowError
-from .models import Category, Motion, MotionPoll, MotionVersion, Workflow
+from .models import Category, Motion, MotionPoll, MotionVersion, MotionChangeRecommendation, Workflow
 from .pdf import motion_poll_to_pdf, motion_to_pdf, motions_to_pdf
 from .serializers import MotionPollSerializer
 
@@ -274,6 +275,24 @@ class MotionPollViewSet(UpdateModelMixin, DestroyModelMixin, GenericViewSet):
         """
         return (self.request.user.has_perm('motions.can_see') and
                 self.request.user.has_perm('motions.can_manage'))
+
+
+class MotionChangeRecommendationViewSet(ModelViewSet):
+    """
+    API endpoint for motion change recommendations.
+
+    There are the following views: metadata, list, retrieve, create,
+    partial_update, update and destroy.
+    """
+    access_permissions = MotionChangeRecommendationAccessPermissions()
+    queryset = MotionChangeRecommendation.objects.all()
+
+    def check_view_permissions(self):
+        """
+        Returns True if the user has required permissions. Obviously.
+        @TODO
+        """
+        return True
 
 
 class CategoryViewSet(ModelViewSet):

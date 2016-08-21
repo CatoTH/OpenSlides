@@ -20,6 +20,25 @@ class MotionAccessPermissions(BaseAccessPermissions):
         return MotionSerializer
 
 
+class MotionChangeRecommendationAccessPermissions(BaseAccessPermissions):
+    """
+    Access permissions container for MotionChangeRecommendation and MotionChangeRecommendationViewSet.
+    """
+    def can_retrieve(self, user):
+        """
+        Returns True if the user has read access model instances.
+        """
+        return user.has_perm('motions.can_see')
+
+    def get_serializer_class(self, user=None):
+        """
+        Returns serializer class.
+        """
+        from .serializers import MotionChangeRecommendationSerializer
+
+        return MotionChangeRecommendationSerializer
+
+
 class CategoryAccessPermissions(BaseAccessPermissions):
     """
     Access permissions container for Category and CategoryViewSet.
