@@ -373,6 +373,61 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     }
 ])
 
+.factory('ChangeRecommendationForm', [
+    'gettextCatalog',
+    'Editor',
+    'Config',
+    function(gettextCatalog, Editor, Config) {
+        return {
+            // ngDialog for motion form
+            getCreateDialog: function (motion, lineFrom, lineTo) {
+                return {
+                    template: 'static/templates/motions/change-recommendation-form.html',
+                    controller: 'ChangeRecommendationCreateCtrl',
+                    className: 'ngdialog-theme-default wide-form',
+                    closeByEscape: false,
+                    closeByDocument: false,
+                    resolve: {
+                        motion: function() {
+                            return motion;
+                        },
+                        lineFrom: function() {
+                            return lineFrom;
+                        },
+                        lineTo: function() {
+                            return lineTo;
+                        }
+                    }
+                };
+            },
+            // angular-formly fields for motion form
+            getFormFields: function () {
+                return [
+                {
+                    key: 'identifier',
+                    type: 'input',
+                    templateOptions: {
+                        label: gettextCatalog.getString('Identifier')
+                    },
+                    hide: true
+                },
+                {
+                    key: 'text',
+                    type: 'editor',
+                    templateOptions: {
+                        label: gettextCatalog.getString('Text'),
+                        required: true
+                    },
+                    data: {
+                        tinymceOption: Editor.getOptions()
+                    }
+                }
+                ]
+            }
+        }
+    }
+])
+
 // Service for generic motion form (create and update)
 .factory('MotionForm', [
     'gettextCatalog',
@@ -770,6 +825,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     '$timeout',
     'ngDialog',
     'MotionForm',
+    'ChangeRecommendationForm',
     'Motion',
     'Category',
     'Mediafile',
@@ -784,10 +840,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeConverter',
     'PdfMakeDocumentProvider',
     'gettextCatalog',
-    'diffService',
-    function($scope, $http, $timeout, ngDialog, MotionForm, Motion, Category, Mediafile, Tag, User, Workflow, Editor,
-             Config,motion, SingleMotionContentProvider, MotionContentProvider, PdfMakeConverter,
-             PdfMakeDocumentProvider, gettextCatalog, diffService) {
+    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommendationForm, Motion, Category, Mediafile, Tag,
+             User, Workflow, Editor, Config,motion, SingleMotionContentProvider, MotionContentProvider, PdfMakeConverter,
+             PdfMakeDocumentProvider, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -1004,65 +1059,123 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         // Amendment creation functions
 
         $scope.tinymceAmendmentOptions = Editor.getOptions(null, true);
-        $scope.amendmentCreating = {
+        $scope.createChangeRecommendation = {
             mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
             lineFrom: 1,
             lineTo: 2,
             html: '',
-            reviewingHtml: ''
-        };
+            reviewingHtml: '',
 
-        $scope.toggleAmendmentCreateMode = function () {
-            if ($scope.amendmentCreating.mode === 0) {
-                $scope.amendmentCreating.mode = 1;
-            } else {
-                $scope.amendmentCreating.mode = 0;
+            startCreating: function() {
+                $scope.createChangeRecommendation.mode = 1;
+                $(".motion-text .os-line-number").each(function() {
+                    $(this).addClass("selectable");
+                });
+            },
+            setFromLine: function(line) {
+                $scope.createChangeRecommendation.mode = 2;
+                $scope.createChangeRecommendation.lineFrom = line;
+
+                $(".motion-text .os-line-number").each(function() {
+                    var $this = $(this);
+                    if ($this.data("line-number") > line) {
+                        $(this).addClass("selectable");
+                    } else {
+                        $(this).removeClass("selectable");
+                    }
+                });
+            },
+            setToLine: function(line) {
+                if (line <= $scope.createChangeRecommendation.lineFrom) {
+                    return;
+                }
+                $scope.createChangeRecommendation.mode = 3;
+                $scope.createChangeRecommendation.lineTo = line;
+                ngDialog.open(ChangeRecommendationForm.getCreateDialog(
+                    motion,
+                    $scope.createChangeRecommendation.lineFrom,
+                    $scope.createChangeRecommendation.lineTo
+                ));
+
+                $scope.createChangeRecommendation.lineFrom = 0;
+                $scope.createChangeRecommendation.lineTo = 0;
+                $(".motion-text .os-line-number").removeClass("selected selectable");
+            },
+            lineClicked: function(ev) {
+                if ($scope.createChangeRecommendation.mode == 0) {
+                    return;
+                }
+                if ($scope.createChangeRecommendation.mode == 1) {
+                    $scope.createChangeRecommendation.setFromLine($(ev.target).data("line-number"));
+                    $(ev.target).addClass("selected").removeClass("selectable");
+                } else if ($scope.createChangeRecommendation.mode == 2) {
+                    $scope.createChangeRecommendation.setToLine($(ev.target).data("line-number"));
+                }
+            },
+            mouseOver: function(ev) {
+                if ($scope.createChangeRecommendation.mode != 2) {
+                    return;
+                }
+                var hoverLine = $(ev.target).data("line-number");
+                $(".motion-text .os-line-number").each(function() {
+                    var line = $(this).data("line-number");
+                    if (line >= $scope.createChangeRecommendation.lineFrom && line <= hoverLine) {
+                        $(this).addClass("selected");
+                    } else {
+                        $(this).removeClass("selected");
+                    }
+                });
+            },
+            init: function($scope) {
+                var $content = $("#content");
+                $content.on("click", ".os-line-number.selectable", $scope.createChangeRecommendation.lineClicked);
+                $content.on("mouseover", ".os-line-number.selectable", $scope.createChangeRecommendation.mouseOver);
+            },
+            destroy: function($scope) {
+                var $content = $("#content");
+                $content.off("click", ".os-line-number.selectable", $scope.createChangeRecommendation.lineClicked);
+                $content.off("mouseover", ".os-line-number.selectable", $scope.createChangeRecommendation.mouseOver);
             }
         };
+        $scope.createChangeRecommendation.init($scope);
+        $scope.$on("$destroy", function() {
+            $scope.createChangeRecommendation.destroy($scope);
+        });
+    }
+])
 
-        $scope.startCreatingAmendmentHtml = function () {
-            if ($scope.amendmentCreating.lineFrom > 0 && $scope.amendmentCreating.lineTo > 0) {
-                var html = motion.getTextWithLineBreaks(motion.active_version),
-                    fragment = diffService.htmlToFragment(html),
-                    lineData = diffService.extractRangeByLineNumbers(
-                        fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
-                    );
-                console.log(html);
+.controller('ChangeRecommendationCreateCtrl', [
+    '$scope',
+    'Motion',
+    'MotionChangeRecommendation',
+    'ChangeRecommendationForm',
+    'Config',
+    'diffService',
+    'motion',
+    'lineFrom',
+    'lineTo',
+    function($scope, Motion, MotionChangeRecommendation, ChangeRecommendationForm, Config, diffService, motion, lineFrom, lineTo) {
+        $scope.alert = {};
 
-                var diffhtml = lineData.outerContextStart + lineData.innerContextStart +
-                    lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
+        var html = motion.getTextWithLineBreaks(motion.active_version),
+            fragment = diffService.htmlToFragment(html),
+            lineData = diffService.extractRangeByLineNumbers(fragment, lineFrom, lineTo);
 
-                console.log(lineData);
-                console.log(diffhtml);
-
-                $scope.amendmentCreating.html = diffhtml;
-                $scope.amendmentCreating.mode = 2;
-            }
+        $scope.model = {
+            text: lineData.outerContextStart + lineData.innerContextStart +
+                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd
         };
 
-        $scope.saveAmendment = function () {
-            var html = motion.getTextWithLineBreaks(motion.active_version),
-                fragment = diffService.htmlToFragment(html),
-                lineData = diffService.extractRangeByLineNumbers(
-                    fragment, $scope.amendmentCreating.lineFrom, $scope.amendmentCreating.lineTo + 1
-                );
-
-            console.log(lineData);
-            var reviewingHtml = lineData.previousHtml + lineData.previousHtmlEndSnippet;
-
-            reviewingHtml += '<section><h3>Old:</h3><div style="color: red;">';
-            reviewingHtml += lineData.outerContextStart + lineData.innerContextStart +
-                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd;
-            reviewingHtml += '</div></section>';
-
-            reviewingHtml += '<section><h3>New:</h3><div style="color: green;">';
-            reviewingHtml += $scope.amendmentCreating.html;
-            reviewingHtml += '</div></section>';
-
-            reviewingHtml += lineData.followingHtmlStartSnippet + lineData.followingHtml;
-
-            $scope.amendmentCreating.reviewingHtml = reviewingHtml;
-            $scope.amendmentCreating.mode = 3;
+        // get all form fields
+        $scope.formFields = ChangeRecommendationForm.getFormFields();
+        // save motion
+        $scope.save = function (motion) {
+            Motion.create(motion).then(
+                function(success) {
+                    console.log("success");
+                    $scope.closeThisDialog();
+                }
+            );
         };
     }
 ])

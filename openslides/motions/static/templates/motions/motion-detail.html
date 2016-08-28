@@ -220,6 +220,10 @@
             <i class="fa fa-bar-chart fa-lg"></i>
             <translate>New vote</translate>
           </button>
+          <button ng-click="createChangeRecommendation.startCreating()" class="btn btn-default btn-sm">
+            <i class="fa fa-bar-chart fa-lg"></i>
+            <translate>Create amendment</translate>
+          </button>
       </div>
     </div>
   </div>
@@ -265,12 +269,6 @@
     </div>
 
     <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
-
-      <button ng-click="toggleAmendmentCreateMode()" class="btn btn-default btn-sm">
-          <i class="fa fa-bar-chart fa-lg"></i>
-          <translate>Create amendment</translate>
-      </button>
-
 
       <section class="amendment-create" ng-show="amendmentCreating.mode == 1">
         <h2>Enter affected line numbers</h2>

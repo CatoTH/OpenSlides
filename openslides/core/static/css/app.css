@@ -379,13 +379,15 @@ img {
     line-height: 0;
     width: 0;
     height: 0;
+    position: absolute;
+    left: 0;
 }
 .motion-text.line-numbers-outside .os-line-number:after {
     content: attr(data-line-number);
     position: absolute;
     left: 0;
+    top: 11px;
     vertical-align: top;
-    margin-top: -5px;
     color: gray;
     font-family: Courier, serif;
     font-size: 13px;
@@ -417,6 +419,7 @@ img {
 }
 
 .os-line-number {
+    position: relative;
     user-select: none;
     -moz-user-select: none;
     -khtml-user-select: none;
@@ -424,11 +427,46 @@ img {
     -o-user-select: none;
 }
 .os-line-number:after {
+    position: relative;
     user-select: none;
     -moz-user-select: none;
     -khtml-user-select: none;
     -webkit-user-select: none;
     -o-user-select: none;
+}
+
+.line-numbers-inline .os-line-number.selectable:before, .line-numbers-inline .os-line-number.selected:before {
+    content: ' ';
+    display: inline-block;
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: solid 1px gray;
+    border-radius: 9px;
+    top: -5px;
+    left: 1px;
+    cursor: pointer;
+}
+.line-numbers-outside .os-line-number.selectable:before, .line-numbers-outside .os-line-number.selected:before {
+    content: ' ';
+    display: inline-block;
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: solid 1px gray;
+    border-radius: 9px;
+    top: 0;
+    left: -1px;
+    cursor: pointer;
+}
+.os-line-number.selected:before {
+    background-color: #ddd;
+}
+.os-line-number.selectable:hover:before {
+    background-color: #ccc;
+}
+.os-line-number.selectable:after {
+    cursor: pointer;
 }
 
 /** Projector sidebar column **/
