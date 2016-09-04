@@ -424,27 +424,73 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 };
             },
             // angular-formly fields for motion form
-            getFormFields: function () {
+            getFormFields: function (line_from, line_to) {
                 return [
-                {
-                    key: 'identifier',
-                    type: 'input',
-                    templateOptions: {
-                        label: gettextCatalog.getString('Identifier')
+                    {
+                        key: 'identifier',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Identifier')
+                        },
+                        hide: true
                     },
-                    hide: true
-                },
-                {
-                    key: 'text',
-                    type: 'editor',
-                    templateOptions: {
-                        label: gettextCatalog.getString('Text'),
-                        required: true
+                    {
+                        key: 'motion_version_id',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Motion')
+                        },
+                        hide: true
                     },
-                    data: {
-                        tinymceOption: Editor.getOptions()
+                    {
+                        key: 'line_from',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('From Line')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'line_to',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('To Line')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'type',
+                        type: 'radio',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Type of Change'),
+                            options: [
+                                {
+                                    name: 'Replacement',
+                                    value: 0
+                                },
+                                {
+                                    name: 'Insertion',
+                                    value: 1
+                                },
+                                {
+                                    name: 'Deletion',
+                                    value: 2
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        key: 'text',
+                        type: 'editor',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Text from line %from% to %to%')
+                                .replace(/%from%/, line_from).replace(/%to%/, line_to),
+                            required: true
+                        },
+                        data: {
+                            tinymceOption: Editor.getOptions()
+                        }
                     }
-                }
                 ]
             }
         }
@@ -1212,14 +1258,17 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
         $scope.model = {
             text: lineData.outerContextStart + lineData.innerContextStart +
-                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd
+                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd,
+            line_from: lineFrom,
+            line_to: lineTo,
+            motion_version_id: motion.active_version
         };
 
         // get all form fields
-        $scope.formFields = ChangeRecommendationForm.getFormFields();
+        $scope.formFields = ChangeRecommendationForm.getFormFields(lineFrom, lineTo);
         // save motion
         $scope.save = function (motion) {
-            Motion.create(motion).then(
+            MotionChangeRecommendation.create(motion).then(
                 function(success) {
                     console.log("success");
                     $scope.closeThisDialog();

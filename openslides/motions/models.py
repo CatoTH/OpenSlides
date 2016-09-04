@@ -650,10 +650,10 @@ class MotionChangeRecommendation(RESTModelMixin, models.Model):
     """The motion version to which the change recommendation belongs."""
 
     type = models.PositiveIntegerField()
-    """ Insertion, Deletion or Replacement """
+    """ Insertion (1), Deletion (2) or Replacement (0) """
 
     status = models.PositiveIntegerField(default=0)
-    """ Proposed, Accepted, Rejected """
+    """ Proposed (0), Accepted (1), Rejected (2) """
 
     line_from = models.PositiveIntegerField()
     """ The number or the first affected line """
