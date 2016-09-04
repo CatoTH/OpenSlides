@@ -911,6 +911,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Motion',
     'Category',
     'Mediafile',
+    'MotionChangeRecommendation',
     'Tag',
     'User',
     'Workflow',
@@ -923,14 +924,15 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeDocumentProvider',
     'gettextCatalog',
     function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommendationForm, Motion, Category, Mediafile,
-             Tag, User, Workflow, Editor, Config, motion, SingleMotionContentProvider, MotionContentProvider,
-             PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
+             MotionChangeRecommendation, Tag, User, Workflow, Editor, Config, motion, SingleMotionContentProvider,
+             MotionContentProvider, PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
         Tag.bindAll({}, $scope, 'tags');
         User.bindAll({}, $scope, 'users');
         Workflow.bindAll({}, $scope, 'workflows');
+        MotionChangeRecommendation.bindAll({}, $scope, 'change_recommendations');
         Motion.loadRelations(motion, 'agenda_item');
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
@@ -940,6 +942,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             Motion.bindOne(motion.parent_id, $scope, 'parent');
         }
         $scope.amendments = Motion.filter({parent_id: motion.id});
+
+        MotionChangeRecommendation.findAll();
 
         $scope.makePDF = function(){
           var content = motion.getText($scope.version) + motion.getReason($scope.version),

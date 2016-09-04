@@ -171,6 +171,11 @@ angular.module('OpenSlidesApp.motions', [
                 getSearchResultSubtitle: function () {
                     return "Motion";
                 },
+                // returns a promise for retrieving all change recommendations for the specified version
+                getChangeRecommendations: function (versionId) {
+                    versionId = versionId || this.active_version;
+                    return MotionChangeRecommendation.findAll();
+                },
                 isAllowed: function (action) {
                     /*
                      * Return true if the requested user is allowed to do the specific action.
