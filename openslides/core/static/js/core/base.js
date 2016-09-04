@@ -286,7 +286,6 @@ angular.module('OpenSlidesApp.core', [
     }
 ])
 
-
 .factory('jsDataModel', [
     '$http',
     'Projector',
@@ -478,6 +477,26 @@ angular.module('OpenSlidesApp.core', [
         };
     }
 ])
+
+// filters the requesting object (id=selfid) from a list of input objects
+.filter('notself', function() {
+    return function(input, selfid) {
+        var result;
+        if (selfid) {
+            result = [];
+            for (var key in input){
+                var obj = input[key];
+                if (selfid != obj.id) {
+                    result.push(obj);
+                }
+            }
+        } else {
+            result = input;
+        }
+        return result;
+    };
+})
+
 
 // Make sure that the DS factories are loaded by making them a dependency
 .run([

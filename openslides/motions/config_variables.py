@@ -23,6 +23,10 @@ def get_config_variables():
     papers' and 'PDF'. The generator has to be evaluated during app loading
     (see apps.py).
     """
+    PERCENT_BASE_CHOICES_MOTION = ({
+        'value': "WITHOUT_ABSTAIN",
+        'display_name': 'Yes and No votes'},)
+    PERCENT_BASE_CHOICES_MOTION += PERCENT_BASE_CHOICES
     # General
     yield ConfigVariable(
         name='motions_workflow',
@@ -99,23 +103,29 @@ def get_config_variables():
         subgroup='General')
 
     # Amendments
-    # Amendments currently not implemented. (TODO: Implement it like in OpenSlides 1.7.)
     yield ConfigVariable(
         name='motions_amendments_enabled',
         default_value=False,
         input_type='boolean',
         label='Activate amendments',
-        hidden=True,
         weight=335,
         group='Motions',
         subgroup='Amendments')
 
     yield ConfigVariable(
         name='motions_amendments_prefix',
-        default_value='A',
+        default_value='-',
         label='Prefix for the identifier for amendments',
-        hidden=True,
         weight=340,
+        group='Motions',
+        subgroup='Amendments')
+
+    yield ConfigVariable(
+        name='motions_amendments_apply_title_text',
+        default_value=False,
+        input_type='boolean',
+        label='Apply title and text for new amendments',
+        weight=342,
         group='Motions',
         subgroup='Amendments')
 
@@ -148,7 +158,7 @@ def get_config_variables():
         default_value='WITHOUT_INVALID',
         input_type='choice',
         label='The 100 % base of a voting result consists of',
-        choices=PERCENT_BASE_CHOICES,
+        choices=PERCENT_BASE_CHOICES_MOTION,
         weight=355,
         group='Motions',
         subgroup='Voting and ballot papers')

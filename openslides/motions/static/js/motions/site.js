@@ -70,14 +70,15 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                     results = function() {
                         return motion.polls.map(function(poll, index) {
                             var id = index + 1,
-                                yes = poll.yes,
-                                yesRelative = (poll.yes) * 100 / (poll.votescast),
-                                no = poll.no,
-                                noRelative = (poll.no) * 100 / (poll.votescast),
-                                abstain = poll.abstain,
-                                abstainRelative = (poll.abstain) * 100 / (poll.votescast),
-                                valid = poll.votesvalid,
-                                validRelative = (poll.votesvalid) * 100 / (poll.votescast),
+                                yes = poll.yes ? poll.yes : '-', // if no poll.yes is given set it to '-'
+                                yesRelative = poll.getVote(poll.yes, 'yes').percentStr,
+                                no = poll.no ? poll.no : '-',
+                                noRelative = poll.getVote(poll.no, 'no').percentStr,
+                                abstain = poll.abstain ? poll.abstain : '-',
+                                abstainrelativeGet = poll.getVote(poll.abstain, 'abstain').percentStr,
+                                abstainRelative = abstainrelativeGet ? abstainrelativeGet : '',
+                                valid = poll.votesvalid  ? poll.votesvalid : '-',
+                                validRelative = poll.getVote(poll.votesvalid, 'votesvalid').percentStr,
                                 number = {
                                     text: id + ".",
                                     width: "5%"
@@ -100,7 +101,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                                     var indexColumn = converter.createElement("text");
                                     var nameColumn = converter.createElement("text", "" + name);
                                     var valueColumn = converter.createElement("text", "" + value);
-                                    var relColumn = converter.createElement("text", "(" + "" + relValue + "%)");
+                                    var relColumn = converter.createElement("text", relValue);
                                     valueColumn.width = "40%";
                                     indexColumn.width = "5%";
                                     valueColumn.width = "5%";
@@ -253,11 +254,16 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                         return User.findAll().catch(
                             function () {
                                 return null;
-                            }
-                        );
+                            });
                     },
                     workflows: function(Workflow) {
                         return Workflow.findAll();
+                    },
+                    items: function(Agenda) {
+                        return Agenda.findAll().catch(
+                            function () {
+                                return null;
+                            });
                     }
                 }
             })
@@ -266,11 +272,21 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                     motion: function(Motion, $stateParams) {
                         return Motion.find($stateParams.id);
                     },
+                    motions: function(Motion) {
+                        return Motion.findAll();
+                    },
                     categories: function(Category) {
                         return Category.findAll();
                     },
                     users: function(User) {
                         return User.findAll().catch(
+                            function () {
+                                return null;
+                            }
+                        );
+                    },
+                    items: function(Agenda) {
+                        return Agenda.findAll().catch(
                             function () {
                                 return null;
                             }
@@ -307,6 +323,13 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                                         return Motion.loadRelations(motion, 'agenda_item');
                                     });
                                 },
+                                items: function(Agenda) {
+                                    return Agenda.findAll().catch(
+                                        function() {
+                                            return null;
+                                        }
+                                    );
+                                }
                             },
                             preCloseCallback: function() {
                                 $state.go('motions.motion.detail', {motion: $stateParams.id});
@@ -439,7 +462,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Tag',
     'User',
     'Workflow',
-    function (gettextCatalog, operator, Editor, Category, Config, Mediafile, Tag, User, Workflow) {
+    'Agenda',
+    'AgendaTree',
+    function (gettextCatalog, operator, Editor, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaTree) {
         return {
             // ngDialog for motion form
             getDialog: function (motion) {
@@ -536,6 +561,17 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                         description: gettextCatalog.getString('If deactivated the motion appears as internal item on agenda.')
                     },
                     hide: !operator.hasPerms('motions.can_manage')
+                },
+                {
+                    key: 'agenda_parent_item_id',
+                    type: 'select-single',
+                    templateOptions: {
+                        label: gettextCatalog.getString('Parent item'),
+                        options: AgendaTree.getFlatTree(Agenda.getAll()),
+                        ngOptions: 'item.id as item.getListViewTitle() for item in to.options | notself : model.agenda_item_id',
+                        placeholder: gettextCatalog.getString('Select a parent item ...')
+                    },
+                    hide: !operator.hasPerms('agenda.can_manage')
                 },
                 {
                     key: 'more',
@@ -840,9 +876,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeConverter',
     'PdfMakeDocumentProvider',
     'gettextCatalog',
-    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommendationForm, Motion, Category, Mediafile, Tag,
-             User, Workflow, Editor, Config,motion, SingleMotionContentProvider, MotionContentProvider, PdfMakeConverter,
-             PdfMakeDocumentProvider, gettextCatalog) {
+    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommendationForm, Motion, Category, Mediafile,
+             Tag, User, Workflow, Editor, Config, motion, SingleMotionContentProvider, MotionContentProvider,
+             PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -854,6 +890,10 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.isCollapsed = true;
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
         $scope.lineBrokenText = motion.getTextWithLineBreaks($scope.version);
+        if (motion.parent_id) {
+            Motion.bindOne(motion.parent_id, $scope, 'parent');
+        }
+        $scope.amendments = Motion.filter({parent_id: motion.id});
 
         $scope.makePDF = function(){
           var content = motion.getText($scope.version) + motion.getReason($scope.version),
@@ -896,6 +936,15 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         // unsupport
         $scope.unsupport = function () {
             $http.delete('/rest/motions/motion/' + motion.id + '/support/');
+        };
+        // open dialog for new amendment
+        $scope.newAmendment = function () {
+            var dialog = MotionForm.getDialog();
+            if (dialog.scope === undefined) {
+                dialog.scope = {};
+            }
+            dialog.scope = $scope;
+            ngDialog.open(dialog);
         };
         // update state
         $scope.updateState = function (state_id) {
@@ -1182,6 +1231,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
 .controller('MotionCreateCtrl', [
     '$scope',
+    '$state',
     'gettext',
     'Motion',
     'MotionForm',
@@ -1192,7 +1242,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'User',
     'Workflow',
     'Agenda',
-    function($scope, gettext, Motion, MotionForm, Category, Config, Mediafile, Tag, User, Workflow, Agenda) {
+    'AgendaUpdate',
+    function($scope, $state, gettext, Motion, MotionForm, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaUpdate) {
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
         Tag.bindAll({}, $scope, 'tags');
@@ -1200,27 +1251,39 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         Workflow.bindAll({}, $scope, 'workflows');
 
         $scope.model = {};
-        // set default values for create form
+
+        // Check whether this is a new amendment.
+        var isAmendment = $scope.$parent.motion && $scope.$parent.motion.id;
+
+        // Set default values for create form
         // ... set preamble config value as text
         $scope.model.text = Config.get('motions_preamble').value;
+        // ... for amendments add parent_id
+        if (isAmendment) {
+            if (Config.get('motions_amendments_apply_title_text').value) {
+                $scope.model.title = $scope.$parent.motion.getTitle();
+                $scope.model.text = $scope.$parent.motion.getText();
+            }
+            $scope.model.parent_id = $scope.$parent.motion.id;
+            Motion.bindOne($scope.model.parent_id, $scope, 'parent');
+        }
         // ... preselect default workflow
         $scope.model.workflow_id = Config.get('motions_workflow').value;
         // get all form fields
         $scope.formFields = MotionForm.getFormFields();
+
         // save motion
         $scope.save = function (motion) {
             Motion.create(motion).then(
                 function(success) {
-                    // find related agenda item
-                    Agenda.find(success.agenda_item_id).then(function(item) {
-                        // check form element and set item type (AGENDA_ITEM = 1, HIDDEN_ITEM = 2)
-                        var type = motion.showAsAgendaItem ? 1 : 2;
-                        // save only if agenda item type is modified
-                        if (item.type != type) {
-                            item.type = type;
-                            Agenda.save(item);
-                        }
-                    });
+                    // type: Value 1 means a non hidden agenda item, value 2 means a hidden agenda item,
+                    // see openslides.agenda.models.Item.ITEM_TYPE.
+                    var changes = [{key: 'type', value: (motion.showAsAgendaItem ? 1 : 2)},
+                                   {key: 'parent_id', value: motion.agenda_parent_item_id}];
+                    AgendaUpdate.saveChanges(success.agenda_item_id, changes);
+                    if (isAmendment) {
+                        $state.go('motions.motion.detail', {id: success.id});
+                    }
                     $scope.closeThisDialog();
                 }
             );
@@ -1239,8 +1302,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'User',
     'Workflow',
     'Agenda',
+    'AgendaUpdate',
     'motion',
-    function($scope, Motion, Category, Config, Mediafile, MotionForm, Tag, User, Workflow, Agenda, motion) {
+    function($scope, Motion, Category, Config, Mediafile, MotionForm, Tag, User, Workflow, Agenda, AgendaUpdate, motion) {
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
         Tag.bindAll({}, $scope, 'tags');
@@ -1288,6 +1352,10 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                // get saved workflow id from state
                $scope.formFields[i].defaultValue = motion.state.workflow_id;
             }
+            if ($scope.formFields[i].key == "agenda_parent_item_id") {
+                // get current parent_id of the agenda item
+                $scope.formFields[i].defaultValue = motion.agenda_item.parent_id;
+            }
         }
 
         // save motion
@@ -1297,14 +1365,14 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             // save change motion object on server
             Motion.save(motion, { method: 'PATCH' }).then(
                 function(success) {
-                    // check form element and set item type (AGENDA_ITEM = 1, HIDDEN_ITEM = 2)
-                    var type = motion.showAsAgendaItem ? 1 : 2;
-                    // save only if agenda item type is modified
-                    if (motion.agenda_item.type != type) {
-                        motion.agenda_item.type = type;
-                        Agenda.save(motion.agenda_item);
-                    }
-                    $scope.closeThisDialog();
+                    Agenda.find(success.agenda_item_id).then(function(item) {
+                        // type: Value 1 means a non hidden agenda item, value 2 means a hidden agenda item,
+                        // see openslides.agenda.models.Item.ITEM_TYPE.
+                        var changes = [{key: 'type', value: (motion.showAsAgendaItem ? 1 : 2)},
+                                       {key: 'parent_id', value: motion.agenda_parent_item_id}];
+                        AgendaUpdate.saveChanges(success.agenda_item_id,changes);
+                        $scope.closeThisDialog();
+                    });
                 },
                 function (error) {
                     // save error: revert all changes by restore
@@ -1362,11 +1430,12 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
 .controller('MotionImportCtrl', [
     '$scope',
+    '$q',
     'gettext',
     'Category',
     'Motion',
     'User',
-    function($scope, gettext, Category, Motion, User) {
+    function($scope, $q, gettext, Category, Motion, User) {
         // set initial data for csv import
         $scope.motions = [];
         $scope.separator = ',';
@@ -1473,45 +1542,136 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             });
         });
 
+        // Counter for creations
+        $scope.usersCreated = 0;
+        $scope.categoriesCreated = 0;
+
         // import from csv file
         $scope.import = function () {
             $scope.csvImporting = true;
+
+            // Reset counters
+            $scope.usersCreated = 0;
+            $scope.categoriesCreated = 0;
+
+            var importedUsers = [];
+            var importedCategories = [];
+            // collect users and categories
             angular.forEach($scope.motions, function (motion) {
                 if (!motion.importerror) {
-                    // create new user if not exists
+                    // collect user if not exists
                     if (!motion.submitters_id && motion.submitter) {
                         var index = motion.submitter.indexOf(' ');
                         var user = {
                             first_name: motion.submitter.substr(0, index),
                             last_name: motion.submitter.substr(index+1),
-                            groups: []
+                            groups_id: []
                         };
-                        User.create(user).then(
-                            function(success) {
-                                // set new user id
-                                motion.submitters_id = [success.id];
-                            }
-                        );
+                        importedUsers.push(user);
                     }
-                    // create new category if not exists
+                    // collect category if not exists
                     if (!motion.category_id && motion.category) {
                         var category = {
                             name: motion.category,
                             prefix: motion.category.charAt(0)
                         };
-                        Category.create(category).then(
+                        importedCategories.push(category);
+                    }
+                }
+            });
+
+            // TODO (Issue #2293):
+            // fix _.uniqWith(importedXXX, _.isEqual); 
+            // (You need lodash version >= 4.0.0)
+
+            // unique users
+            var importedUsersUnique = [];
+            importedUsers.forEach(function (u1) {
+                var unique = true;
+                importedUsersUnique.forEach(function (u2) {
+                    if (u1.first_name == u2.first_name &&
+                        u1.last_name == u2.last_name) {
+                        unique = false;
+                    }
+                });
+                if (unique) {
+                    importedUsersUnique.push(u1);
+                }
+            });
+
+            // unique categories
+            var importedCategoriesUnique = [];
+            importedCategories.forEach(function (c1) {
+                var unique = true;
+                importedCategoriesUnique.forEach(function (c2) {
+                    if (c1.name == c2.name) {
+                        unique = false;
+                    }
+                });
+                if (unique) {
+                    importedCategoriesUnique.push(c1);
+                }
+            });
+
+            // Promises for users and categories
+            var createPromises = [];
+
+            // create users and categories
+            importedUsersUnique.forEach(function (user) {
+                createPromises.push(User.create(user).then(
+                    function (success) {
+                        user.id = success.id;
+                        $scope.usersCreated++;
+                    }
+                ));
+            });
+            importedCategoriesUnique.forEach(function (category) {
+                createPromises.push(Category.create(category).then(
+                    function (success) {
+                        category.id = success.id;
+                        $scope.categoriesCreated++;
+                    }
+                ));
+            });
+
+            // wait for users and categories to create
+            $q.all(createPromises).then( function() {
+                angular.forEach($scope.motions, function (motion) {
+                    if (!motion.importerror) {
+                        // now, add user
+                        if (!motion.submitters_id && motion.submitter) {
+                            var index = motion.submitter.indexOf(' ');
+                            var first_name = motion.submitter.substr(0, index);
+                            var last_name = motion.submitter.substr(index+1);
+                            
+                            // search for user, set id.
+                            importedUsersUnique.forEach(function (user) {
+                                if (user.first_name == first_name &&
+                                    user.last_name == last_name) {
+                                    motion.submitters_id = [user.id];
+                                }
+                            });
+                        }
+                        // add category
+                        if (!motion.category_id && motion.category) {
+                            var name = motion.category;
+                         
+                            // search for category, set id.
+                            importedCategoriesUnique.forEach(function (category) {
+                                if (category.name == name) {
+                                    motion.category_id = category.id;
+                                }
+                            });
+                        }
+
+                        // finally create motion
+                        Motion.create(motion).then(
                             function(success) {
-                                // set new category id
-                                motion.category_id = [success.id];
+                                motion.imported = true;
                             }
                         );
                     }
-                    Motion.create(motion).then(
-                        function(success) {
-                            motion.imported = true;
-                        }
-                    );
-                }
+                });
             });
             $scope.csvimported = true;
         };
@@ -1654,29 +1814,17 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 .config([
     'gettext',
     function (gettext) {
-        gettext('The assembly may decide,');
-        gettext('Workflow of new motions');
         gettext('Motions');
+
+        // subgroup General
+        gettext('General');
+        gettext('Workflow of new motions');
         gettext('Identifier');
         gettext('Numbered per category');
         gettext('Serially numbered');
         gettext('Set it manually');
         gettext('Motion preamble');
-        gettext('Stop submitting new motions by non-staff users');
-        gettext('Allow to disable versioning');
-        gettext('Activate amendments');
-        gettext('Amendments');
-        gettext('Prefix for the identifier for amendments');
-        gettext('Number of (minimum) required supporters for a motion');
-        gettext('Choose 0 to disable the supporting system.');
-        gettext('Supporters');
-        gettext('Remove all supporters of a motion if a submitter edits his ' +
-                'motion in early state');
-        gettext('Title for PDF document (all motions)');
-        gettext('Preamble text for PDF document (all motioqns)');
-        gettext('Show paragraph numbering (only in PDF)');
-        /// Prefix for the identifier for amendments
-        gettext('A');
+        gettext('The assembly may decide,');
         gettext('Default line numbering');
         /// Line numbering: Outside
         gettext('Outside');
@@ -1686,6 +1834,39 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         gettext('None');
         gettext('Line length');
         gettext('The maximum number of characters per line. Relevant when line numbering is enabled. Min: 40');
+        gettext('Stop submitting new motions by non-staff users');
+        gettext('Allow to disable versioning');
+
+        // subgroup Amendments
+        gettext('Amendments');
+        gettext('Activate amendments');
+        gettext('Prefix for the identifier for amendments');
+        gettext('Apply title and text for new amendments');
+
+        // subgroup Suppoerters
+        gettext('Supporters');
+        gettext('Number of (minimum) required supporters for a motion');
+        gettext('Choose 0 to disable the supporting system.');
+        gettext('Remove all supporters of a motion if a submitter edits his ' +
+                'motion in early state');
+
+        // subgroup Voting and ballot papers
+        gettext('Voting and ballot papers');
+        gettext('The 100 % base of a voting result consists of');
+        gettext('All valid votes (Yes/No/Abstain)');
+        gettext('All votes cast (including invalid votes)');
+        gettext('Disabled (no percents)');
+        gettext('Yes and No votes');
+        gettext('Number of ballot papers (selection)');
+        gettext('Number of all delegates');
+        gettext('Number of all participants');
+        gettext('Use the following custom number');
+        gettext('Custom number of ballot papers');
+
+        // subgroup PDF
+        gettext('Title for PDF document (all motions)');
+        gettext('Preamble text for PDF document (all motioqns)');
+        gettext('Show paragraph numbering (only in PDF)');
     }
 ]);
 

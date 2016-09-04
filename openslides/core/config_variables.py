@@ -17,7 +17,7 @@ def get_config_variables():
         weight=110,
         group='General',
         subgroup='Event',
-        validators=(MaxLengthValidator(50),))
+        validators=(MaxLengthValidator(100),))
 
     yield ConfigVariable(
         name='general_event_description',
@@ -154,4 +154,13 @@ def get_config_variables():
         input_type='integer',
         label='Default countdown',
         weight=185,
+        group='Projector')
+
+    # set the resolution for one projector. It can be removed with the multiprojector feature.
+    yield ConfigVariable(
+        name='projector_resolution',
+        default_value={'width': 1024, 'height': 768},
+        input_type='resolution',
+        label='Projector Resolution',
+        weight=200,
         group='Projector')

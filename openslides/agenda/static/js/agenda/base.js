@@ -21,6 +21,28 @@ angular.module('OpenSlidesApp.agenda', ['OpenSlidesApp.users'])
     }
 ])
 
+.factory('AgendaUpdate',[
+    'Agenda',
+    function(Agenda) {
+        return {
+            saveChanges: function (item_id, changes) {
+                Agenda.find(item_id).then(function(item) {
+                    var something = false;
+                    _.each(changes, function(change) {
+                        if (change.value !== item[change.key]) {
+                            item[change.key] = change.value;
+                            something = true;
+                        }
+                    });
+                    if (something === true) {
+                        Agenda.save(item);
+                    }
+                });
+            }
+        };
+    }
+])
+
 .factory('Agenda', [
     '$http',
     'DS',
@@ -28,11 +50,13 @@ angular.module('OpenSlidesApp.agenda', ['OpenSlidesApp.users'])
     'jsDataModel',
     'Projector',
     'gettextCatalog',
-    function($http, DS, Speaker, jsDataModel, Projector, gettextCatalog) {
+    'gettext',
+    function($http, DS, Speaker, jsDataModel, Projector, gettextCatalog, gettext) {
         var name = 'agenda/item';
         return DS.defineResource({
             name: name,
             useClass: jsDataModel,
+            verboseName: gettext('Agenda'),
             methods: {
                 getResourceName: function () {
                     return name;

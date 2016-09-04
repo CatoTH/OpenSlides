@@ -322,6 +322,14 @@ img {
     margin-left: 20px;
 }
 
+/* .resolution can be removed with the multiprojector, but maybe
+ * it could be reused for the settings in the projectormanage-view */
+.col1 .input-group .resolution {
+    float: none;
+    display: inline-block;
+    width: 80px;
+    border-radius: 4px !important;
+}
 
 /* Toolbar to save motion in inline editing mode */
 .motion-save-toolbar {
@@ -671,23 +679,14 @@ img {
 
 /* iframe for live view */
 .col2 #iframe {
-    width: 1024px;
-    height: 768px;
     -moz-transform-origin: 0 0;
     -webkit-transform-origin: 0 0;
     -o-transform-origin: 0 0;
     transform-origin: 0 0 0;
-    -moz-transform: scale(0.25);
-    -webkit-transform: scale(0.25);
-    -o-transform: scale(0.25);
-    transform: scale(0.25);
-    /* IE8+ - must be on one line, unfortunately */
-    -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.25, M12=0, M21=0, M22=0.25, SizingMethod='auto expand')";
 }
 
 .col2 #iframewrapper {
     width: 256px;
-    height: 192px;
     position: relative;
     overflow: hidden;
     border: 1px solid #D5D5D5;
@@ -696,7 +695,6 @@ img {
 
 .col2 #iframeoverlay {
     width: 256px;
-    height: 192px;
     position: absolute;
     top: 0px;
     left: 0px;
@@ -704,9 +702,7 @@ img {
     z-index: 1;
 }
 
-
 /** Footer **/
-
 #footer {
     float: left;
     height: 50px;
@@ -720,6 +716,16 @@ img {
 
 .btn-primary {
     background-color: #317796;
+}
+
+.dropdown-entries {
+    white-space: nowrap;
+}
+
+.dropdown-entries > li {
+    padding: 5px 10px 5px 10px;
+    width: 100%;
+    cursor: pointer;
 }
 
 .slimDropDown {
@@ -834,6 +840,85 @@ img {
 }
 .user_details label:after {
     content: ":";
+}
+
+/* group list */
+#groups-table {
+    table-layout: fixed;
+    text-align: center;
+}
+
+#groups-table > thead > tr > th {
+    vertical-align: top;
+    text-align: center;
+    min-width: 40px;
+}
+
+#groups-table .perm-head {
+    width: 300px;
+}
+
+#groups-table > thead > tr > th > div {
+    text-align: center;
+}
+
+#groups-table > tbody > tr:hover {
+    background-color: #f5f5f5 !important;
+}
+
+#groups-table > tbody > tr:first-child {
+    background-color: #f9f9f9;
+}
+
+#groups-table > tbody > tr > td:first-child {
+    text-align: left;
+}
+
+#groups-table .optional-show { /* hide optional-show column */
+    display: none;
+}
+
+/* List of speakers view */
+.fullscreendiv {
+    position: absolute;
+    font-size:120%;
+    top:0;
+    bottom:0;
+    right:0;
+    left:0;
+    padding: 50px;
+    background: #fff;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99;
+}
+
+.fullscreendiv-title {
+    border-bottom: 5px solid #d3d3d3;
+    margin-bottom: 40px;
+}
+
+.lastSpeakers {
+    color: #9a9898;
+    margin-left: 27px;
+}
+
+.currentSpeaker {
+    font-weight: bold;
+    margin-left: 0px;
+}
+
+.currentSpeaker i {
+    padding-right: 5px;
+}
+
+.nextSpeakers {
+    margin-left: 8px;
+}
+
+.nextSpeakers li {
+    line-height: 150%;
 }
 
 /* search results */
@@ -1014,7 +1099,6 @@ tr.selected td {
     color: #9a9898;
 }
 
-
 /*////////////////////////////////////////
     =MEDIA QUERIES (RESPONSIVE DESIGN)
 ////////////////////////////////////////*/
@@ -1037,6 +1121,16 @@ tr.selected td {
 @media only screen and (max-width: 900px) {
 
     #nav .navbar li a { padding: 24px 5px; }
+
+    #groups-table .perm-head {
+        width: 200px;
+    }
+
+    /* hide text in groups-table earlier */
+    #groups-table .optional { display: none; }
+
+    /* show replacement elements, if any */
+    #groups-table .optional-show { display: block !important; }
 }
 
 
@@ -1059,6 +1153,9 @@ tr.selected td {
 
     /* hide marked element / column */
     .optional, .hide-sm { display: none; }
+
+    /* show replacement elements, if any */
+    .optional-show { display: block !important; }
 }
 
 /* display for resolutions smaller that 560px */
@@ -1072,5 +1169,8 @@ tr.selected td {
     }
     .col2 .projector_full {
         margin-left: 0px;
+    }
+    #groups-table .perm-head {
+        width: 150px;
     }
 }
