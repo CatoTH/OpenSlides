@@ -1155,9 +1155,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             );
         };
 
-        // Amendment creation functions
+        // Change Recommendation creation functions
 
-        $scope.tinymceAmendmentOptions = Editor.getOptions(null, true);
         $scope.createChangeRecommendation = {
             mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
             lineFrom: 1,
@@ -1240,6 +1239,11 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.$on("$destroy", function() {
             $scope.createChangeRecommendation.destroy($scope);
         });
+
+
+        // Change Recommendation viewing
+
+        $scope.changeRecommendationShow = 'original';
     }
 ])
 

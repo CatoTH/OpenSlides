@@ -157,6 +157,18 @@ angular.module('OpenSlidesApp.motions', [
 
                     return lineNumberingService.insertLineNumbers(html, lineLength);
                 },
+                getTextWithChangeRecommendationsAsDiff: function (versionId) {
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = this.getVersion(versionId).text;
+
+                    return lineNumberingService.insertLineNumbers(html, lineLength);
+                },
+                getTextWithAcceptedChangeRecommendations: function (versionId) {
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = this.getVersion(versionId).text;
+
+                    return lineNumberingService.insertLineNumbers(html, lineLength);
+                },
                 setTextStrippingLineBreaks: function (versionId, text) {
                     this.text = lineNumberingService.stripLineNumbers(text);
                 },

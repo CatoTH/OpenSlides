@@ -261,7 +261,7 @@
       </button>
     </div>
 
-    <div class="line-number-setter {{ lineNumberMode }}">
+    <div class="line-number-change-mode-setter {{ lineNumberMode }}">
       <div class="btn-group" data-toggle="buttons">
         <div class="btn btn-default disabled" title="{{ 'Line Numbering' | translate }}">
           <i class="fa fa-list-ol" aria-hidden="true"></i>
@@ -285,11 +285,35 @@
           <translate>Outside</translate>
         </label>
       </div>
+
+      <div class="btn-group" data-toggle="buttons">
+        <div class="btn btn-default disabled" title="{{ 'Show Change Recommendations' | translate }}">
+          <i class="fa fa-edit" aria-hidden="true"></i>
+        </div>
+        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'original')}"
+               ng-click="changeRecommendationShow = 'original';">
+          <input type="radio" name="changeRecommendationShow" value="none" ng-model="changeRecommendationShow"
+                 ng-checked="changeRecommendationShow == 'original'">
+          <translate>Original</translate>
+        </label>
+        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'diff')}"
+               ng-click="changeRecommendationShow = 'diff'">
+          <input type="radio" name="changeRecommendationShow" value="diff" ng-model="lineNumberMode"
+                 ng-checked="lineNumberMode == 'diff'">
+          <translate>Diff</translate>
+        </label>
+        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'changed')}"
+               ng-click="changeRecommendationShow = 'changed'">
+          <input type="radio" name="changeRecommendationShow" value="changed" ng-model="changeRecommendationShow"
+                 ng-checked="changeRecommendationShow == 'outside'">
+          <translate>Changed</translate>
+        </label>
+      </div>
     </div>
 
     <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
 
-      <div ng-if="inlineEditing.allowed">
+      <div ng-if="changeRecommendationShow == 'original' && inlineEditing.allowed">
         <div ng-show="inlineEditing.active">
           <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText"
             class="motion-text line-numbers-{{ lineNumberMode }}"></div>
@@ -306,8 +330,19 @@
           </label>
         </div>
       </div>
-      <div ng-if="!inlineEditing.allowed">
+
+      <div ng-if="changeRecommendationShow == 'original' && !inlineEditing.allowed">
         <div ng-bind-html="motion.getTextWithLineBreaks(version) | trusted"
+           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+      </div>
+
+      <div ng-if="changeRecommendationShow == 'diff'">
+        <div ng-bind-html="motion.getTextWithChangeRecommendationsAsDiff(version) | trusted"
+           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+      </div>
+
+      <div ng-if="changeRecommendationShow == 'changed'">
+        <div ng-bind-html="motion.getTextWithAcceptedChangeRecommendations(version) | trusted"
            class="motion-text line-numbers-{{ lineNumberMode }}"></div>
       </div>
 
