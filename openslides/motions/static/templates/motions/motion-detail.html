@@ -338,20 +338,13 @@
 
       <div ng-if="changeRecommendationShow == 'diff'">
         <div ng-bind-html="motion.getTextWithChangeRecommendationsAsDiff(version) | trusted"
-           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+           class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}"></div>
       </div>
 
       <div ng-if="changeRecommendationShow == 'changed'">
         <div ng-bind-html="motion.getTextWithAcceptedChangeRecommendations(version) | trusted"
-           class="motion-text line-numbers-{{ lineNumberMode }}"></div>
+           class="motion-text motion-text-changed line-numbers-{{ lineNumberMode }}"></div>
       </div>
-
-      <ul class="change-recommendations">
-        <li ng-repeat="change in change_recommendations | filter:{motion_version_id:version}:true"
-            data-line-from="{{ change.line_from }}" data-line-to="{{ change.line_to}}">
-          <div class="text" ng-bind-html="change.text || trusted"></div>
-        </li>
-      </ul>
 
 
       <!-- reason -->

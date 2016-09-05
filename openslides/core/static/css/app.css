@@ -479,6 +479,24 @@ img {
     cursor: pointer;
 }
 
+
+/** Diff view */
+
+.motion-text-diff .delete {
+    color: red;
+    text-decoration: line-through;
+}
+.motion-text-diff .insert {
+    color: green;
+    text-decoration: underline;
+}
+.motion-text-diff.line-numbers-outside .os-line-number {
+    display: none;
+}
+.motion-text-diff.line-numbers-inline .os-line-number {
+    display: none;
+}
+
 /** Projector sidebar column **/
 
 #content .col2 {
