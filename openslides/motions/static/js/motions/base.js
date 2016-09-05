@@ -117,12 +117,15 @@ angular.module('OpenSlidesApp.motions', [
 .factory('Motion', [
     'DS',
     'MotionPoll',
+    'MotionChangeRecommendation',
     'jsDataModel',
     'gettext',
     'operator',
     'Config',
     'lineNumberingService',
-    function(DS, MotionPoll, jsDataModel, gettext, operator, Config, lineNumberingService) {
+    'diffService',
+    function(DS, MotionPoll, MotionChangeRecommendation, jsDataModel, gettext, operator, Config,
+             lineNumberingService, diffService) {
         var name = 'motions/motion';
         return DS.defineResource({
             name: name,
@@ -165,7 +168,17 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getTextWithAcceptedChangeRecommendations: function (versionId) {
                     var lineLength = Config.get('motions_line_length').value,
-                        html = this.getVersion(versionId).text;
+                        html = this.getVersion(versionId).text,
+                        changes = this.getChangeRecommendations(versionId),
+                        fragment, change;
+
+                    for (var i = 0; i < changes.length; i++) {
+                        change = changes[i];
+
+                        html = lineNumberingService.insertLineNumbers(html, lineLength);
+                        fragment = diffService.htmlToFragment(html);
+                        html = diffService.replaceLines(fragment, change.text, change.line_from, change.line_to);
+                    }
 
                     return lineNumberingService.insertLineNumbers(html, lineLength);
                 },
@@ -183,10 +196,17 @@ angular.module('OpenSlidesApp.motions', [
                 getSearchResultSubtitle: function () {
                     return "Motion";
                 },
-                // returns a promise for retrieving all change recommendations for the specified version
+                // returns all change recommendations for this given version, sorted by line (descending)
                 getChangeRecommendations: function (versionId) {
                     versionId = versionId || this.active_version;
-                    return MotionChangeRecommendation.findAll();
+                    return MotionChangeRecommendation.filter({
+                        where: {
+                            motion_version_id: versionId
+                        },
+                        orderBy: [
+                            ['line_from', 'DESC']
+                        ]
+                    });
                 },
                 isAllowed: function (action) {
                     /*
