@@ -1032,13 +1032,150 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     }
 ])
 
+
+.factory('ChangeRecommmendationCreate', [
+    'ngDialog',
+    'ChangeRecommendationForm',
+    function(ngDialog, ChangeRecommendationForm) {
+        var obj = {
+            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
+            lineFrom: 1,
+            lineTo: 2,
+            html: '',
+            reviewingHtml: '',
+        };
+        var motion = null;
+
+        obj.startCreating = function () {
+            obj.mode = 1;
+            $(".motion-text .os-line-number").each(function () {
+                $(this).addClass("selectable");
+            });
+        };
+        obj.setFromLine = function (line) {
+            obj.mode = 2;
+            obj.lineFrom = line;
+
+            $(".motion-text .os-line-number").each(function () {
+                var $this = $(this);
+                if ($this.data("line-number") > line) {
+                    $(this).addClass("selectable");
+                } else {
+                    $(this).removeClass("selectable");
+                }
+            });
+        };
+        obj.setToLine = function (line) {
+            if (line <= obj.lineFrom) {
+                return;
+            }
+            obj.mode = 3;
+            obj.lineTo = line;
+            ngDialog.open(ChangeRecommendationForm.getCreateDialog(
+                motion,
+                obj.lineFrom,
+                obj.lineTo
+            ));
+
+            obj.lineFrom = 0;
+            obj.lineTo = 0;
+            $(".motion-text .os-line-number").removeClass("selected selectable");
+        };
+        obj.lineClicked = function (ev) {
+            if (obj.mode == 0) {
+                return;
+            }
+            if (obj.mode == 1) {
+                obj.setFromLine($(ev.target).data("line-number"));
+                $(ev.target).addClass("selected").removeClass("selectable");
+            } else if (obj.mode == 2) {
+                obj.setToLine($(ev.target).data("line-number"));
+            }
+        };
+        obj.mouseOver = function (ev) {
+            if (obj.mode != 2) {
+                return;
+            }
+            var hoverLine = $(ev.target).data("line-number");
+            $(".motion-text .os-line-number").each(function () {
+                var line = $(this).data("line-number");
+                if (line >= obj.lineFrom && line <= hoverLine) {
+                    $(this).addClass("selected");
+                } else {
+                    $(this).removeClass("selected");
+                }
+            });
+        };
+        obj.init = function (_motion) {
+            motion = _motion;
+            var $content = $("#content");
+            $content.on("click", ".os-line-number.selectable", obj.lineClicked);
+            $content.on("mouseover", ".os-line-number.selectable", obj.mouseOver);
+        };
+        obj.destroy = function () {
+            var $content = $("#content");
+            $content.off("click", ".os-line-number.selectable", obj.lineClicked);
+            $content.off("mouseover", ".os-line-number.selectable", obj.mouseOver);
+        };
+
+        return obj;
+    }
+])
+
+.factory('ChangeRecommmendationView', [
+    function () {
+        var ELEMENT_NODE = 1,
+            addCSSClass = function (node, className) {
+            if (node.nodeType != ELEMENT_NODE) {
+                return;
+            }
+            var classes = node.getAttribute('class');
+            classes = (classes ? classes.split(' ') : []);
+            if (classes.indexOf(className) == -1) {
+                classes.push(className);
+            }
+            node.setAttribute('class', classes);
+        };
+
+        var obj = {
+            mode: 'original'
+        };
+        obj.diffFormatterCb = function (oldFragment, newFragment) {
+            for (var i = 0; i < oldFragment.childNodes.length; i++) {
+                addCSSClass(oldFragment.childNodes[i], 'delete');
+            }
+            for (i = 0; i < newFragment.childNodes.length; i++) {
+                addCSSClass(newFragment.childNodes[i], 'insert');
+            }
+            var mergedFragment = document.createDocumentFragment(),
+                el;
+
+            while (oldFragment.firstChild) {
+                el = oldFragment.firstChild;
+                oldFragment.removeChild(el);
+                mergedFragment.appendChild(el);
+            }
+            while (newFragment.firstChild) {
+                el = newFragment.firstChild;
+                newFragment.removeChild(el);
+                mergedFragment.appendChild(el);
+            }
+
+            return mergedFragment;
+        };
+
+        return obj;
+    }
+])
+
 .controller('MotionDetailCtrl', [
     '$scope',
     '$http',
     '$timeout',
     'ngDialog',
     'MotionForm',
-    'ChangeRecommendationForm',
+    'ChangeRecommmendationCreate',
+    'ChangeRecommmendationView',
     'Motion',
     'Category',
     'Mediafile',
@@ -1055,9 +1192,10 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeConverter',
     'PdfMakeDocumentProvider',
     'gettextCatalog',
-    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommendationForm, Motion, Category, Mediafile,
-             MotionChangeRecommendation, Tag, User, Workflow, Editor, Config, motion, SingleMotionContentProvider,
-             MotionContentProvider, PollContentProvider, PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
+    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommmendationCreate, ChangeRecommmendationView,
+             Motion, Category, Mediafile, MotionChangeRecommendation, Tag, User, Workflow, Editor, Config, motion,
+             SingleMotionContentProvider, MotionContentProvider, PollContentProvider,
+             PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -1298,93 +1436,15 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
         // Change Recommendation creation functions
 
-        $scope.createChangeRecommendation = {
-            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
-            lineFrom: 1,
-            lineTo: 2,
-            html: '',
-            reviewingHtml: '',
-
-            startCreating: function() {
-                $scope.createChangeRecommendation.mode = 1;
-                $(".motion-text .os-line-number").each(function() {
-                    $(this).addClass("selectable");
-                });
-            },
-            setFromLine: function(line) {
-                $scope.createChangeRecommendation.mode = 2;
-                $scope.createChangeRecommendation.lineFrom = line;
-
-                $(".motion-text .os-line-number").each(function() {
-                    var $this = $(this);
-                    if ($this.data("line-number") > line) {
-                        $(this).addClass("selectable");
-                    } else {
-                        $(this).removeClass("selectable");
-                    }
-                });
-            },
-            setToLine: function(line) {
-                if (line <= $scope.createChangeRecommendation.lineFrom) {
-                    return;
-                }
-                $scope.createChangeRecommendation.mode = 3;
-                $scope.createChangeRecommendation.lineTo = line;
-                ngDialog.open(ChangeRecommendationForm.getCreateDialog(
-                    motion,
-                    $scope.createChangeRecommendation.lineFrom,
-                    $scope.createChangeRecommendation.lineTo
-                ));
-
-                $scope.createChangeRecommendation.lineFrom = 0;
-                $scope.createChangeRecommendation.lineTo = 0;
-                $(".motion-text .os-line-number").removeClass("selected selectable");
-            },
-            lineClicked: function(ev) {
-                if ($scope.createChangeRecommendation.mode == 0) {
-                    return;
-                }
-                if ($scope.createChangeRecommendation.mode == 1) {
-                    $scope.createChangeRecommendation.setFromLine($(ev.target).data("line-number"));
-                    $(ev.target).addClass("selected").removeClass("selectable");
-                } else if ($scope.createChangeRecommendation.mode == 2) {
-                    $scope.createChangeRecommendation.setToLine($(ev.target).data("line-number"));
-                }
-            },
-            mouseOver: function(ev) {
-                if ($scope.createChangeRecommendation.mode != 2) {
-                    return;
-                }
-                var hoverLine = $(ev.target).data("line-number");
-                $(".motion-text .os-line-number").each(function() {
-                    var line = $(this).data("line-number");
-                    if (line >= $scope.createChangeRecommendation.lineFrom && line <= hoverLine) {
-                        $(this).addClass("selected");
-                    } else {
-                        $(this).removeClass("selected");
-                    }
-                });
-            },
-            init: function($scope) {
-                var $content = $("#content");
-                $content.on("click", ".os-line-number.selectable", $scope.createChangeRecommendation.lineClicked);
-                $content.on("mouseover", ".os-line-number.selectable", $scope.createChangeRecommendation.mouseOver);
-            },
-            destroy: function($scope) {
-                var $content = $("#content");
-                $content.off("click", ".os-line-number.selectable", $scope.createChangeRecommendation.lineClicked);
-                $content.off("mouseover", ".os-line-number.selectable", $scope.createChangeRecommendation.mouseOver);
-            }
-        };
-        $scope.createChangeRecommendation.init($scope);
+        $scope.createChangeRecommendation = ChangeRecommmendationCreate;
+        $scope.createChangeRecommendation.init(motion);
         $scope.$on("$destroy", function() {
-            $scope.createChangeRecommendation.destroy($scope);
+            $scope.createChangeRecommendation.destroy();
         });
-
 
         // Change Recommendation viewing
 
-        $scope.changeRecommendationShow = 'original';
+        $scope.viewChangeRecommendations = ChangeRecommmendationView;
     }
 ])
 

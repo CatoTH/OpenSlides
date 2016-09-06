@@ -289,22 +289,22 @@
         <div class="btn btn-default disabled" title="{{ 'Show Change Recommendations' | translate }}">
           <i class="fa fa-edit" aria-hidden="true"></i>
         </div>
-        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'original')}"
-               ng-click="changeRecommendationShow = 'original';">
-          <input type="radio" name="changeRecommendationShow" value="none" ng-model="changeRecommendationShow"
-                 ng-checked="changeRecommendationShow == 'original'">
+        <label class="btn btn-default" ng-class="{active: (viewChangeRecommendations.mode == 'original')}"
+               ng-click="viewChangeRecommendations.mode = 'original';">
+          <input type="radio" name="viewChangeRecommendations.mode" value="none" ng-model="viewChangeRecommendations.mode"
+                 ng-checked="viewChangeRecommendations.mode == 'original'">
           <translate>Original</translate>
         </label>
-        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'diff')}"
-               ng-click="changeRecommendationShow = 'diff'">
-          <input type="radio" name="changeRecommendationShow" value="diff" ng-model="lineNumberMode"
+        <label class="btn btn-default" ng-class="{active: (viewChangeRecommendations.mode == 'diff')}"
+               ng-click="viewChangeRecommendations.mode = 'diff'">
+          <input type="radio" name="viewChangeRecommendations.mode" value="diff" ng-model="lineNumberMode"
                  ng-checked="lineNumberMode == 'diff'">
           <translate>Diff</translate>
         </label>
-        <label class="btn btn-default" ng-class="{active: (changeRecommendationShow == 'changed')}"
-               ng-click="changeRecommendationShow = 'changed'">
-          <input type="radio" name="changeRecommendationShow" value="changed" ng-model="changeRecommendationShow"
-                 ng-checked="changeRecommendationShow == 'outside'">
+        <label class="btn btn-default" ng-class="{active: (viewChangeRecommendations.mode == 'changed')}"
+               ng-click="viewChangeRecommendations.mode = 'changed'">
+          <input type="radio" name="viewChangeRecommendations.mode" value="changed" ng-model="viewChangeRecommendations.mode"
+                 ng-checked="viewChangeRecommendations.mode == 'outside'">
           <translate>Changed</translate>
         </label>
       </div>
@@ -312,7 +312,7 @@
 
     <div  ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}">
 
-      <div ng-if="changeRecommendationShow == 'original' && inlineEditing.allowed">
+      <div ng-if="viewChangeRecommendations.mode == 'original' && inlineEditing.allowed">
         <div ng-show="inlineEditing.active">
           <div ui-tinymce="tinymceOptions" ng-model="lineBrokenText"
             class="motion-text line-numbers-{{ lineNumberMode }}"></div>
@@ -330,17 +330,17 @@
         </div>
       </div>
 
-      <div ng-if="changeRecommendationShow == 'original' && !inlineEditing.allowed">
+      <div ng-if="viewChangeRecommendations.mode == 'original' && !inlineEditing.allowed">
         <div ng-bind-html="motion.getTextWithLineBreaks(version) | trusted"
            class="motion-text line-numbers-{{ lineNumberMode }}"></div>
       </div>
 
-      <div ng-if="changeRecommendationShow == 'diff'">
-        <div ng-bind-html="motion.getTextWithChangeRecommendationsAsDiff(version) | trusted"
+      <div ng-if="viewChangeRecommendations.mode == 'diff'">
+        <div ng-bind-html="motion.getTextWithChangeRecommendationsAsDiff(version, viewChangeRecommendations.diffFormatterCb) | trusted"
            class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}"></div>
       </div>
 
-      <div ng-if="changeRecommendationShow == 'changed'">
+      <div ng-if="viewChangeRecommendations.mode == 'changed'">
         <div ng-bind-html="motion.getTextWithAcceptedChangeRecommendations(version) | trusted"
            class="motion-text motion-text-changed line-numbers-{{ lineNumberMode }}"></div>
       </div>

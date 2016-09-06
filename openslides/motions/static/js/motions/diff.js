@@ -211,18 +211,6 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         return html;
     };
 
-    this._addCSSClass = function(node, className) {
-        if (node.nodeType != ELEMENT_NODE) {
-            return;
-        }
-        var classes = node.getAttribute('class');
-        classes = (classes ? classes.split(' ') : []);
-        if (classes.indexOf(className) == -1) {
-            classes.push(className);
-        }
-        node.setAttribute('class', classes);
-    };
-
     this.htmlToFragment = function(html) {
         var fragment = document.createDocumentFragment(),
             div = document.createElement('DIV');
@@ -435,7 +423,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         return this._serializeDom(mergedFragment, true);
     };
 
-    this.addDiffMarkup = function (fragment, newHTML, fromLine, toLine) {
+    this.addDiffMarkup = function (fragment, newHTML, fromLine, toLine, diffFormatterCb) {
         var data = this.extractRangeByLineNumbers(fragment, fromLine, toLine),
             previousHtml = data.previousHtml + '<TEMPLATE></TEMPLATE>' + data.previousHtmlEndSnippet,
             previousFragment = this.htmlToFragment(previousHtml),
@@ -446,12 +434,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                     + data.innerContextEnd + data.outerContextEnd,
             oldFragment = this.htmlToFragment(oldHTML);
 
-        for (var i = 0; i < oldFragment.childNodes.length; i++) {
-            this._addCSSClass(oldFragment.childNodes[i], 'delete');
-        }
-        for (i = 0; i < newFragment.childNodes.length; i++) {
-            this._addCSSClass(newFragment.childNodes[i], 'insert');
-        }
+        var diffFragment = diffFormatterCb(oldFragment, newFragment);
 
         var mergedFragment = document.createDocumentFragment();
         while (previousFragment.firstChild) {
@@ -459,14 +442,9 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             previousFragment.removeChild(el);
             mergedFragment.appendChild(el);
         }
-        while (oldFragment.firstChild) {
-            el = oldFragment.firstChild;
-            oldFragment.removeChild(el);
-            mergedFragment.appendChild(el);
-        }
-        while (newFragment.firstChild) {
-            el = newFragment.firstChild;
-            newFragment.removeChild(el);
+        while (diffFragment.firstChild) {
+            el = diffFragment.firstChild;
+            diffFragment.removeChild(el);
             mergedFragment.appendChild(el);
         }
         while (followingFragment.firstChild) {
@@ -476,7 +454,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         }
 
         var forgottenTemplates = mergedFragment.querySelectorAll("TEMPLATE");
-        for (i = 0; i < forgottenTemplates.length; i++) {
+        for (var i = 0; i < forgottenTemplates.length; i++) {
             el = forgottenTemplates[i];
             el.parentNode.removeChild(el);
         }

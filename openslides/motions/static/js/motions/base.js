@@ -160,7 +160,7 @@ angular.module('OpenSlidesApp.motions', [
 
                     return lineNumberingService.insertLineNumbers(html, lineLength);
                 },
-                getTextWithChangeRecommendationsAsDiff: function (versionId) {
+                getTextWithChangeRecommendationsAsDiff: function (versionId, diffFormatterCb) {
                     var lineLength = Config.get('motions_line_length').value,
                         html = this.getVersion(versionId).text,
                         changes = this.getChangeRecommendations(versionId),
@@ -171,7 +171,9 @@ angular.module('OpenSlidesApp.motions', [
 
                         html = lineNumberingService.insertLineNumbers(html, lineLength);
                         fragment = diffService.htmlToFragment(html);
-                        html = diffService.addDiffMarkup(fragment, change.text, change.line_from, change.line_to);
+                        html = diffService.addDiffMarkup(
+                            fragment, change.text, change.line_from, change.line_to, diffFormatterCb
+                        );
                     }
 
                     return lineNumberingService.insertLineNumbers(html, lineLength);
