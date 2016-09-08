@@ -15,11 +15,25 @@ angular.module('OpenSlidesApp.motions', [
             name: 'motions/workflowstate',
             methods: {
                 getNextStates: function () {
+                    // TODO: Use filter with params with operator 'in'.
                     var states = [];
                     _.forEach(this.next_states_id, function (stateId) {
                         states.push(DS.get('motions/workflowstate', stateId));
                     });
                     return states;
+                },
+                getRecommendations: function () {
+                    var params = {
+                        where: {
+                            'workflow_id': {
+                                '==': this.workflow_id
+                            },
+                            'recommendation_label': {
+                                '!=': null
+                            }
+                        }
+                    };
+                    return DS.filter('motions/workflowstate', params);
                 }
             }
         });
@@ -118,13 +132,14 @@ angular.module('OpenSlidesApp.motions', [
     'DS',
     'MotionPoll',
     'MotionChangeRecommendation',
+    'MotionComment',
     'jsDataModel',
     'gettext',
     'operator',
     'Config',
     'lineNumberingService',
     'diffService',
-    function(DS, MotionPoll, MotionChangeRecommendation, jsDataModel, gettext, operator, Config,
+    function(DS, MotionPoll, MotionChangeRecommendation, MotionComment, jsDataModel, gettext, operator, Config,
              lineNumberingService, diffService) {
         var name = 'motions/motion';
         return DS.defineResource({
@@ -132,6 +147,10 @@ angular.module('OpenSlidesApp.motions', [
             useClass: jsDataModel,
             verboseName: gettext('Motion'),
             verboseNamePlural: gettext('Motions'),
+            validate: function (resource, data, callback) {
+                MotionComment.populateFieldsReverse(data);
+                callback(null, data);
+            },
             methods: {
                 getResourceName: function () {
                     return name;
@@ -232,6 +251,7 @@ angular.module('OpenSlidesApp.motions', [
                      * - unsupport
                      * - change_state
                      * - reset_state
+                     * - change_recommendation
                      *
                      *  NOTE: If you update this function please also update the
                      *  'get_allowed_actions' function on server side in motions/models.py.
@@ -280,6 +300,8 @@ angular.module('OpenSlidesApp.motions', [
                             return operator.hasPerms('motions.can_manage');
                         case 'reset_state':
                             return operator.hasPerms('motions.can_manage');
+                        case 'change_recommendation':
+                            return operator.hasPerms('motions.can_manage');
                         case 'can_manage':
                             return operator.hasPerms('motions.can_manage');
                         default:
@@ -323,13 +345,131 @@ angular.module('OpenSlidesApp.motions', [
                     }
                 },
                 hasOne: {
-                    'motions/workflowstate': {
-                        localField: 'state',
-                        localKey: 'state_id',
-                    }
+                    'motions/workflowstate': [
+                        {
+                            localField: 'state',
+                            localKey: 'state_id',
+                        },
+                        {
+                            localField: 'recommendation',
+                            localKey: 'recommendation_id',
+                        }
+                    ]
                 }
             }
         });
+    }
+])
+
+// Service for generic comment fields
+.factory('MotionComment', [
+    'Config',
+    function (Config) {
+        return {
+            getFields: function () {
+                // Take input from config field and parse it. It can be some
+                // JSON or just a comma separated list of strings.
+                //
+                // The result is an array of objects. Each object contains
+                // at least the name of the comment field See configSchema.
+                //
+                // Attention: This code does also exist on server side.
+                var configSchema = {
+                    $schema: "http://json-schema.org/draft-04/schema#",
+                    title: "Motion Comments",
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            name: {
+                                type: "string",
+                                minLength: 1
+                            },
+                            public: {
+                                type: "boolean"
+                            },
+                            forRecommendation: {
+                                type: "boolean"
+                            },
+                            forState: {
+                                type: "boolean"
+                            }
+                        },
+                        required: ["name"]
+                    },
+                    minItems: 1,
+                    uniqueItems: true
+                };
+                var configValue = Config.get('motions_comments').value;
+                var fields;
+                var isJSON = true;
+                try {
+                    fields = JSON.parse(configValue);
+                } catch (err) {
+                    isJSON = false;
+                }
+                if (isJSON) {
+                    // Config is JSON. Validate it.
+                    if (!jsen(configSchema)(fields)) {
+                        fields = [];
+                    }
+                } else {
+                    // Config is a comma separated list of strings. Strip out
+                    // empty parts. All valid strings lead to public comment
+                    // fields.
+                    fields = _.map(
+                        _.filter(
+                            configValue.split(','),
+                            function (name) {
+                                return name;
+                            }),
+                        function (name) {
+                            return {
+                                'name': name,
+                                'public': true
+                            };
+                        }
+                    );
+                }
+                return fields;
+            },
+            getFormFields: function () {
+                var fields = this.getFields();
+                return _.map(
+                    fields,
+                    function (field) {
+                        // TODO: Hide non-public fields for unauthorized users.
+                        return {
+                            key: 'comment ' + field.name,
+                            type: 'input',
+                            templateOptions: {
+                                label: field.name,
+                            },
+                            hideExpression: '!model.more'
+                        };
+                    }
+                );
+            },
+            populateFields: function (motion) {
+                // Populate content of motion.comments to the single comment
+                // fields like motion['comment MyComment'], motion['comment MyOtherComment'], ...
+                var fields = this.getFields();
+                if (!motion.comments) {
+                    motion.comments = [];
+                }
+                for (var i = 0; i < fields.length; i++) {
+                    motion['comment ' + fields[i].name] = motion.comments[i];
+                }
+            },
+            populateFieldsReverse: function (motion) {
+                // Reverse equivalent to populateFields.
+                var fields = this.getFields();
+                motion.comments = [];
+                for (var i = 0; i < fields.length; i++) {
+                    motion.comments.push(motion['comment ' + fields[i].name] || '');
+                }
+            }
+        };
     }
 ])
 
@@ -394,31 +534,41 @@ angular.module('OpenSlidesApp.motions', [
         gettext('submitted');
         gettext('accepted');
         gettext('Accept');
+        gettext('Acceptance');
         gettext('rejected');
         gettext('Reject');
+        gettext('Rejection');
         gettext('not decided');
         gettext('Do not decide');
+        gettext('No decision');
         // workflow 2
         gettext('Complex Workflow');
         gettext('published');
         gettext('permitted');
         gettext('Permit');
+        gettext('Permission');
         gettext('accepted');
         gettext('Accept');
+        gettext('Acceptance');
         gettext('rejected');
         gettext('Reject');
+        gettext('Rejection');
         gettext('withdrawed');
         gettext('Withdraw');
         gettext('adjourned');
         gettext('Adjourn');
+        gettext('Adjournment');
         gettext('not concerned');
         gettext('Do not concern');
-        gettext('commited a bill');
-        gettext('Commit a bill');
+        gettext('No concernment');
+        gettext('refered to committee');
+        gettext('Refer to committee');
+        gettext('Referral to committee');
         gettext('needs review');
         gettext('Needs review');
         gettext('rejected (not authorized)');
         gettext('Reject (not authorized)');
+        gettext('Rejection (not authorized)');
     }
 ]);
 

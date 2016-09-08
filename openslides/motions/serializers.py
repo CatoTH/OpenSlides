@@ -5,6 +5,7 @@ from openslides.poll.serializers import default_votes_validator
 from openslides.utils.rest_api import (
     CharField,
     DictField,
+    Field,
     IntegerField,
     ModelSerializer,
     PrimaryKeyRelatedField,
@@ -51,6 +52,7 @@ class StateSerializer(ModelSerializer):
             'id',
             'name',
             'action_word',
+            'recommendation_label',
             'css_class',
             'required_permission_to_see',
             'allow_support',
@@ -73,6 +75,28 @@ class WorkflowSerializer(ModelSerializer):
     class Meta:
         model = Workflow
         fields = ('id', 'name', 'states', 'first_state',)
+
+
+class MotionCommentsJSONSerializerField(Field):
+    """
+    Serializer for motions's comments JSONField.
+    """
+    def to_representation(self, obj):
+        """
+        Returns the value of the field.
+        """
+        return obj
+
+    def to_internal_value(self, data):
+        """
+        Checks that data is a list of strings.
+        """
+        if type(data) is not list:
+            raise ValidationError({'detail': 'Data must be an array.'})
+        for element in data:
+            if type(element) is not str:
+                raise ValidationError({'detail': 'Data must be an array of strings.'})
+        return data
 
 
 class MotionLogSerializer(ModelSerializer):
@@ -227,6 +251,7 @@ class MotionSerializer(ModelSerializer):
     Serializer for motion.models.Motion objects.
     """
     active_version = PrimaryKeyRelatedField(read_only=True)
+    comments = MotionCommentsJSONSerializerField(required=False)
     log_messages = MotionLogSerializer(many=True, read_only=True)
     polls = MotionPollSerializer(many=True, read_only=True)
     reason = CharField(allow_blank=True, required=False, write_only=True)
@@ -254,14 +279,16 @@ class MotionSerializer(ModelSerializer):
             'origin',
             'submitters',
             'supporters',
+            'comments',
             'state',
             'workflow_id',
+            'recommendation',
             'tags',
             'attachments',
             'polls',
             'agenda_item_id',
             'log_messages',)
-        read_only_fields = ('state',)  # Some other fields are also read_only. See definitions above.
+        read_only_fields = ('state', 'recommendation',)  # Some other fields are also read_only. See definitions above.
 
     @transaction.atomic
     def create(self, validated_data):
@@ -275,12 +302,13 @@ class MotionSerializer(ModelSerializer):
         motion.identifier = validated_data.get('identifier')
         motion.category = validated_data.get('category')
         motion.origin = validated_data.get('origin', '')
+        motion.comments = validated_data.get('comments')
         motion.parent = validated_data.get('parent')
         motion.reset_state(validated_data.get('workflow_id'))
         motion.save()
         if validated_data.get('submitters'):
             motion.submitters.add(*validated_data['submitters'])
-        else:
+        elif validated_data['request_user'].is_authenticated():
             motion.submitters.add(validated_data['request_user'])
         motion.supporters.add(*validated_data.get('supporters', []))
         motion.attachments.add(*validated_data.get('attachments', []))
@@ -292,8 +320,8 @@ class MotionSerializer(ModelSerializer):
         """
         Customized method to update a motion.
         """
-        # Identifier, category and origin.
-        for key in ('identifier', 'category', 'origin'):
+        # Identifier, category, origin and comments.
+        for key in ('identifier', 'category', 'origin', 'comments'):
             if key in validated_data.keys():
                 setattr(motion, key, validated_data[key])
 

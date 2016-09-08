@@ -208,7 +208,6 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     };
 })
 .factory('PollContentProvider', function() {
-
     /**
     * Generates a content provider for polls
     * @constructor
@@ -216,7 +215,6 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     * @param {string} id - if of poll
     * @param {object} gettextCatalog - for translation
     */
-
     var createInstance = function(title, id, gettextCatalog){
 
         //left and top margin for a single sheet
@@ -633,6 +631,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'gettextCatalog',
     'operator',
     'Editor',
+    'MotionComment',
     'Category',
     'Config',
     'Mediafile',
@@ -641,7 +640,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Workflow',
     'Agenda',
     'AgendaTree',
-    function (gettextCatalog, operator, Editor, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaTree) {
+    function (gettextCatalog, operator, Editor, MotionComment, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaTree) {
         return {
             // ngDialog for motion form
             getDialog: function (motion) {
@@ -649,6 +648,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 if (motion) {
                     resolve = {
                         motion: function() {
+                            MotionComment.populateFields(motion);
                             return motion;
                         },
                         agenda_item: function(Motion) {
@@ -809,8 +809,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                         placeholder: gettextCatalog.getString('Select or search a supporter ...')
                     },
                     hideExpression: '!model.more'
-                },
-                {
+                }]
+                .concat(MotionComment.getFormFields())
+                .concat([{
                     key: 'workflow_id',
                     type: 'select-single',
                     templateOptions: {
@@ -821,7 +822,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                         placeholder: gettextCatalog.getString('Select or search a workflow ...')
                     },
                     hideExpression: '!model.more',
-                }];
+                }]);
             }
         };
     }
@@ -893,6 +894,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 .controller('MotionListCtrl', [
     '$scope',
     '$state',
+    '$http',
     'ngDialog',
     'MotionForm',
     'Motion',
@@ -900,7 +902,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Tag',
     'Workflow',
     'User',
-    function($scope, $state, ngDialog, MotionForm, Motion, Category, Tag, Workflow, User) {
+    'Agenda',
+    function($scope, $state, $http, ngDialog, MotionForm, Motion, Category, Tag, Workflow, User, Agenda) {
         Motion.bindAll({}, $scope, 'motions');
         Category.bindAll({}, $scope, 'categories');
         Tag.bindAll({}, $scope, 'tags');
@@ -912,6 +915,32 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.sortColumn = 'identifier';
         $scope.filterPresent = '';
         $scope.reverse = false;
+
+        $scope.multiselectFilter = {
+            state: [],
+            category: [],
+            tag: []
+        };
+        $scope.getItemId = {
+            state: function (motion) {return motion.state_id;},
+            category: function (motion) {return motion.category_id;},
+            tag: function (motion) {return motion.tags_id;}
+        };
+        // function to operate the multiselectFilter
+        $scope.operateMultiselectFilter = function (filter, id) {
+            if (!$scope.isDeleteMode) {
+                if (_.indexOf($scope.multiselectFilter[filter], id) > -1) {
+                    // remove id
+                    $scope.multiselectFilter[filter] = _.filter($scope.multiselectFilter[filter], function (_id) {
+                        return _id != id;
+                    });
+                } else {
+                    // add id
+                    $scope.multiselectFilter[filter].push(id);
+                }
+
+            }
+        };
         // function to sort by clicked column
         $scope.toggleSort = function (column) {
             if ( $scope.sortColumn === column ) {
@@ -952,6 +981,23 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 category,
             ].join(" ");
         };
+        // for reset-button
+        $scope.reset_filters = function () {
+            $scope.multiselectFilter = {
+                state: [],
+                category: [],
+                tag: []
+            };
+            if ($scope.filter) {
+                $scope.filter.search = '';
+            }
+        };
+        $scope.are_filters_set = function () {
+            return $scope.multiselectFilter.state.length > 0 ||
+                   $scope.multiselectFilter.category.length > 0 ||
+                   $scope.multiselectFilter.tag.length > 0 ||
+                   ($scope.filter ? $scope.filter.search : false);
+        };
 
         // collect all states of all workflows
         // TODO: regard workflows only which are used by motions
@@ -961,7 +1007,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             if (workflows.length > 1) {
                 var wf = {};
                 wf.name = workflow.name;
-                wf.workflowSeparator = "-";
+                wf.workflowHeader = true;
                 $scope.states.push(wf);
             }
             angular.forEach(workflow.states, function (state) {
@@ -969,41 +1015,83 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             });
         });
 
+        // update state
+        $scope.updateState = function (motion, state_id) {
+            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {'state': state_id});
+        };
+        // reset state
+        $scope.reset_state = function (motion) {
+            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {});
+        };
+
+        $scope.has_tag = function (motion, tag) {
+            return _.indexOf(motion.tags_id, tag.id) > -1;
+        };
+
+        // Use this methon instead of Motion.save(), because otherwise
+        // you have to provide always a title and a text
+        var save = function (motion) {
+            motion.title = motion.getTitle(-1);
+            motion.text = motion.getText(-1);
+            motion.reason = motion.getReason(-1);
+            Motion.save(motion);
+        };
+        $scope.toggle_tag = function (motion, tag) {
+            if ($scope.has_tag(motion, tag)) {
+                // remove
+                motion.tags_id = _.filter(motion.tags_id, function (tag_id){
+                    return tag_id != tag.id;
+                });
+            } else {
+                motion.tags_id.push(tag.id);
+            }
+            save(motion);
+        };
+        $scope.toggle_category = function (motion, category) {
+            if (motion.category_id == category.id) {
+                motion.category_id = null;
+            } else {
+                motion.category_id = category.id;
+            }
+            save(motion);
+        };
+
         // open new/edit dialog
         $scope.openDialog = function (motion) {
             ngDialog.open(MotionForm.getDialog(motion));
         };
-        // cancel QuickEdit mode
-        $scope.cancelQuickEdit = function (motion) {
-            // revert all changes by restore (refresh) original motion object from server
-            Motion.refresh(motion);
-            motion.quickEdit = false;
-        };
-        // save changed motion
-        $scope.save = function (motion) {
-            // get (unchanged) values from latest version for update method
-            motion.title = motion.getTitle(-1);
-            motion.text = motion.getText(-1);
-            motion.reason = motion.getReason(-1);
-            Motion.save(motion).then(
-                function(success) {
-                    motion.quickEdit = false;
-                    $scope.alert.show = false;
-                },
-                function(error){
-                    var message = '';
-                    for (var e in error.data) {
-                        message += e + ': ' + error.data[e] + ' ';
-                    }
-                    $scope.alert = { type: 'danger', msg: message, show: true };
-                });
+
+        // Export the given motions as a csv file
+        $scope.csv_export = function () {
+            var element = document.getElementById('downloadLink');
+            var csvRows = [
+                ['identifier', 'title', 'text', 'reason', 'submitter', 'category', 'origin'],
+            ];
+            angular.forEach($scope.motionsFiltered, function (motion) {
+                var row = [];
+                row.push('"' + motion.identifier + '"');
+                row.push('"' + motion.getTitle() + '"');
+                row.push('"' + motion.getText() + '"');
+                row.push('"' + motion.getReason() + '"');
+                row.push('"' + motion.submitters[0].get_full_name() + '"');
+                var category = motion.category ? motion.category.name : '';
+                row.push('"' + category + '"');
+                row.push('"' + motion.origin + '"');
+                csvRows.push(row);
+            });
+
+            var csvString = csvRows.join("%0A");
+            element.href = 'data:text/csv;charset=utf-8,' + csvString;
+            element.download = 'motions-export.csv';
+            element.target = '_blank';
         };
 
         // *** delete mode functions ***
         $scope.isDeleteMode = false;
-        // check all checkboxes
+        // check all checkboxes from filtered motions
         $scope.checkAll = function () {
-            angular.forEach($scope.motions, function (motion) {
+            $scope.selectedAll = !$scope.selectedAll;
+            angular.forEach($scope.motionsFiltered, function (motion) {
                 motion.selected = $scope.selectedAll;
             });
         };
@@ -1018,7 +1106,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         };
         // delete selected motions
         $scope.deleteMultiple = function () {
-            angular.forEach($scope.motions, function (motion) {
+            angular.forEach($scope.motionsFiltered, function (motion) {
                 if (motion.selected)
                     Motion.destroy(motion.id);
             });
@@ -1173,6 +1261,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     '$http',
     '$timeout',
     'ngDialog',
+    'MotionComment',
     'MotionForm',
     'ChangeRecommmendationCreate',
     'ChangeRecommmendationView',
@@ -1192,10 +1281,10 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeConverter',
     'PdfMakeDocumentProvider',
     'gettextCatalog',
-    function($scope, $http, $timeout, ngDialog, MotionForm, ChangeRecommmendationCreate, ChangeRecommmendationView,
-             Motion, Category, Mediafile, MotionChangeRecommendation, Tag, User, Workflow, Editor, Config, motion,
-             SingleMotionContentProvider, MotionContentProvider, PollContentProvider,
-             PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
+    function($scope, $http, $timeout, ngDialog, MotionComment, MotionForm, ChangeRecommmendationCreate,
+             ChangeRecommmendationView, Motion, Category, Mediafile, MotionChangeRecommendation, Tag,
+             User, Workflow, Editor, Config, motion, SingleMotionContentProvider, MotionContentProvider,
+             PollContentProvider, PdfMakeConverter, PdfMakeDocumentProvider, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -1206,6 +1295,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         Motion.loadRelations(motion, 'agenda_item');
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
+        $scope.commentsFields = MotionComment.getFields();
         $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
         $scope.lineBrokenText = motion.getTextWithLineBreaks($scope.version);
         if (motion.parent_id) {
@@ -1280,8 +1370,16 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {'state': state_id});
         };
         // reset state
-        $scope.reset_state = function (state_id) {
+        $scope.reset_state = function () {
             $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {});
+        };
+        // update recommendation
+        $scope.updateRecommendation = function (recommendation_id) {
+            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {'recommendation': recommendation_id});
+        };
+        // reset state
+        $scope.resetRecommendation = function () {
+            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {});
         };
         // create poll
         $scope.create_poll = function () {
@@ -1492,6 +1590,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     '$state',
     'gettext',
     'gettextCatalog',
+    'operator',
     'Motion',
     'MotionForm',
     'Category',
@@ -1502,7 +1601,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Workflow',
     'Agenda',
     'AgendaUpdate',
-    function($scope, $state, gettext, gettextCatalog, Motion, MotionForm, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaUpdate) {
+    function($scope, $state, gettext, gettextCatalog, operator, Motion, MotionForm, Category, Config, Mediafile, Tag, User, Workflow, Agenda, AgendaUpdate) {
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
         Tag.bindAll({}, $scope, 'tags');
@@ -1535,11 +1634,14 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.save = function (motion) {
             Motion.create(motion).then(
                 function(success) {
-                    // type: Value 1 means a non hidden agenda item, value 2 means a hidden agenda item,
-                    // see openslides.agenda.models.Item.ITEM_TYPE.
-                    var changes = [{key: 'type', value: (motion.showAsAgendaItem ? 1 : 2)},
-                                   {key: 'parent_id', value: motion.agenda_parent_item_id}];
-                    AgendaUpdate.saveChanges(success.agenda_item_id, changes);
+                    // change agenda item only if user has the permission to do that
+                    if (operator.hasPerms('agenda.can_manage')) {
+                        // type: Value 1 means a non hidden agenda item, value 2 means a hidden agenda item,
+                        // see openslides.agenda.models.Item.ITEM_TYPE.
+                        var changes = [{key: 'type', value: (motion.showAsAgendaItem ? 1 : 2)},
+                                       {key: 'parent_id', value: motion.agenda_parent_item_id}];
+                        AgendaUpdate.saveChanges(success.agenda_item_id, changes);
+                    }
                     if (isAmendment) {
                         $state.go('motions.motion.detail', {id: success.id});
                     }
@@ -2095,6 +2197,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         gettext('The maximum number of characters per line. Relevant when line numbering is enabled. Min: 40');
         gettext('Stop submitting new motions by non-staff users');
         gettext('Allow to disable versioning');
+        gettext('Name of recommendation committee');
+        gettext('Use an empty value to disable the recommendation system.');
 
         // subgroup Amendments
         gettext('Amendments');

@@ -27,6 +27,7 @@ def get_config_variables():
         'value': "WITHOUT_ABSTAIN",
         'display_name': 'Yes and No votes'},)
     PERCENT_BASE_CHOICES_MOTION += PERCENT_BASE_CHOICES
+
     # General
     yield ConfigVariable(
         name='motions_workflow',
@@ -102,6 +103,16 @@ def get_config_variables():
         group='Motions',
         subgroup='General')
 
+    yield ConfigVariable(
+        name='motions_recommendations_by',
+        default_value='Recommendation committee',
+        label='Name of recommendation committee',
+        help_text='Use an empty value to disable the recommendation system.',
+        weight=332,
+        group='Motions',
+        subgroup='General',
+        translatable=True)
+
     # Amendments
     yield ConfigVariable(
         name='motions_amendments_enabled',
@@ -150,6 +161,20 @@ def get_config_variables():
         weight=350,
         group='Motions',
         subgroup='Supporters')
+
+    # Comments
+
+    yield ConfigVariable(
+        name='motions_comments',
+        default_value='Comment',
+        input_type='text',
+        label='Comment fields for motions',
+        help_text='Use comma separated list of field names for public '
+                  'fields or use special JSON. Example: [{"name": "Hidden Comment", '
+                  '"public": false}, {"name": "Public Comment", "public": true}]',
+        weight=353,
+        group='Motions',
+        subgroup='Comments')
 
     # Voting and ballot papers
 

@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404
 from django.utils.text import slugify
 from django.utils.translation import ugettext as _
@@ -25,7 +25,15 @@ from .access_permissions import (
     WorkflowAccessPermissions,
 )
 from .exceptions import WorkflowError
-from .models import Category, Motion, MotionPoll, MotionVersion, MotionChangeRecommendation, Workflow
+from .models import (
+    Category,
+    Motion,
+    MotionPoll,
+    MotionVersion,
+    MotionChangeRecommendation,
+    State,
+    Workflow,
+)
 from .pdf import motion_poll_to_pdf, motion_to_pdf, motions_to_pdf
 from .serializers import MotionPollSerializer
 
@@ -58,7 +66,7 @@ class MotionViewSet(ModelViewSet):
                       self.request.user.has_perm('motions.can_create') and
                       (not config['motions_stop_submitting'] or
                        self.request.user.has_perm('motions.can_manage')))
-        elif self.action in ('destroy', 'manage_version', 'set_state', 'create_poll'):
+        elif self.action in ('destroy', 'manage_version', 'set_state', 'set_recommendation', 'create_poll'):
             result = (self.request.user.has_perm('motions.can_see') and
                       self.request.user.has_perm('motions.can_manage'))
         elif self.action == 'support':
@@ -68,6 +76,27 @@ class MotionViewSet(ModelViewSet):
             result = False
         return result
 
+    def list(self, request, *args, **kwargs):
+        """
+        Customized view endpoint to list all motions.
+
+        Hides non public comment fields for some users.
+        """
+        response = super().list(request, *args, **kwargs)
+        for i, motion in enumerate(response.data):
+            response.data[i] = self.get_access_permissions().get_restricted_data(motion, self.request.user)
+        return response
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Customized view endpoint to retrieve a motion.
+
+        Hides non public comment fields for some users.
+        """
+        response = super().retrieve(request, *args, **kwargs)
+        response.data = self.get_access_permissions().get_restricted_data(response.data, self.request.user)
+        return response
+
     def create(self, request, *args, **kwargs):
         """
         Customized view endpoint to create a new motion.
@@ -76,6 +105,12 @@ class MotionViewSet(ModelViewSet):
         if (not request.user.has_perm('motions.can_manage') and
                 (request.data.get('submitters_id') or request.data.get('supporters_id'))):
             # Non-staff users are not allowed to send submitter or supporter data.
+            self.permission_denied(request)
+
+        # Check permission to send comment data.
+        if (not request.user.has_perm('motions.can_see_and_manage_comments') and
+                request.data.get('comments')):
+            # Some users are not allowed to send comments data.
             self.permission_denied(request)
 
         # Validate data and create motion.
@@ -115,6 +150,12 @@ class MotionViewSet(ModelViewSet):
                 if key not in whitelist:
                     # Non-staff users are allowed to send only some data. Ignore other data.
                     del request.data[key]
+        if not request.user.has_perm('motions.can_see_and_manage_comments'):
+            try:
+                del request.data['comments']
+            except KeyError:
+                # No comments here. Just do nothing.
+                pass
 
         # Validate data and update motion.
         serializer = self.get_serializer(
@@ -246,6 +287,46 @@ class MotionViewSet(ModelViewSet):
             person=request.user)
         return Response({'detail': message})
 
+    @detail_route(methods=['put'])
+    def set_recommendation(self, request, pk=None):
+        """
+        Special view endpoint to set a recommendation of a motion.
+
+        Send PUT {'recommendation': <state_id>} to set and just PUT {} to
+        reset the recommendation. Only managers can use this view.
+        """
+        # Retrieve motion and recommendation state.
+        motion = self.get_object()
+        recommendation_state = request.data.get('recommendation')
+
+        # Set or reset recommendation.
+        if recommendation_state is not None:
+            # Check data and set recommendation.
+            try:
+                recommendation_state_id = int(recommendation_state)
+            except ValueError:
+                raise ValidationError({'detail': _('Invalid data. Recommendation must be an integer.')})
+            recommendable_states = State.objects.filter(workflow=motion.workflow, recommendation_label__isnull=False)
+            if recommendation_state_id not in [item.id for item in recommendable_states]:
+                raise ValidationError(
+                    {'detail': _('You can not set the recommendation to {recommendation_state_id}.').format(
+                        recommendation_state_id=recommendation_state_id)})
+            motion.set_recommendation(recommendation_state_id)
+        else:
+            # Reset recommendation.
+            motion.recommendation = None
+
+        # Save motion.
+        motion.save(update_fields=['recommendation'])
+        label = motion.recommendation.recommendation_label if motion.recommendation else 'None'
+        message = _('The recommendation of the motion was set to %s.') % label
+
+        # Write the log message and initiate response.
+        motion.write_log(
+            message_list=[ugettext_noop('Recommendation set to'), ' ', label],
+            person=request.user)
+        return Response({'detail': message})
+
     @detail_route(methods=['post'])
     def create_poll(self, request, pk=None):
         """
@@ -346,24 +427,30 @@ class CategoryViewSet(ModelViewSet):
                 motion_dict[motion.pk] = motion
             motions = [motion_dict[pk] for pk in motion_list]
 
-        with transaction.atomic():
-            for motion in motions:
-                motion.identifier = None
-                motion.save()
+        try:
+            with transaction.atomic():
+                for motion in motions:
+                    motion.identifier = None
+                    motion.save()
 
-            for motion in motions:
-                if motion.is_amendment():
-                    parent_identifier = motion.parent.identifier or ''
-                    prefix = '%s %s ' % (parent_identifier, config['motions_amendments_prefix'])
-                number += 1
-                identifier = '%s%d' % (prefix, number)
-                motion.identifier = identifier
-                motion.identifier_number = number
-                motion.save()
-
-        message = _('All motions in category {category} numbered '
-                    'successfully.').format(category=category)
-        return Response({'detail': message})
+                for motion in motions:
+                    if motion.is_amendment():
+                        parent_identifier = motion.parent.identifier or ''
+                        prefix = '%s %s ' % (parent_identifier, config['motions_amendments_prefix'])
+                    number += 1
+                    identifier = '%s%d' % (prefix, number)
+                    motion.identifier = identifier
+                    motion.identifier_number = number
+                    motion.save()
+        except IntegrityError:
+            message = _('Error: At least one identifier of this category does '
+                        'already exist in another category.')
+            response = Response({'detail': message}, status_code=400)
+        else:
+            message = _('All motions in category {category} numbered '
+                        'successfully.').format(category=category)
+            response = Response({'detail': message})
+        return response
 
 
 class WorkflowViewSet(ModelViewSet):

@@ -10,9 +10,9 @@ def create_builtin_groups_and_admin(**kwargs):
 
     Creates the builtin user: admin.
     """
-    # Check whether the group pk's 1 to 4 are free.
-    if Group.objects.filter(pk__in=range(1, 5)).exists():
-        # Do completely nothing if there are already some of our groups in the database.
+    # Check whether there are groups in the database.
+    if Group.objects.exists():
+        # Do completely nothing if there are already some groups in the database.
         return
 
     permission_strings = (
@@ -36,6 +36,7 @@ def create_builtin_groups_and_admin(**kwargs):
         'motions.can_create',
         'motions.can_manage',
         'motions.can_see',
+        'motions.can_see_and_manage_comments',
         'motions.can_support',
         'users.can_manage',
         'users.can_see_extra_data',
@@ -106,6 +107,7 @@ def create_builtin_groups_and_admin(**kwargs):
         permission_dict['motions.can_see'],
         permission_dict['motions.can_create'],
         permission_dict['motions.can_manage'],
+        permission_dict['motions.can_see_and_manage_comments'],
         permission_dict['users.can_see_name'],
         permission_dict['users.can_manage'],
         permission_dict['users.can_see_extra_data'],)
