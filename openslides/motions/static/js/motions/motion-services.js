@@ -131,7 +131,7 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             lineFrom: 1,
             lineTo: 2,
             html: '',
-            reviewingHtml: '',
+            reviewingHtml: ''
         };
 
         var motion = null,
@@ -227,7 +227,8 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
 ])
 
 .factory('ChangeRecommmendationView', [
-    function () {
+    'MotionChangeRecommendation',
+    function (MotionChangeRecommendation) {
         var ELEMENT_NODE = 1,
 
             addCSSClass = function (node, className) {
@@ -268,6 +269,10 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             }
 
             return mergedFragment;
+        };
+
+        obj.delete = function (changeId) {
+            MotionChangeRecommendation.destroy(changeId);
         };
 
         return obj;

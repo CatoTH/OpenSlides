@@ -362,6 +362,23 @@
         <div ng-bind-html="motion.getTextWithLineBreaks(version) | trusted"
            class="motion-text line-numbers-{{ lineNumberMode }}"></div>
       </div>
+      <div ng-if="viewChangeRecommendations.mode == 'original'" class="change-recommendaton-list">
+        <ul>
+          <li ng-repeat="change in change_recommendations | filter:{motion_version_id:version}:true"
+              data-line-from="{{ change.line_from }}" data-line-to="{{ change.line_to}}">
+
+            <div class="text" ng-bind-html="change.text || trusted"></div>
+
+            <!-- delete change recommendation -->
+            <button class="btn btn-default btn-xs"
+                    ng-bootbox-confirm="{{ 'Are you sure you want to delete this change recommendation?' | translate }}"
+                    ng-bootbox-confirm-action="viewChangeRecommendations.delete(change.id)"
+                    title="{{ 'Delete' | translate }}">
+              <i class="fa fa-times"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
 
       <div ng-if="viewChangeRecommendations.mode == 'diff'">
         <div ng-bind-html="motion.getTextWithChangeRecommendationsAsDiff(version, viewChangeRecommendations.diffFormatterCb) | trusted"
