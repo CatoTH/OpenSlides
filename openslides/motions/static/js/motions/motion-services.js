@@ -116,6 +116,141 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
 
         return obj;
     }
-]);
+])
+
+.factory('ChangeRecommmendationCreate', [
+    'ngDialog',
+    'ChangeRecommendationForm',
+    function(ngDialog, ChangeRecommendationForm) {
+        var obj = {
+            mode: 0, // 0: not editing; 1: selecting lines; 2: editing the text
+            lineFrom: 1,
+            lineTo: 2,
+            html: '',
+            reviewingHtml: '',
+        };
+        var motion = null;
+
+        obj.startCreating = function () {
+            obj.mode = 1;
+            $(".motion-text .os-line-number").each(function () {
+                $(this).addClass("selectable");
+            });
+        };
+        obj.setFromLine = function (line) {
+            obj.mode = 2;
+            obj.lineFrom = line;
+
+            $(".motion-text .os-line-number").each(function () {
+                var $this = $(this);
+                if ($this.data("line-number") > line) {
+                    $(this).addClass("selectable");
+                } else {
+                    $(this).removeClass("selectable");
+                }
+            });
+        };
+        obj.setToLine = function (line) {
+            if (line <= obj.lineFrom) {
+                return;
+            }
+            obj.mode = 3;
+            obj.lineTo = line;
+            ngDialog.open(ChangeRecommendationForm.getCreateDialog(
+                motion,
+                obj.lineFrom,
+                obj.lineTo
+            ));
+
+            obj.lineFrom = 0;
+            obj.lineTo = 0;
+            $(".motion-text .os-line-number").removeClass("selected selectable");
+        };
+        obj.lineClicked = function (ev) {
+            if (obj.mode == 0) {
+                return;
+            }
+            if (obj.mode == 1) {
+                obj.setFromLine($(ev.target).data("line-number"));
+                $(ev.target).addClass("selected").removeClass("selectable");
+            } else if (obj.mode == 2) {
+                obj.setToLine($(ev.target).data("line-number"));
+            }
+        };
+        obj.mouseOver = function (ev) {
+            if (obj.mode != 2) {
+                return;
+            }
+            var hoverLine = $(ev.target).data("line-number");
+            $(".motion-text .os-line-number").each(function () {
+                var line = $(this).data("line-number");
+                if (line >= obj.lineFrom && line <= hoverLine) {
+                    $(this).addClass("selected");
+                } else {
+                    $(this).removeClass("selected");
+                }
+            });
+        };
+        obj.init = function (_motion) {
+            motion = _motion;
+            var $content = $("#content");
+            $content.on("click", ".os-line-number.selectable", obj.lineClicked);
+            $content.on("mouseover", ".os-line-number.selectable", obj.mouseOver);
+        };
+        obj.destroy = function () {
+            var $content = $("#content");
+            $content.off("click", ".os-line-number.selectable", obj.lineClicked);
+            $content.off("mouseover", ".os-line-number.selectable", obj.mouseOver);
+        };
+
+        return obj;
+    }
+])
+
+.factory('ChangeRecommmendationView', [
+    function () {
+        var ELEMENT_NODE = 1,
+            addCSSClass = function (node, className) {
+            if (node.nodeType != ELEMENT_NODE) {
+                return;
+            }
+            var classes = node.getAttribute('class');
+            classes = (classes ? classes.split(' ') : []);
+            if (classes.indexOf(className) == -1) {
+                classes.push(className);
+            }
+            node.setAttribute('class', classes);
+        };
+
+        var obj = {
+            mode: 'original'
+        };
+        obj.diffFormatterCb = function (oldFragment, newFragment) {
+            for (var i = 0; i < oldFragment.childNodes.length; i++) {
+                addCSSClass(oldFragment.childNodes[i], 'delete');
+            }
+            for (i = 0; i < newFragment.childNodes.length; i++) {
+                addCSSClass(newFragment.childNodes[i], 'insert');
+            }
+            var mergedFragment = document.createDocumentFragment(),
+                el;
+
+            while (oldFragment.firstChild) {
+                el = oldFragment.firstChild;
+                oldFragment.removeChild(el);
+                mergedFragment.appendChild(el);
+            }
+            while (newFragment.firstChild) {
+                el = newFragment.firstChild;
+                newFragment.removeChild(el);
+                mergedFragment.appendChild(el);
+            }
+
+            return mergedFragment;
+        };
+
+        return obj;
+    }
+])
 
 }());
