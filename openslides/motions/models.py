@@ -24,6 +24,7 @@ from .access_permissions import (
     CategoryAccessPermissions,
     MotionAccessPermissions,
     WorkflowAccessPermissions,
+    MotionChangeRecommendationAccessPermissions,
 )
 from .exceptions import WorkflowError
 
@@ -695,6 +696,57 @@ class MotionVersion(RESTModelMixin, models.Model):
         Returns the motion to this instance which is the root REST element.
         """
         return self.motion
+
+
+class MotionChangeRecommendation(RESTModelMixin, models.Model):
+    """
+    A MotionChangeRecommendation object saves change recommendations for a specific MotionVersion
+    """
+
+    access_permissions = MotionChangeRecommendationAccessPermissions()
+
+    motion_version = models.ForeignKey(
+        MotionVersion,
+        on_delete=models.CASCADE,
+        related_name='change_recommendations')
+    """The motion version to which the change recommendation belongs."""
+
+    type = models.PositiveIntegerField()
+    """ Insertion (1), Deletion (2) or Replacement (0) """
+
+    status = models.PositiveIntegerField(default=0)
+    """ Proposed (0), Accepted (1), Rejected (2) """
+
+    line_from = models.PositiveIntegerField()
+    """ The number or the first affected line """
+
+    line_to = models.PositiveIntegerField()
+    """ The number or the last affected line (inclusive) """
+
+    text = models.TextField(blank=True)
+    """The replacement for the section of the original text specified by version, line_from and line_to """
+
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True)
+    """A user object, who created this change recommendation. Optional."""
+
+    creation_time = models.DateTimeField(auto_now=True)
+    """Time when the version was saved."""
+
+    class Meta:
+        default_permissions = ()
+
+    def __str__(self):
+        """Return a string, representing this object."""
+        return "Recommendation for Version %s, line %s - %s" % (self.motion_version_id, self.line_from, self.line_to)
+
+    def get_root_rest_element(self):
+        """
+        Returns the motion to this instance which is the root REST element.
+        """
+        return self
 
 
 class Category(RESTModelMixin, models.Model):

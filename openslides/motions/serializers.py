@@ -19,6 +19,7 @@ from .models import (
     MotionLog,
     MotionPoll,
     MotionVersion,
+    MotionChangeRecommendation,
     State,
     Workflow,
 )
@@ -226,6 +227,23 @@ class MotionVersionSerializer(ModelSerializer):
             'title',
             'text',
             'reason',)
+
+
+class MotionChangeRecommendationSerializer(ModelSerializer):
+    """
+    Serializer for motion.models.MotionChangeRecommendation objects.
+    """
+    class Meta:
+        model = MotionChangeRecommendation
+        fields = (
+            'id',
+            'motion_version',
+            'type',
+            'status',
+            'line_from',
+            'line_to',
+            'text',
+            'creation_time',)
 
 
 class MotionSerializer(ModelSerializer):

@@ -142,13 +142,16 @@ angular.module('OpenSlidesApp.motions', [
 .factory('Motion', [
     'DS',
     'MotionPoll',
+    'MotionChangeRecommendation',
     'MotionComment',
     'jsDataModel',
     'gettext',
     'operator',
     'Config',
     'lineNumberingService',
-    function(DS, MotionPoll, MotionComment, jsDataModel, gettext, operator, Config, lineNumberingService) {
+    'diffService',
+    function(DS, MotionPoll, MotionChangeRecommendation, MotionComment, jsDataModel, gettext, operator, Config,
+             lineNumberingService, diffService) {
         var name = 'motions/motion';
         return DS.defineResource({
             name: name,
@@ -187,7 +190,88 @@ angular.module('OpenSlidesApp.motions', [
 
                     return lineNumberingService.insertLineNumbers(html, lineLength, highlight, callback);
                 },
-                setTextStrippingLineBreaks: function (versionId, text) {
+
+                /* Not used currently
+                getTextWithChangeRecommendationsAsDiff: function (versionId, diffFormatterCb) {
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = this.getVersion(versionId).text,
+                        changes = this.getChangeRecommendations(versionId);
+
+                    for (var i = 0; i < changes.length; i++) {
+                        (function (change) {
+                            html = lineNumberingService.insertLineNumbers(html, lineLength);
+                            var cb = function (oldFragment, newFragment) {
+                                    return diffFormatterCb(change, oldFragment, newFragment);
+                                };
+                            html = diffService.addDiffMarkup(
+                                html, change.text, change.line_from, change.line_to, cb
+                            );
+                        }(changes[i]));
+                    }
+
+                    return lineNumberingService.insertLineNumbers(html, lineLength);
+                },
+                */
+
+                getTextBetweenChangeRecommendations: function (versionId, change1, change2) {
+                    var line_from = (change1 ? change1.line_to : 1),
+                        line_to = (change2 ? change2.line_from : null);
+
+                    if (line_from > line_to) {
+                        throw 'Invalid call of getTextBetweenChangeRecommendations: change1 needs to be before change2';
+                    }
+                    if (line_from == line_to) {
+                        return '';
+                    }
+
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength);
+
+                    var data = diffService.extractRangeByLineNumbers(html, line_from, line_to);
+
+                    html = data.outerContextStart + data.innerContextStart + data.html +
+                        data.innerContextEnd + data.outerContextEnd;
+                    html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, line_from);
+
+                    return html;
+                },
+                getTextRemainderAfterLastChangeRecommendation: function(versionId, changes) {
+                    var maxLine = 0;
+                    for (var i = 0; i < changes.length; i++) {
+                        if (changes[i].line_to > maxLine) {
+                            maxLine = changes[i].line_to;
+                        }
+                    }
+
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength);
+
+                    var data = diffService.extractRangeByLineNumbers(html, maxLine, null);
+                    html = data.outerContextStart + data.innerContextStart +
+                        data.html +
+                        data.innerContextEnd + data.outerContextEnd;
+                    html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, maxLine);
+
+                    return html;
+                },
+                getTextWithAcceptedChangeRecommendations: function (versionId) {
+                    var lineLength = Config.get('motions_line_length').value,
+                        html = this.getVersion(versionId).text,
+                        changes = this.getChangeRecommendations(versionId),
+                        fragment;
+
+                    for (var i = 0; i < changes.length; i++) {
+                        var change = changes[i];
+                        if (change.status != 2) {
+                            html = lineNumberingService.insertLineNumbers(html, lineLength);
+                            fragment = diffService.htmlToFragment(html);
+                            html = diffService.replaceLines(fragment, change.text, change.line_from, change.line_to);
+                        }
+                    }
+
+                    return lineNumberingService.insertLineNumbers(html, lineLength);
+                },
+                setTextStrippingLineBreaks: function (text) {
                     this.text = lineNumberingService.stripLineNumbers(text);
                 },
                 getReason: function (versionId) {
@@ -200,6 +284,18 @@ angular.module('OpenSlidesApp.motions', [
                 // subtitle of search result
                 getSearchResultSubtitle: function () {
                     return "Motion";
+                },
+                // returns all change recommendations for this given version, sorted by line (descending)
+                getChangeRecommendations: function (versionId) {
+                    versionId = versionId || this.active_version;
+                    return MotionChangeRecommendation.filter({
+                        where: {
+                            motion_version_id: versionId
+                        },
+                        orderBy: [
+                            ['line_from', 'DESC']
+                        ]
+                    });
                 },
                 isAllowed: function (action) {
                     /*
@@ -392,11 +488,36 @@ angular.module('OpenSlidesApp.motions', [
     }
 ])
 
+.factory('MotionChangeRecommendation', [
+    'DS',
+    'jsDataModel',
+    function (DS, jsDataModel) {
+        return DS.defineResource({
+            name: 'motions/motionchangerecommendation',
+            useClass: jsDataModel,
+            /*
+            belongsTo: {
+                    'motions/motion': {
+                        localField: 'motion',
+                        localKey: 'motion_id',
+                    }
+                }
+             */
+            methods: {
+                saveStatus: function() {
+                    this.DSSave();
+                }
+            }
+        });
+    }
+])
+
 .run([
     'Motion',
     'Category',
     'Workflow',
-    function(Motion, Category, Workflow) {}
+    'MotionChangeRecommendation',
+    function(Motion, Category, Workflow, MotionChangeRecommendation) {}
 ])
 
 
