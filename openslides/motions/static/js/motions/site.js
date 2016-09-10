@@ -532,7 +532,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     function(gettextCatalog, Editor, Config) {
         return {
             // ngDialog for motion form
-            getCreateDialog: function (motion, lineFrom, lineTo) {
+            getCreateDialog: function (motion, version, lineFrom, lineTo) {
                 return {
                     template: 'static/templates/motions/change-recommendation-form.html',
                     controller: 'ChangeRecommendationCreateCtrl',
@@ -542,6 +542,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                     resolve: {
                         motion: function() {
                             return motion;
+                        },
+                        version: function() {
+                            return version;
                         },
                         lineFrom: function() {
                             return lineFrom;
@@ -1274,6 +1277,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.showVersion = function (version) {
             $scope.version = version.id;
             $scope.inlineEditing.setVersion(motion, version.id);
+            $scope.createChangeRecommendation.setVersion(motion, version.id);
         };
         // permit specific version
         $scope.permitVersion = function (version) {
@@ -1305,7 +1309,6 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         });
 
         // Change Recommendation viewing
-
         $scope.viewChangeRecommendations = ChangeRecommmendationView;
     }
 ])
@@ -1318,12 +1321,14 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'Config',
     'diffService',
     'motion',
+    'version',
     'lineFrom',
     'lineTo',
-    function($scope, Motion, MotionChangeRecommendation, ChangeRecommendationForm, Config, diffService, motion, lineFrom, lineTo) {
+    function($scope, Motion, MotionChangeRecommendation, ChangeRecommendationForm, Config, diffService, motion,
+             version, lineFrom, lineTo) {
         $scope.alert = {};
 
-        var html = motion.getTextWithLineBreaks(motion.active_version),
+        var html = motion.getTextWithLineBreaks(version),
             fragment = diffService.htmlToFragment(html),
             lineData = diffService.extractRangeByLineNumbers(fragment, lineFrom, lineTo);
 
@@ -1332,7 +1337,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
                 lineData.html + lineData.innerContextEnd + lineData.outerContextEnd,
             line_from: lineFrom,
             line_to: lineTo,
-            motion_version_id: motion.active_version
+            motion_version_id: version
         };
 
         // get all form fields
