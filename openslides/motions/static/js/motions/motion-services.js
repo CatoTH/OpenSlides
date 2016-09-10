@@ -229,21 +229,23 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
 .factory('ChangeRecommmendationView', [
     function () {
         var ELEMENT_NODE = 1,
+
             addCSSClass = function (node, className) {
-            if (node.nodeType != ELEMENT_NODE) {
-                return;
-            }
-            var classes = node.getAttribute('class');
-            classes = (classes ? classes.split(' ') : []);
-            if (classes.indexOf(className) == -1) {
-                classes.push(className);
-            }
-            node.setAttribute('class', classes);
-        };
+                if (node.nodeType != ELEMENT_NODE) {
+                    return;
+                }
+                var classes = node.getAttribute('class');
+                classes = (classes ? classes.split(' ') : []);
+                if (classes.indexOf(className) == -1) {
+                    classes.push(className);
+                }
+                node.setAttribute('class', classes);
+            };
 
         var obj = {
             mode: 'original'
         };
+
         obj.diffFormatterCb = function (oldFragment, newFragment) {
             for (var i = 0; i < oldFragment.childNodes.length; i++) {
                 addCSSClass(oldFragment.childNodes[i], 'delete');

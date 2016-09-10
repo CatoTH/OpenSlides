@@ -1303,7 +1303,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
 
         // Change Recommendation creation functions
         $scope.createChangeRecommendation = ChangeRecommmendationCreate;
-        $scope.createChangeRecommendation.init(motion);
+        $scope.createChangeRecommendation.init(motion, $scope.version);
         $scope.$on("$destroy", function() {
             $scope.createChangeRecommendation.destroy();
         });
