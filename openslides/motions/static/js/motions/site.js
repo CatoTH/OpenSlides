@@ -533,6 +533,110 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     }
 ])
 
+.factory('ChangeRecommendationForm', [
+    'gettextCatalog',
+    'Editor',
+    'Config',
+    function(gettextCatalog, Editor, Config) {
+        return {
+            // ngDialog for motion form
+            getCreateDialog: function (motion, version, lineFrom, lineTo) {
+                return {
+                    template: 'static/templates/motions/change-recommendation-form.html',
+                    controller: 'ChangeRecommendationCreateCtrl',
+                    className: 'ngdialog-theme-default wide-form',
+                    closeByEscape: false,
+                    closeByDocument: false,
+                    resolve: {
+                        motion: function() {
+                            return motion;
+                        },
+                        version: function() {
+                            return version;
+                        },
+                        lineFrom: function() {
+                            return lineFrom;
+                        },
+                        lineTo: function() {
+                            return lineTo;
+                        }
+                    }
+                };
+            },
+            // angular-formly fields for motion form
+            getFormFields: function (line_from, line_to) {
+                return [
+                    {
+                        key: 'identifier',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Identifier')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'motion_version_id',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Motion')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'line_from',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('From Line')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'line_to',
+                        type: 'input',
+                        templateOptions: {
+                            label: gettextCatalog.getString('To Line')
+                        },
+                        hide: true
+                    },
+                    {
+                        key: 'type',
+                        type: 'radio',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Type of Change'),
+                            options: [
+                                {
+                                    name: 'Replacement',
+                                    value: 0
+                                },
+                                {
+                                    name: 'Insertion',
+                                    value: 1
+                                },
+                                {
+                                    name: 'Deletion',
+                                    value: 2
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        key: 'text',
+                        type: 'editor',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Text from line %from% to %to%')
+                                .replace(/%from%/, line_from).replace(/%to%/, line_to),
+                            required: false
+                        },
+                        data: {
+                            tinymceOption: Editor.getOptions()
+                        }
+                    }
+                ]
+            }
+        }
+    }
+])
+
 // Service for generic motion form (create and update)
 .factory('MotionForm', [
     'gettextCatalog',
@@ -1034,6 +1138,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'ngDialog',
     'MotionComment',
     'MotionForm',
+    'ChangeRecommmendationCreate',
+    'ChangeRecommmendationView',
+    'MotionChangeRecommendation',
     'Motion',
     'Category',
     'Mediafile',
@@ -1049,7 +1156,9 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
     'PdfMakeDocumentProvider',
     'MotionInlineEditing',
     'gettextCatalog',
-    function($scope, $http, ngDialog, MotionComment, MotionForm, Motion, Category, Mediafile, Tag,
+    function($scope, $http, ngDialog, MotionComment, MotionForm,
+             ChangeRecommmendationCreate, ChangeRecommmendationView, MotionChangeRecommendation,
+             Motion, Category, Mediafile, Tag,
              User, Workflow, Config, motion, SingleMotionContentProvider, MotionContentProvider,
              PollContentProvider, PdfMakeConverter, PdfMakeDocumentProvider, MotionInlineEditing, gettextCatalog) {
         Motion.bindOne(motion.id, $scope, 'motion');
@@ -1058,6 +1167,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         Tag.bindAll({}, $scope, 'tags');
         User.bindAll({}, $scope, 'users');
         Workflow.bindAll({}, $scope, 'workflows');
+        MotionChangeRecommendation.bindAll({}, $scope, 'change_recommendations');
         Motion.loadRelations(motion, 'agenda_item');
         $scope.version = motion.active_version;
         $scope.isCollapsed = true;
@@ -1067,6 +1177,8 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
             Motion.bindOne(motion.parent_id, $scope, 'parent');
         }
         $scope.amendments = Motion.filter({parent_id: motion.id});
+
+        MotionChangeRecommendation.findAll();
 
         $scope.makePDF = function(){
           var content = motion.getText($scope.version) + motion.getReason($scope.version),
@@ -1174,6 +1286,7 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         $scope.showVersion = function (version) {
             $scope.version = version.id;
             $scope.inlineEditing.setVersion(motion, version.id);
+            $scope.createChangeRecommendation.setVersion(motion, version.id);
         };
         // permit specific version
         $scope.permitVersion = function (version) {
@@ -1196,6 +1309,56 @@ angular.module('OpenSlidesApp.motions.site', ['OpenSlidesApp.motions', 'OpenSlid
         // Inline editing functions
         $scope.inlineEditing = MotionInlineEditing;
         $scope.inlineEditing.init($scope, motion);
+
+        // Change Recommendation creation functions
+        $scope.createChangeRecommendation = ChangeRecommmendationCreate;
+        $scope.createChangeRecommendation.init(motion, $scope);
+
+        // Change Recommendation viewing
+        $scope.viewChangeRecommendations = ChangeRecommmendationView;
+        $scope.viewChangeRecommendations.init($scope);
+    }
+])
+
+.controller('ChangeRecommendationCreateCtrl', [
+    '$scope',
+    'Motion',
+    'MotionChangeRecommendation',
+    'ChangeRecommendationForm',
+    'Config',
+    'diffService',
+    'motion',
+    'version',
+    'lineFrom',
+    'lineTo',
+    function($scope, Motion, MotionChangeRecommendation, ChangeRecommendationForm, Config, diffService, motion,
+             version, lineFrom, lineTo) {
+        $scope.alert = {};
+
+        var html = motion.getTextWithLineBreaks(version),
+            fragment = diffService.htmlToFragment(html),
+            lineData = diffService.extractRangeByLineNumbers(fragment, lineFrom, lineTo);
+
+        $scope.model = {
+            text: lineData.outerContextStart + lineData.innerContextStart +
+                lineData.html + lineData.innerContextEnd + lineData.outerContextEnd,
+            line_from: lineFrom,
+            line_to: lineTo,
+            motion_version_id: version,
+            type: 0
+        };
+
+        // get all form fields
+        $scope.formFields = ChangeRecommendationForm.getFormFields(lineFrom, lineTo);
+        // save motion
+        $scope.save = function (motion) {
+            MotionChangeRecommendation.create(motion).then(
+                function(success) {
+                    console.log("success");
+                    $scope.closeThisDialog();
+                }
+            );
+        };
     }
 ])
 
