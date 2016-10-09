@@ -263,10 +263,12 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
     'Motion',
     'MotionChangeRecommendation',
     'Config',
+    'Projector',
     'lineNumberingService',
     'diffService',
+    '$http',
     '$interval',
-    function (Motion, MotionChangeRecommendation, Config, lineNumberingService, diffService, $interval) {
+    function (Motion, MotionChangeRecommendation, Config, Projector, lineNumberingService, diffService, $http, $interval) {
         var ELEMENT_NODE = 1,
 
             addCSSClass = function (node, className) {
@@ -415,6 +417,22 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             $('html, body').animate({
                 scrollTop: $diffBox[0].getBoundingClientRect().top
             }, 1000);
+        };
+
+        obj.setProjectorData = function(elementData) {
+            var elements = _.map(Projector.get(1).elements, function(element) { return element; });
+            elements.forEach(function (element) {
+                if (element.name == 'motions/motion') {
+                    var data = {};
+                    data[element.uuid] = elementData;
+                    $http.post('/rest/core/projector/1/update_elements/', data);
+                }
+            });
+        };
+
+        obj.setMode = function(mode) {
+            this.mode = mode;
+            this.setProjectorData({ changeRecommendationMode: mode });
         };
 
         obj.init = function (_scope) {

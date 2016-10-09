@@ -444,6 +444,44 @@ tr.elected td {
     visibility: hidden;
 }
 
+
+.diff-box, .change-recommendation-overview {
+    background-color: #eee;
+    border: solid 1px #ddd;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    margin-top: -15px;
+    padding-top: 5px;
+}
+
+.diff-box .status-row {
+    font-style: italic;
+    color: gray;
+}
+.diff-box .status-row > *:after {
+    content: ':';
+}
+
+.motion-text-diff .delete {
+    color: red;
+    text-decoration: line-through;
+}
+.motion-text-diff .insert {
+    color: green;
+    text-decoration: underline;
+}
+.motion-text-diff p {
+    padding-bottom: 5px;
+}
+.motion-text-diff.line-numbers-outside .os-line-number {
+    display: none;
+}
+.motion-text-diff.line-numbers-inline .os-line-number {
+    display: none;
+}
+
+
+
 /*** Video and Image projection ***/
 img.projector-image {
     width: 100%;

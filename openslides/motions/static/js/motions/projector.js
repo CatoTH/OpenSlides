@@ -2,7 +2,7 @@
 
 'use strict';
 
-angular.module('OpenSlidesApp.motions.projector', ['OpenSlidesApp.motions'])
+angular.module('OpenSlidesApp.motions.projector', ['OpenSlidesApp.motions', 'OpenSlidesApp.motions.motionservices'])
 
 .config([
     'slidesProvider',
@@ -18,17 +18,19 @@ angular.module('OpenSlidesApp.motions.projector', ['OpenSlidesApp.motions'])
     '$rootScope',
     '$http',
     'Motion',
+    'MotionChangeRecommendation',
     'User',
     'Config',
     'Projector',
-    '$timeout',
-    function($scope, $rootScope, $http, Motion, User, Config, Projector, $timeout) {
+    'ChangeRecommmendationView',
+    function($scope, $rootScope, $http, Motion, MotionChangeRecommendation, User, Config, Projector, ChangeRecommmendationView) {
         // Attention! Each object that is used here has to be dealt on server side.
         // Add it to the coresponding get_requirements method of the ProjectorElement
         // class.
         var id = $scope.element.id;
 
         $scope.line = $scope.element.highlightAndScroll;
+        $scope.changeRecommendationMode = ($scope.element.changeRecommendationMode || 'original');
 
         // get cookie using jQuery
         var getCookie = function (name) {
@@ -82,6 +84,12 @@ angular.module('OpenSlidesApp.motions.projector', ['OpenSlidesApp.motions'])
         Motion.bindOne(id, $scope, 'motion');
         User.bindAll({}, $scope, 'users');
 
+        MotionChangeRecommendation.bindAll({}, $scope, 'change_recommendations');
+        MotionChangeRecommendation.findAll();
+
+        // Change Recommendation viewing
+        $scope.viewChangeRecommendations = ChangeRecommmendationView;
+        $scope.viewChangeRecommendations.init($scope);
     }
 ]);
 

@@ -69,11 +69,43 @@
     </h2>
   </div>
 
-  <!-- Text -->
-  <div ng-bind-html="motion.getTextWithLineBreaks(null, line, scroll) | trusted"
+  <!-- Original motion -->
+  <div ng-if="changeRecommendationMode == 'original'">
+    <!-- Text -->
+    <div ng-bind-html="motion.getTextWithLineBreaks(null, line, scroll) | trusted"
        class="motion-text line-numbers-{{ config('motions_default_line_numbering') }}"></div>
 
-  <!-- Reason -->
-  <h3 ng-if="motion.getReason()" translate>Reason</h3>
-  <div ng-bind-html="motion.getReason() | trusted"></div>
+    <!-- Reason -->
+    <h3 ng-if="motion.getReason()" translate>Reason</h3>
+    <div ng-bind-html="motion.getReason() | trusted"></div>
+  </div>
+
+  <!-- Diff view (including change recommendations) -->
+  <div ng-if="changeRecommendationMode == 'diff'">
+    <div ng-repeat="change in (changes = (change_recommendations | filter:{motion_version_id:version}:true | orderBy: 'line_from')) ">
+        <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
+             ng-bind-html="motion.getTextBetweenChangeRecommendations(motion.getVersion().version_number, changes[$index - 1], change) | trusted"></div>
+
+        <div class="diff-box diff-box-{{ change.id }}">
+            <div class="status-row" ng-if="!motion.isAllowed('can_manage')">
+                <span ng-if="change.status == 0"><translate>Suggested</translate></span>
+                <span ng-if="change.status == 1"><translate>Accepted</translate></span>
+                <span ng-if="change.status == 2"><translate>Rejected</translate></span>
+            </div>
+
+            <div class="motion-text motion-text-diff line-numbers-{{ config('motions_default_line_numbering') }}"
+                 ng-bind-html="viewChangeRecommendations.formatChangeRecommendation(motion, motion.getVersion().version_number, change) | trusted"></div>
+        </div>
+    </div>
+
+    <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
+         ng-bind-html="motion.getTextRemainderAfterLastChangeRecommendation(motion.getVersion().version_number, changes) | trusted"></div>
+  </div>
+
+  <!-- Changed view -->
+  <div ng-if="changeRecommendationMode == 'changed'">
+    <div ng-bind-html="motion.getTextWithAcceptedChangeRecommendations(motion.getVersion().version_number) | trusted"
+               class="motion-text motion-text-changed line-numbers-{{ config('motions_default_line_numbering') }}"></div>
+  </div>
+
 </div>
