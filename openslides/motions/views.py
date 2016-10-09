@@ -359,7 +359,7 @@ class MotionChangeRecommendationViewSet(ModelViewSet):
         """
         if self.action in ('list', 'retrieve'):
             result = self.get_access_permissions().check_permissions(self.request.user)
-        elif self.action in ('create', 'destroy'):
+        elif self.action in ('create', 'destroy', 'update'):
             result = self.request.user.has_perm('motions.can_manage')
         else:
             result = False
