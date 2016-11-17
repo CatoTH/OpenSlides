@@ -1,5 +1,40 @@
 @import "projector-container";
 
+/* Custom font definitions */
+@font-face {
+    font-family: 'Arvo Regular';
+    src: url('../fonts/arvo_regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Arvo Gruen';
+    src: url('../fonts/arvo_gruen.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'PT Sans';
+    src: url('../fonts/ptsans_regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'PT Sans Bold';
+    src: url('../fonts/ptsans_bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+#header, #currentTime, #footer, h1 {
+    font-family: 'Arvo Regular' !important;
+}
+body, h2, h3, h4, h5, h6 {
+    font-family: 'PT Sans' !important;
+}
+h3, h4, h5, h6 {
+    font-weight: bold !important;
+}
+
 /* Template styles for OpenSlides projector */
 html, body {
     height: 100%;

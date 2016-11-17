@@ -202,6 +202,7 @@ angular.module('OpenSlidesApp.core.pdf', [])
                     alignment: 'right',
                     margin: [0, 10, 0, 0],
                 });
+
                 return {
                     color: '#555',
                     fontSize: 9,
@@ -257,6 +258,7 @@ angular.module('OpenSlidesApp.core.pdf', [])
                     content: content,
                     styles: {
                         title: {
+                            font: 'Arvo',
                             fontSize: 18,
                             margin: [0,0,0,20],
                             bold: true
@@ -1156,15 +1158,14 @@ angular.module('OpenSlidesApp.core.pdf', [])
          * the map fould be "fonts/myFont.ttf": ["OSFont-regular.ttf", "OSFont-bold.ttf"]
          */
         var getUrlMapping = function () {
-            var urlMap = {};
-            var fonts = ['regular', 'italic', 'bold', 'bold_italic'];
-            _.forEach(fonts, function (font) {
-                var url = Fonts.getUrl('font_' + font);
-                if (!urlMap[url]) {
-                    urlMap[url] = [];
-                }
-                urlMap[url].push('OSFont-' + font + '.ttf');
-            });
+            // Use custom built-in fonts only
+            var urlMap = {
+                "static/fonts/arvo_regular.ttf": ['Arvo-Regular.ttf'],
+                "static/fonts/ptsans_regular.ttf": ['PTSans-Regular.ttf'],
+                "static/fonts/ptsans_bold.ttf": ['PTSans-Bold.ttf'],
+                "static/fonts/ptsans_italic.ttf": ['PTSans-Italic.ttf'],
+                "static/fonts/ptsans_bolditalic.ttf": ['PTSans-BoldItalic.ttf']
+            };
             return urlMap;
         };
 

@@ -18,10 +18,16 @@ importScripts('/static/js/workers/pdf-worker-libs.js');
 // suffix after "OSFont-" has to be the same as the config value.
 pdfMake.fonts = {
     PdfFont: {
-        normal: 'OSFont-regular.ttf',
-        bold: 'OSFont-bold.ttf',
-        italics: 'OSFont-italic.ttf',
-        bolditalics: 'OSFont-bold_italic.ttf'
+        normal: 'PTSans-Regular.ttf',
+        bold: 'PTSans-Bold.ttf',
+        italics: 'PTSans-Italic.ttf',
+        bolditalics: 'PTSans-BoldItalic.ttf'
+    },
+    Arvo: {
+        normal: 'Arvo-Regular.ttf',
+        bold: 'Arvo-Regular.ttf',
+        italics: 'Arvo-Regular.ttf',
+        bolditalics: 'Arvo-Regular.ttf'
     }
 };
 
