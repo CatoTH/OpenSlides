@@ -5,10 +5,10 @@
     <h1 translate>List of speakers</h1>
     <h2>
       {{ item.getListOfSpeakersTitle() }}
-      <span ng-if="(item.speakers | filter: {begin_time: null}).length > 0">
+      <!--<span ng-if="(item.speakers | filter: {begin_time: null}).length > 0">
         &ndash; {{ (item.speakers | filter: {begin_time: null}).length }} <translate>speakers</translate>
       </span>
-      <span ng-if="item.speaker_list_closed" class="slimlabel label label-danger" translate>Closed</span>
+      <span ng-if="item.speaker_list_closed" class="slimlabel label label-danger" translate>Closed</span>-->
     </h2>
   </div>
 
@@ -27,10 +27,10 @@
         <i class="fa fa-star" ng-if="speaker.marked" title="{{ 'Marked' | translate }}"></i>
 
     <!-- Next speakers -->
-    <ol class="nextSpeakers">
+    <ul class="nextSpeakers">
       <li ng-repeat="speaker in item.speakers | filter: {begin_time: null} | orderBy:'weight'">
         {{ speaker.user.get_full_name() }}
         <i class="fa fa-star" ng-if="speaker.marked" title="{{ 'Marked' | translate }}"></i>
-    </ol>
+    </ul>
   </div>
 </div>
