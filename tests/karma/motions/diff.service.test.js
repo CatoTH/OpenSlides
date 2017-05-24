@@ -138,7 +138,7 @@ describe('linenumbering', function () {
       expect(diff.ancestor.nodeName).toBe('UL');
       expect(diff.outerContextStart).toBe('<UL class="ul-class">');
       expect(diff.outerContextEnd).toBe('</UL>');
-      expect(diff.innerContextStart).toBe('<LI class="li-class">');
+      expect(diff.innerContextStart).toBe('<LI class="li-class os-split-li">');
       expect(diff.innerContextEnd).toBe('</UL></LI>');
       expect(diff.previousHtmlEndSnippet).toBe('</LI></UL>');
       expect(diff.followingHtmlStartSnippet).toBe('<UL class="ul-class"><LI class="li-class"><UL>');
@@ -202,6 +202,23 @@ describe('linenumbering', function () {
         var inHtml = '<h2>' + noMarkup(1) + 'Looks like a &lt;p&gt; tag &lt;/p&gt;</h2><p>' + noMarkup(2) + 'Another line</p>';
         var diff = diffService.extractRangeByLineNumbers(inHtml, 1, 2);
         expect(diff.html).toBe('<H2>Looks like a &lt;p&gt; tag &lt;/p&gt;</H2>');
+    });
+
+    it('marks split list items', function () {
+        var html = '<ol><li>' + noMarkup(1) + 'Line 1' + brMarkup(2) + 'Line 2' + brMarkup(3) + 'Line 3</li></ol>'
+        var diff = diffService.extractRangeByLineNumbers(html, 2, 3);
+        expect(diff.outerContextStart.toLowerCase()).toBe('<ol start="1"><li class="os-split-li">');
+
+        diff = diffService.extractRangeByLineNumbers(html, 3, null);
+        expect(diff.innerContextStart.toLowerCase()).toBe('<ol start="1"><li class="os-split-li">');
+    });
+
+    it('does not mark the second list item as being split', function () {
+        var html = '<ol><li>' + noMarkup(1) + 'Line 1</li><li>' + noMarkup(2) + 'Line 2' + brMarkup(3) + 'Line 3</li></ol>'
+        var diff = diffService.extractRangeByLineNumbers(html, 2, 3);
+        expect(diff.outerContextStart.toLowerCase()).toBe('<ol start="2">');
+        expect(diff.innerContextStart.toLowerCase()).toBe('');
+        expect(diff.html.toLowerCase()).toBe('<li>line 2');
     });
   });
 
