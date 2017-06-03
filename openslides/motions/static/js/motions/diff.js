@@ -384,9 +384,14 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             toChildTraceAbs.shift();
             var followingHtml = this._serializePartialDomFromChild(fragment, toChildTraceAbs, false);
 
-            var currNode = fromLineNode;
+            var currNode = fromLineNode,
+                isSplit = false;
             while (currNode.parentNode) {
-                if (currNode.parentNode.nodeName === 'LI' && !this._isFirstNonemptyChild(currNode.parentNode, currNode)) {
+                if (!this._isFirstNonemptyChild(currNode.parentNode, currNode)) {
+                    isSplit = true;
+                }
+                if (currNode.parentNode.nodeName === 'LI' && isSplit) {
+                    console.log("Add to: ", currNode.parentNode);
                     this.addCSSClass(currNode.parentNode, 'os-split-li');
                 }
                 if (currNode.nodeName !== 'OS-LINEBREAK') {
@@ -401,16 +406,20 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
 
             var found = false;
+            isSplit = false;
             for (var i = 0; i < fromChildTraceRel.length && !found; i++) {
                 if (fromChildTraceRel[i].nodeName === 'OS-LINEBREAK') {
                     found = true;
                 } else {
+                    if (!this._isFirstNonemptyChild(fromChildTraceRel[i], fromChildTraceRel[i + 1])) {
+                        isSplit = true;
+                    }
                     if (fromChildTraceRel[i].nodeName === 'OL') {
                         fakeOl = fromChildTraceRel[i].cloneNode(false);
                         fakeOl.setAttribute('start', this._isWithinNthLIOfOL(fromChildTraceRel[i], fromLineNode));
                         innerContextStart += this._serializeTag(fakeOl);
                     } else if (fromChildTraceRel[i].nodeName === 'LI') {
-                        if (i < (fromChildTraceRel.length - 1) && !this._isFirstNonemptyChild(fromChildTraceRel[i], fromChildTraceRel[i + 1])) {
+                        if (i < (fromChildTraceRel.length - 1) && isSplit) {
                             this.addCSSClass(fromChildTraceRel[i], 'os-split-li');
                         }
                         innerContextStart += this._serializeTag(fromChildTraceRel[i]);
@@ -468,6 +477,8 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 'followingHtml': followingHtml,
                 'followingHtmlStartSnippet': followingHtmlStartSnippet
             };
+
+            console.log(ret);
 
             diffCache.put(cacheKey, ret);
             return ret;
@@ -1052,13 +1063,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 diffWithoutLines = diff;
             diffWithoutLines = diffWithoutLines.replace(/<span class="os\-line\-number[^>]*>&nbsp;<\/span>/gi, '');
             diffWithoutLines = diffWithoutLines.replace(/ class="delete"/gi, '');
-            console.log(diffWithoutLines, origBeginning);
             if (diffWithoutLines.toLowerCase().indexOf(origBeginning.toLowerCase()) === 0) {
                 // Add "merge-before"-css-class if the first line begins in the middle of a paragraph. Used for PDF.
                 diff = this.addCSSClassToFirstTag(diff, "merge-before");
             }
-
-            console.log(arguments, diff);
 
             return diff;
         };

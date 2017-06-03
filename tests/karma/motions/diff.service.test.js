@@ -144,6 +144,37 @@ describe('linenumbering', function () {
       expect(diff.followingHtmlStartSnippet).toBe('<UL class="ul-class"><LI class="li-class"><UL>');
     });
 
+    it('extracts lines from double-nested UL/LI-structures (1)', function () {
+      var html = '<p>' + noMarkup(1) + 'Line 1</p>' +
+              '<ul><li><p>' + noMarkup(2) + 'Line 2' + brMarkup(3) + 'Line 3' + brMarkup(4) + '</p></li></ul>';
+      var diff = diffService.extractRangeByLineNumbers(html, 3, 4);
+      expect(diff.html).toBe('Line 3');
+      expect(diff.ancestor.nodeName).toBe('P');
+      expect(diff.outerContextStart).toBe('<UL><LI class="os-split-li"><P>');
+      expect(diff.outerContextEnd).toBe('</P></LI></UL>');
+      expect(diff.innerContextStart).toBe('');
+      expect(diff.innerContextEnd).toBe('');
+      expect(diff.previousHtmlEndSnippet).toBe('</P></LI></UL>');
+      expect(diff.followingHtmlStartSnippet).toBe('<UL><LI class="os-split-li"><P>');
+    });
+
+    it('extracts lines from double-nested UL/LI-structures (2)', function () {
+      var html = '<p>' + noMarkup(1) + 'Line 1</p>' +
+              '<ul><li><p>' + noMarkup(2) + 'Line 2' + brMarkup(3) + 'Line 3' + brMarkup(4) + '</p></li></ul>';
+      var diff = diffService.extractRangeByLineNumbers(html, 2, 3);
+      expect(diff.html).toBe('<UL><LI><P>Line 2');
+      expect(diff.outerContextStart).toBe('');
+      expect(diff.outerContextEnd).toBe('');
+      expect(diff.innerContextStart).toBe('');
+      expect(diff.innerContextEnd).toBe('</P></LI></UL>');
+      expect(diff.previousHtmlEndSnippet).toBe('');
+
+      // @TODO in followingHtmlStartSnippet, os-split-li is not set yet in this case.
+      // This is not entirely correct, but as this field is never actually used, it's not bothering (yet)
+      // This comment remains to document a potential pitfall in the future
+      // expect(diff.followingHtmlStartSnippet).toBe('<UL><LI class="os-split-li"><P>');
+    });
+
     it('extracts a single line right before a UL/LI', function () {
       // Test case for https://github.com/OpenSlides/OpenSlides/issues/3226
       var html = "<p>A line</p><p>Another line</p>\n<ul>\t<li>A list item</li>\t<li>Yet another item</li></ul>";
@@ -184,7 +215,7 @@ describe('linenumbering', function () {
 
       expect(diff.html).toBe('<LI>Line 3.3</LI></OL></LI><LI> Line 4</LI></OL>');
       expect(diff.ancestor.nodeName).toBe('#document-fragment');
-      expect(diff.innerContextStart).toBe('<OL start="3"><LI><OL start="3">');
+      expect(diff.innerContextStart).toBe('<OL start="3"><LI class="os-split-li"><OL start="3">');
       expect(diff.innerContextEnd).toBe('');
       expect(diff.previousHtmlEndSnippet).toBe('</OL></LI></OL>');
     });
