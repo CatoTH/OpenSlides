@@ -1039,11 +1039,16 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
 
             var origBeginning = data.outerContextStart + data.innerContextStart,
-                diffWithoutLines = diff.replace(/<span class="os\-line\-number[^>]*>&nbsp;<\/span>/gi, '');
+                diffWithoutLines = diff;
+            diffWithoutLines = diffWithoutLines.replace(/<span class="os\-line\-number[^>]*>&nbsp;<\/span>/gi, '');
+            diffWithoutLines = diffWithoutLines.replace(/ class="delete"/gi, '');
+            console.log(diffWithoutLines, origBeginning);
             if (diffWithoutLines.toLowerCase().indexOf(origBeginning.toLowerCase()) === 0) {
                 // Add "merge-before"-css-class if the first line begins in the middle of a paragraph. Used for PDF.
                 diff = this.addCSSClassToFirstTag(diff, "merge-before");
             }
+
+            console.log(arguments, diff);
 
             return diff;
         };
