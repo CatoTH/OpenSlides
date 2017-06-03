@@ -222,6 +222,22 @@ describe('linenumbering', function () {
     });
   });
 
+  describe('diff formatting', function () {
+    it('adds the merge-before-class for the pdf in a regular case', function () {
+        var inHtml = '<p><span><span>' + noMarkup(1) + 'Es war einmal eine alte Geis, ' + brMarkup(2) + 'die hatte sieben junge Geislein, ' + brMarkup(3) + 'und hatte sie lieb, wie eine Mutter ihre Kinder lieb hat.</span></span></p>',
+            diffHtml = '<p><span><span>die hatte sieben junge Geislein, </span></span></p>';
+        var diff = diffService.getAndFormatDiff(inHtml, diffHtml, 80, 2, 3, 0);
+        expect(diff).toBe('<p class="merge-before">' + noMarkup(2) + '<span><span>die hatte sieben junge Geislein, </span></span></p>');
+    });
+
+    it('adds the merge-before-class for the pdf in a deleted line', function () {
+        var inHtml = '<p><span><span>' + noMarkup(1) + 'Es war einmal eine alte Geis, ' + brMarkup(2) + 'die hatte sieben junge Geislein, ' + brMarkup(3) + 'und hatte sie lieb, wie eine Mutter ihre Kinder lieb hat.</span></span></p>',
+            diffHtml = '';
+        var diff = diffService.getAndFormatDiff(inHtml, diffHtml, 80, 2, 3, 0);
+        expect(diff).toBe('<p class="delete merge-before"><span class="os-line-number line-number-2" data-line-number="2" contenteditable="false">&nbsp;</span><span><span>die hatte sieben junge Geislein, </span></span></p>');
+    });
+  });
+
   describe('merging two sections', function () {
       it('merges OLs recursively, ignoring whitespaces between OL and LI', function () {
           var node1 = document.createElement('DIV');

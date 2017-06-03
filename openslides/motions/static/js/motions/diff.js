@@ -339,7 +339,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
          * - followingHtmlStartSnippet: A HTML snippet that opens all HTML tags necessary to render "followingHtml"
          *
          */
-        this.extractRangeByLineNumbers = function(htmlIn, fromLine, toLine, debug) {
+        this.extractRangeByLineNumbers = function(htmlIn, fromLine, toLine) {
             if (typeof(htmlIn) !== 'string') {
                 throw 'Invalid call - extractRangeByLineNumbers expects a string as first argument';
             }
@@ -474,7 +474,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         };
 
         /*
-         * This is a workardoun to prevent the last word of the inserted text from accidently being merged with the
+         * This is a workardound to prevent the last word of the inserted text from accidently being merged with the
          * first word of the following line.
          *
          * This happens as trailing spaces in the change recommendation's text are frequently stripped,
@@ -1028,6 +1028,39 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                     return match.substring(0, match.length - 1) + " class=\"" + className + "\">";
                 }
             });
+        };
+
+        this.getAndFormatDiff = function (motionHtml, newHtml, lineLength, line_from, line_to, highlightLine) {
+            var html = lineNumberingService.insertLineNumbers(motionHtml, lineLength),
+                data = this.extractRangeByLineNumbers(html, line_from, line_to),
+                oldText = data.outerContextStart + data.innerContextStart +
+                    data.html + data.innerContextEnd + data.outerContextEnd;
+
+            oldText = lineNumberingService.insertLineNumbers(oldText, lineLength, null, null, line_from);
+            var diff = this.diff(oldText, newHtml);
+
+            // If an insertion makes the line longer than the line length limit, we need two line breaking runs:
+            // - First, for the official line numbers, ignoring insertions (that's been done some lines before)
+            // - Second, another one to prevent the displayed including insertions to exceed the page width
+            diff = lineNumberingService.insertLineBreaksWithoutNumbers(diff, lineLength, true);
+
+            if (highlightLine > 0) {
+                diff = lineNumberingService.highlightLine(diff, highlightLine);
+            }
+
+            var origBeginning = data.outerContextStart + data.innerContextStart,
+                diffWithoutLines = diff;
+            diffWithoutLines = diffWithoutLines.replace(/<span class="os\-line\-number[^>]*>&nbsp;<\/span>/gi, '');
+            diffWithoutLines = diffWithoutLines.replace(/ class="delete"/gi, '');
+            console.log(diffWithoutLines, origBeginning);
+            if (diffWithoutLines.toLowerCase().indexOf(origBeginning.toLowerCase()) === 0) {
+                // Add "merge-before"-css-class if the first line begins in the middle of a paragraph. Used for PDF.
+                diff = this.addCSSClassToFirstTag(diff, "merge-before");
+            }
+
+            console.log(arguments, diff);
+
+            return diff;
         };
 
         /**
