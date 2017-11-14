@@ -1,9 +1,5 @@
 <div ng-controller="SlideMotionCtrl" class="content">
   <div id="sidebox" ng-if="!config('motions_disable_sidebox_on_projector')">
-    <!-- State -->
-    <h3 translate>State</h3>
-    {{ motion.getStateName() }}
-
     <!-- Recommendation -->
     <div ng-if="motion.getRecommendationName() != '' && !config('motions_disable_recommendation_on_projector')">
       <h3>{{ config('motions_recommendations_by') }}</h3>
