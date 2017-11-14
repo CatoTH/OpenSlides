@@ -84,7 +84,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='agenda_couple_countdown_and_speakers',
-        default_value=False,
+        default_value=True,
         input_type='boolean',
         label='Couple countdown with the list of speakers',
         help_text='[Begin speech] starts the countdown, [End speech] stops the countdown.',

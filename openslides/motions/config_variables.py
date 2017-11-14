@@ -57,7 +57,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_default_line_numbering',
-        default_value='none',
+        default_value='outside',
         input_type='choice',
         label='Default line numbering',
         choices=(
@@ -81,7 +81,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_disable_reason_on_projector',
-        default_value=False,
+        default_value=True,
         input_type='boolean',
         label='Hide reason on projector',
         weight=325,
@@ -126,7 +126,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_recommendations_by',
-        default_value='',
+        default_value='Empfehlung der Antragskommission',
         label='Name of recommender',
         help_text='Will be displayed as label before selected recommendation. Use an empty value to disable the recommendation system.',
         weight=332,
@@ -135,7 +135,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_recommendation_text_mode',
-        default_value='original',
+        default_value='diff',
         input_type='choice',
         label='Default text version for change recommendations',
         choices=(
@@ -150,7 +150,7 @@ def get_config_variables():
     # Amendments
     yield ConfigVariable(
         name='motions_amendments_enabled',
-        default_value=False,
+        default_value=True,
         input_type='boolean',
         label='Activate amendments',
         weight=335,
@@ -159,7 +159,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_amendments_prefix',
-        default_value='-',
+        default_value='-Ä',
         label='Prefix for the identifier for amendments',
         weight=340,
         group='Motions',

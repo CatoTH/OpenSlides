@@ -152,3 +152,8 @@ CHANNEL_LAYERS = {
 
 # Enable updating the last_login field for users on every login.
 ENABLE_LAST_LOGIN_FIELD = False
+
+# Customization of OpenSlides apps
+MOTION_IDENTIFIER_MIN_DIGITS = 2
+MOTION_IDENTIFIER_WITHOUT_BLANKS = True
+MOTIONS_ALLOW_AMENDMENTS_OF_AMENDMENTS = True
