@@ -18,95 +18,96 @@ def create_builtin_workflows(sender, **kwargs):
         # If there is at least one workflow, then do nothing.
         return
 
-    workflow_1 = Workflow.objects.create(name='Simple Workflow')
-    state_1_1 = State.objects.create(name=ugettext_noop('submitted'),
+    workflow_1 = Workflow.objects.create(name='Grüne')
+    state_1_1 = State.objects.create(name=ugettext_noop('eingereicht'),
                                      workflow=workflow_1,
-                                     allow_create_poll=True,
+                                     required_permission_to_see='motions.can_manage',
+                                     allow_support=False,
+                                     dont_set_identifier=True,
+                                     allow_submitter_edit=False)
+    state_1_2 = State.objects.create(name=ugettext_noop('veröffentlicht'),
+                                     workflow=workflow_1,
+                                     action_word='veröffentlicht',
                                      allow_support=True,
-                                     allow_submitter_edit=True)
-    state_1_2 = State.objects.create(name=ugettext_noop('accepted'),
+                                     dont_set_identifier=True,
+                                     allow_submitter_edit=False)
+    state_1_3 = State.objects.create(name=ugettext_noop('zugelassen'),
                                      workflow=workflow_1,
-                                     action_word='Accept',
-                                     recommendation_label='Acceptance',
-                                     css_class='success')
-    state_1_3 = State.objects.create(name=ugettext_noop('rejected'),
+                                     action_word='zugelassen',
+                                     allow_support=True,
+                                     dont_set_identifier=False,
+                                     allow_create_poll=True,
+                                     allow_submitter_edit=False)
+
+    # Empfehlungen der Antragskommission, inkl. passenden Status
+    state_1_10 = State.objects.create(name=ugettext_noop('accepted'),
+                                      workflow=workflow_1,
+                                      action_word='angenommen',
+                                      recommendation_label='Übernahme',
+                                      css_class='success')
+    state_1_11 = State.objects.create(name='angenommen nach Modifizierung',
+                                      workflow=workflow_1,
+                                      action_word='modifizierte Übernahme',
+                                      recommendation_label='modifizierte Übernahme',
+                                      show_recommendation_extension_field=True,
+                                      show_state_extension_field=True,
+                                      css_class='success')
+    state_1_12 = State.objects.create(name='zurückgezogen wegen modifizierte Übernahme',
+                                      workflow=workflow_1,
+                                      action_word='zurückgezogen wegen modifizierte Übernahme',
+                                      recommendation_label='zurückgezogen wegen modifizierte Übernahme',
+                                      show_recommendation_extension_field=True,
+                                      show_state_extension_field=True,
+                                      css_class='default')
+
+    # Empfehlungen ohne passenden Status
+    state_1_a = State.objects.create(name='strittig',
                                      workflow=workflow_1,
-                                     action_word='Reject',
-                                     recommendation_label='Rejection',
-                                     css_class='danger')
-    state_1_4 = State.objects.create(name=ugettext_noop('not decided'),
+                                     recommendation_label='strittig',
+                                     css_class='warning')
+    state_1_b = State.objects.create(name='Abstimmung',
                                      workflow=workflow_1,
-                                     action_word='Do not decide',
-                                     recommendation_label='No decision',
-                                     css_class='default')
-    state_1_1.next_states.add(state_1_2, state_1_3, state_1_4)
+                                     recommendation_label='Abstimmung',
+                                     css_class='warning')
+
+    # Beschlüsse
+    state_1_13 = State.objects.create(name='erledigt',
+                                      workflow=workflow_1,
+                                      action_word='erledigt',
+                                      recommendation_label='erledigt',
+                                      show_recommendation_extension_field=True,
+                                      show_state_extension_field=True,
+                                      css_class='default')
+    state_1_14 = State.objects.create(name='zurückgezogen',
+                                      workflow=workflow_1,
+                                      action_word='zurückgezogen',
+                                      recommendation_label='zurückgezogen',
+                                      css_class='default')
+    state_1_15 = State.objects.create(name='Überweisung in Ausschuss',
+                                      workflow=workflow_1,
+                                      action_word='Überweisung in Ausschuss',
+                                      css_class='default')
+    state_1_16 = State.objects.create(name='nicht befasst',
+                                      workflow=workflow_1,
+                                      action_word='nicht befasst',
+                                      css_class='default')
+    state_1_17 = State.objects.create(name=ugettext_noop('rejected'),
+                                      workflow=workflow_1,
+                                      action_word='abgelehnt',
+                                      recommendation_label='Ablehnung nach Abstimmung der Versammlung',
+                                      css_class='danger')
+    state_1_18 = State.objects.create(name='Sonstiges',
+                                      workflow=workflow_1,
+                                      action_word='Sonstiges',
+                                      recommendation_label='Sonstiges',
+                                      show_recommendation_extension_field=True,
+                                      show_state_extension_field=True,
+                                      css_class='default')
+    state_1_1.next_states.add(state_1_2)
+    state_1_2.next_states.add(state_1_3)
+    state_1_3.next_states.add(state_1_10, state_1_11, state_1_12, state_1_13, state_1_14, state_1_15, state_1_16, state_1_17, state_1_18)
     workflow_1.first_state = state_1_1
     workflow_1.save()
-
-    workflow_2 = Workflow.objects.create(name='Complex Workflow')
-    state_2_1 = State.objects.create(name=ugettext_noop('published'),
-                                     workflow=workflow_2,
-                                     allow_support=True,
-                                     allow_submitter_edit=True,
-                                     dont_set_identifier=True)
-    state_2_2 = State.objects.create(name=ugettext_noop('permitted'),
-                                     workflow=workflow_2,
-                                     action_word='Permit',
-                                     recommendation_label='Permission',
-                                     allow_create_poll=True,
-                                     allow_submitter_edit=True,
-                                     versioning=True,
-                                     leave_old_version_active=True)
-    state_2_3 = State.objects.create(name=ugettext_noop('accepted'),
-                                     workflow=workflow_2,
-                                     action_word='Accept',
-                                     recommendation_label='Acceptance',
-                                     versioning=True,
-                                     css_class='success')
-    state_2_4 = State.objects.create(name=ugettext_noop('rejected'),
-                                     workflow=workflow_2,
-                                     action_word='Reject',
-                                     recommendation_label='Rejection',
-                                     versioning=True,
-                                     css_class='danger')
-    state_2_5 = State.objects.create(name=ugettext_noop('withdrawed'),
-                                     workflow=workflow_2,
-                                     action_word='Withdraw',
-                                     versioning=True,
-                                     css_class='default')
-    state_2_6 = State.objects.create(name=ugettext_noop('adjourned'),
-                                     workflow=workflow_2,
-                                     action_word='Adjourn',
-                                     recommendation_label='Adjournment',
-                                     versioning=True,
-                                     css_class='default')
-    state_2_7 = State.objects.create(name=ugettext_noop('not concerned'),
-                                     workflow=workflow_2,
-                                     action_word='Do not concern',
-                                     recommendation_label='No concernment',
-                                     versioning=True,
-                                     css_class='default')
-    state_2_8 = State.objects.create(name=ugettext_noop('refered to committee'),
-                                     workflow=workflow_2,
-                                     action_word='Refer to committee',
-                                     recommendation_label='Referral to committee',
-                                     versioning=True,
-                                     css_class='default')
-    state_2_9 = State.objects.create(name=ugettext_noop('needs review'),
-                                     workflow=workflow_2,
-                                     action_word='Needs review',
-                                     versioning=True,
-                                     css_class='default')
-    state_2_10 = State.objects.create(name=ugettext_noop('rejected (not authorized)'),
-                                      workflow=workflow_2,
-                                      action_word='Reject (not authorized)',
-                                      recommendation_label='Rejection (not authorized)',
-                                      versioning=True,
-                                      css_class='default')
-    state_2_1.next_states.add(state_2_2, state_2_5, state_2_10)
-    state_2_2.next_states.add(state_2_3, state_2_4, state_2_5, state_2_6, state_2_7, state_2_8, state_2_9)
-    workflow_2.first_state = state_2_1
-    workflow_2.save()
 
 
 def get_permission_change_data(sender, permissions, **kwargs):

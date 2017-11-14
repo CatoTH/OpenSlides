@@ -33,7 +33,10 @@ angular.module('OpenSlidesApp.motions', [
                             'recommendation_label': {
                                 '!=': null
                             }
-                        }
+                        },
+                        orderBy: [
+                            ['id']
+                        ]
                     };
                     return DS.filter('motions/workflowstate', params);
                 }
@@ -468,7 +471,11 @@ angular.module('OpenSlidesApp.motions', [
                             // check motion comment fields for flag 'forState'
                             var commentFieldForStateId = MotionComment.getFieldIdForFlag('forState');
                             if (commentFieldForStateId > -1) {
-                                name += ' ' + this.comments[commentFieldForStateId];
+                                if (name == 'Sonstiges') {
+                                    name =  this.comments[commentFieldForStateId];
+                                } else {
+                                    name += ' ' + this.comments[commentFieldForStateId];
+                                }
                             }
                         }
                     }
@@ -484,7 +491,11 @@ angular.module('OpenSlidesApp.motions', [
                             // check motion comment fields for flag 'forRecommendation'
                             var commentFieldForRecommendationId = MotionComment.getFieldIdForFlag('forRecommendation');
                             if (commentFieldForRecommendationId > -1) {
-                                recommendation += ' ' + this.comments[commentFieldForRecommendationId];
+                                if (recommendation == 'Sonstiges') {
+                                    recommendation =  this.comments[commentFieldForRecommendationId];
+                                } else {
+                                    recommendation += ' ' + this.comments[commentFieldForRecommendationId];
+                                }
                             }
                         }
                     }

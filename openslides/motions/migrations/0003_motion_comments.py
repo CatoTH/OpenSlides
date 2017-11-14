@@ -18,7 +18,10 @@ def change_motions_comments(apps, schema_editor):
     try:
         config_comments_fields = ConfigStore.objects.get(key='motions_comments').value
     except ConfigStore.DoesNotExist:
-        config_comments_fields = []  # The old default: An empty list.
+        config_comments_fields = [
+            {"name": "Ergänzung zum Status", "public": True, "forState": True},
+            {"name": "Ergänzung zur Empfehlung", "public": True, "forRecommendation": True}
+        ]
 
     comments_fields = {}
     for index, field in enumerate(config_comments_fields):
