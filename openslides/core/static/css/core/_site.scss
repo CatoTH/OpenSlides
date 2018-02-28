@@ -47,14 +47,19 @@ blockquote {
     font-size: inherit;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1 {
     line-height: 1.1;
     font-family: $font-condensed, sans-serif;
     font-weight: 400;
 }
+h2, h3, h4, h5, h6 {
+    line-height: 1.1;
+    font-family: $font, sans-serif;
+    font-weight: 400;
+}
 
 h1 {
-    font-size: 36px;
+    font-size: 32px;
     color: #317796;
     padding-bottom: 8px;
 }
@@ -275,7 +280,7 @@ strong, b, th {
 
     .meta {
         h3 {
-            font-family: $font-condensed-light;
+            font-family: $font;
         }
 
         .heading, h3 {
@@ -319,7 +324,7 @@ strong, b, th {
         }
 
         .heading .drop-down-name {
-            font-family: $font-condensed-light;
+            font-family: $font;
         }
     }
 
@@ -369,7 +374,7 @@ strong, b, th {
         font-size: 20px;
         line-height: 24px;
         color: #444;
-        font-family: $font-condensed-light;
+        font-family: $font;
         font-weight: 300;
     }
 
