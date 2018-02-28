@@ -19,9 +19,16 @@
     padding-right: 4px !important;
 }
 
-.btn-primary {
-    background-color: #317796;
+.btn-primary, .btn-primary:focus {
+    background-color: $magenta;
+    border-color: $magenta;
 }
+.btn-primary:hover {
+    background-color: $magenta;
+    border-color: $magenta;
+    opacity: 0.7;
+}
+
 
 .btn-slim {
     padding-left: 6px;
@@ -196,11 +203,11 @@ tr.hiddenrow td {
 }
 
 tr.activeline td, li.activeline, .projected {
-    background-color: #bed4de !important;
+    background-color: $blue !important;
 }
 
 .related-projected {
-    background-color: #e1ecfe !important;
+    background-color: $blue_light !important;
 }
 
 tr.selected td {

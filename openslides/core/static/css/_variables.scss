@@ -8,3 +8,29 @@ $font-condensed: 'Arvo Regular';
 $font-condensed-src: url('../fonts/arvo_regular.woff') format('woff');
 $font-condensed-light: 'Arvo Regular Light';
 $font-condensed-light-src: url('../fonts/arvo_regular.woff') format('woff');
+
+
+/** Colors **/
+$textcolor: #333333;
+$white: #ffffff;
+$green: #46962b;
+$darkgreen: #0a321e;
+$magenta: #e6007e;
+$yellow: #ffee00;
+$darkyellow: #ffd500;
+$blue: #d4edfc;
+$blue_light: rgba(212, 237, 252, 0.5);
+$darkblue: #4cb4e7;
+
+
+.label-success {
+    background-color: $green;
+}
+.label-primary {
+    background-color: $darkblue;
+}
+.label-danger {
+    background-color: $magenta;
+}
+
+

@@ -20,7 +20,7 @@
 body {
     font-size: 14px;
     line-height: 1.5;
-    color: #222;
+    color: $textcolor;
     text-align: center;
     background: #e8eaed;
     font-family: $font, sans-serif !important;
@@ -36,10 +36,11 @@ img {
 
 a {
     text-decoration: none;
-    color: #2b6883;
+    color: $green;
     
     &:hover {
         text-decoration: underline;
+        color: $darkgreen;
     }
 }
 
@@ -60,25 +61,25 @@ h2, h3, h4, h5, h6 {
 
 h1 {
     font-size: 32px;
-    color: #317796;
+    color: $darkgreen;
     padding-bottom: 8px;
 }
 
 h2 {
     font-size: 22px;
-    color: #9a9898;
+    color: $green;
     padding-bottom: 14px;
 }
 
 h3 {
     font-size: 22px;
-    color: #222;
+    color: $textcolor;
     padding-bottom: 14px;
 }
 
 h4 {
     font-size: 18px;
-    color: #222;
+    color: $textcolor;
 }
 
 strong, b, th {
@@ -104,22 +105,22 @@ strong, b, th {
     float: left;
     width: 100%;
     height: 40px;
-    background: #002c42;
-    color: #999;
+    background: $darkgreen;
+    color: $white;
 
     a.headerlink {
         text-decoration: none;
-        color: #999;
+        color: $white;
     }
 
     a.headerlink:hover, a.headerlink:active, a.headerlink.active {
-        color: #e8eaed;
+        color: $darkyellow;
     }
 
     .title {
         float: left;
         margin: 2px 0 0 -5px;
-        color: #fff;
+        color: $white;
         font-family: $font-condensed, sans-serif;
         font-weight: 400;
     }
@@ -133,13 +134,20 @@ strong, b, th {
            display: inline;
         }
     }
+    .logoaddon {
+        color: $darkyellow;
+        font-family: $font-medium;
+        vertical-align: bottom;
+        font-size: 23px;
+        margin-left: -8px;
+    }
 }
 
 #nav {
     float: left;
     width: 100%;
     height: auto;
-    background: #317796;
+    background: $green;
     color: #fff;
     overflow-y: hidden;
 
@@ -156,7 +164,7 @@ strong, b, th {
         i {
             font-size: 28px;
             color: #fff;
-            opacity: 0.5;
+            opacity: 0.75;
         }
 
         &:hover i {
@@ -179,6 +187,7 @@ strong, b, th {
             a {
                 display: block;
                 color: #fff;
+                font-weight: bold;
                 padding: 22px 15px;
                 text-decoration: none;
 
@@ -298,7 +307,7 @@ strong, b, th {
             cursor: pointer;
             height: 30px;
             color: #fff;
-            background: #317796;
+            background: $green;
             padding: 5px 20px 0 20px;
 
             &:hover {
@@ -396,14 +405,14 @@ strong, b, th {
             width: 50px;
             text-align: center;
             padding: 7px 0;
-            background: #317796;
+            background: $magenta;
 
             a {
                 color: #fff;
                 display: block;
 
                 i {
-                    opacity: 0.5;
+                    opacity: 0.75;
                 }
 
                 &:hover i {
@@ -421,7 +430,7 @@ strong, b, th {
             width: 100%;
             color: #fff;
             height: 50px;
-            background: #317796;
+            background: $magenta;
             cursor: pointer;
 
             &:hover {
