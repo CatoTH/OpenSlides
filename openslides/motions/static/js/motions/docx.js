@@ -101,6 +101,14 @@ angular.module('OpenSlidesApp.motions.docx', ['OpenSlidesApp.core.docx'])
                 var reason = params.include.reason ? motion.getReason() : '';
                 var comments = getMotionComments(motion, params.includeComments);
 
+                var title;
+                var titleChange = motion.getTitleChangeRecommendation();
+                if (titleChange && (params.changeRecommendationMode === "changed" || params.changeRecommendationMode === 'agreed' && !titleChange.rejected)) {
+                    title = titleChange.text;
+                } else {
+                    title = motion.getTitle();
+                }
+
                 // Data for one motions. Must include translations, ...
                 var motionData = {
                     // Translations
@@ -114,7 +122,7 @@ angular.module('OpenSlidesApp.motions.docx', ['OpenSlidesApp.core.docx'])
                     // Actual data
                     id: motion.id,
                     identifier: motion.identifier || '',
-                    title: motion.getTitle(),
+                    title: title,
                     submitters: params.include.submitters ?  _.map(motion.submitters, function (submitter) {
                                     return submitter.get_full_name();
                                 }).join(', ') : '',
