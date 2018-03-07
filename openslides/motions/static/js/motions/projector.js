@@ -4,6 +4,7 @@
 
 angular.module('OpenSlidesApp.motions.projector', [
     'OpenSlidesApp.motions',
+    'OpenSlidesApp.motions.motionservices',
     'OpenSlidesApp.motions.motionBlockProjector',
 ])
 
@@ -20,35 +21,28 @@ angular.module('OpenSlidesApp.motions.projector', [
     '$scope',
     'Motion',
     'MotionChangeRecommendation',
+    'ChangeRecommendationView',
     'User',
-    function($scope, Motion, MotionChangeRecommendation, User) {
+    function($scope, Motion, MotionChangeRecommendation, ChangeRecommendationView, User) {
         // Attention! Each object that is used here has to be dealt on server side.
         // Add it to the coresponding get_requirements method of the ProjectorElement
         // class.
-        var id = $scope.element.id;
+        var motionId = $scope.element.id;
         $scope.mode = $scope.element.mode || 'original';
 
-        Motion.bindOne(id, $scope, 'motion');
         User.bindAll({}, $scope, 'users');
 
         $scope.$watch(function () {
-            return MotionChangeRecommendation.lastModified();
+            return Motion.lastModified(motionId);
         }, function () {
-            $scope.change_recommendations = [];
-            $scope.title_change_recommendation = null;
-            if ($scope.motion) {
-                MotionChangeRecommendation.filter({
-                    'where': {'motion_version_id': {'==': $scope.motion.active_version}}
-                }).forEach(function(change) {
-                    if (change.isTextRecommendation()) {
-                        $scope.change_recommendations.push(change);
-                    }
-                    if (change.isTitleRecommendation()) {
-                        $scope.title_change_recommendation = change;
-                    }
-                });
-            }
+            $scope.motion = Motion.get(motionId);
+            $scope.amendment_diff_paragraphs = $scope.motion.getAmendmentParagraphsLinesDiff();
+            $scope.viewChangeRecommendations.setVersion($scope.motion, $scope.motion.active_version);
         });
+
+        // Change recommendation viewing
+        $scope.viewChangeRecommendations = ChangeRecommendationView;
+        $scope.viewChangeRecommendations.initProjector($scope, Motion.get(motionId), $scope.mode);
     }
 ]);
 
