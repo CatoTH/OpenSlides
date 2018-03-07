@@ -324,7 +324,7 @@ angular.module('OpenSlidesApp.motions.pdf', ['OpenSlidesApp.core.pdf'])
 
             // motion title
             var motionTitle = function() {
-                if (params.include.text) {
+                if (params.include.text && !motion.isParagraphBasedAmendment()) {
                     return [{
                         text: titlePlain,
                         style: 'heading3'
@@ -334,30 +334,45 @@ angular.module('OpenSlidesApp.motions.pdf', ['OpenSlidesApp.core.pdf'])
 
             // motion preamble
             var motionPreamble = function () {
-                if (params.include.text) {
-                    return {
-                        text: Config.translate(Config.get('motions_preamble').value),
-                        margin: [0, 10, 0, 0]
-                    };
-                }
+                return {
+                    text: Config.translate(Config.get('motions_preamble').value),
+                    margin: [0, 10, 0, 0]
+                };
             };
 
             var escapeHtml = function(text) {
-                return text.replace(/&/, "&amp;").replace(/</, "&lt;").replace(/>/, "&gt;");
+                return text.replace(/&/, '&amp;').replace(/</, '&lt;').replace(/>/, '&gt;');
             };
 
             // motion text (with line-numbers)
             var motionText = function() {
+                var content = [];
                 if (params.include.text) {
                     var motionTextContent = '';
-                    var titleChange = motion.getTitleChangeRecommendation();
-                    if (params.changeRecommendationMode === 'diff' && titleChange) {
-                        motionTextContent += '<p><strong>' + gettextCatalog.getString('New title') + ':</strong> ' +
-                            escapeHtml(titleChange.text) + '</p>';
+                    if (motion.isParagraphBasedAmendment()) {
+                        // paragraph based amendment
+                        var diffs = motion.getAmendmentParagraphsLinesDiff();
+                        if (diffs.length) {
+                            content.push(motionPreamble());
+                            _.forEach(diffs, function (diff) {
+                                motionTextContent += diff.textPre + diff.text + diff.textPost;
+                            });
+                        } else {
+                            motionTextContent += gettextCatalog.getString('No changes at the text.');
+                        }
+                    } else {
+                        // lead motion or normal amendment
+                        content.push(motionPreamble());
+                        var titleChange = motion.getTitleChangeRecommendation();
+                        if (params.changeRecommendationMode === 'diff' && titleChange) {
+                            motionTextContent += '<p><strong>' + gettextCatalog.getString('New title') + ':</strong> ' +
+                                escapeHtml(titleChange.text) + '</p>';
+                        }
+                        motionTextContent += motion.getTextByMode(params.changeRecommendationMode, motionVersion);
                     }
-                    motionTextContent += motion.getTextByMode(params.changeRecommendationMode, motionVersion);
-                    return converter.convertHTML(motionTextContent, params.lineNumberMode);
+                    content.push(converter.convertHTML(motionTextContent, params.lineNumberMode));
                 }
+                return content;
             };
 
             // motion reason heading
@@ -418,10 +433,10 @@ angular.module('OpenSlidesApp.motions.pdf', ['OpenSlidesApp.core.pdf'])
                     title,
                     subtitle,
                     metaTable(),
-                    motionTitle(),
-                    motionPreamble(),
-                    motionText(),
+                    motionTitle()
                 ];
+                content = content.concat(motionText());
+
                 var reason = motionReason();
                 if (reason) {
                     content.push(reason);

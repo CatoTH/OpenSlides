@@ -715,4 +715,53 @@ describe('linenumbering', function () {
        expect(cleaned).toBe('<UL class="os-split-before os-split-after"><LI class="os-split-before"><UL class="os-split-before os-split-after"><LI class="os-split-before">...here it goes on</LI><LI>This has been added</LI></UL></LI></UL>');
     });
   });
+
+  describe('detecting changed line number range', function () {
+    it('detects changed line numbers in the middle', function () {
+      var before = '<p>' + noMarkup(1) + 'foo &amp; bar' + brMarkup(2) + 'Another line' +
+          brMarkup(3) + 'This will be changed' + brMarkup(4) + 'This, too' + brMarkup(5) + 'End</p>',
+          after = '<p>' + noMarkup(1) + 'foo &amp; bar' + brMarkup(2) + 'Another line' +
+              brMarkup(3) + 'This has been changed' + brMarkup(4) + 'End</p>';
+
+      var diff = diffService.diff(before, after);
+      var affected = diffService.detectAffectedLineRange(diff);
+      expect(affected).toEqual({"from": 3, "to": 5});
+    });
+    it('detects changed line numbers at the beginning', function () {
+        var before = '<p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat</p>',
+          after = '<p>sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat</p>';
+
+      before = lineNumberingService.insertLineNumbers(before, 20);
+        var diff = diffService.diff(before, after);
+
+      var affected = diffService.detectAffectedLineRange(diff);
+      expect(affected).toEqual({"from": 1, "to": 2});
+    });
+  });
+
+  describe('stripping ins/del-styles/tags', function () {
+    it('deletes to be deleted nodes', function () {
+        var inHtml = '<p>Test <span class="delete">Test 2</span> Another test <del>Test 3</del></p><p class="delete">Test 4</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test  Another test </P>');
+    });
+
+    it('produces empty paragraphs, if necessary', function () {
+        var inHtml = '<p class="delete">Test <span class="delete">Test 2</span> Another test <del>Test 3</del></p><p class="delete">Test 4</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('');
+    });
+
+    it('Removes INS-tags', function () {
+        var inHtml = '<p>Test <ins>Test <strong>2</strong></ins> Another test</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test Test <STRONG>2</STRONG> Another test</P>');
+    });
+
+    it('Removes .insert-classes', function () {
+        var inHtml = '<p class="insert">Test <strong>1</strong></p><p class="insert anotherclass">Test <strong>2</strong></p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test <STRONG>1</STRONG></P><P class="anotherclass">Test <STRONG>2</STRONG></P>');
+    });
+  });
 });
