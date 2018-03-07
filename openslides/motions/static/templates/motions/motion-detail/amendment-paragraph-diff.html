@@ -1,0 +1,16 @@
+<div class="motion-toolbar" ng-if="motion.isParagraphBasedAmendment()">
+    <div class="toolbar-left {{ lineNumberMode }}">
+        <ng-include src="'static/templates/motions/motion-detail/toolbar-line-numbering.html'"></ng-include>
+    </div>
+</div>
+
+<div ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}"
+     ng-if="motion.isParagraphBasedAmendment()">
+
+    <section class="motion-text-holder" ng-init="paragraphs = motion.getAmendmentParagraphsByMode('diff')">
+        <div ng-repeat="paragraph in paragraphs" class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}">
+            <h3>From line {{ paragraph.lineFrom }} to {{ paragraph.lineTo }}</h3>
+            <div ng-bind-html="paragraph.text | trusted"></div>
+        </div>
+    </section>
+</div>

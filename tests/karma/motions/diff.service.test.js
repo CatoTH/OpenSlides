@@ -715,4 +715,27 @@ describe('linenumbering', function () {
        expect(cleaned).toBe('<UL class="os-split-before os-split-after"><LI class="os-split-before"><UL class="os-split-before os-split-after"><LI class="os-split-before">...here it goes on</LI><LI>This has been added</LI></UL></LI></UL>');
     });
   });
+
+  describe('detecting changed line number range', function () {
+    it('detects changed line numbers in the middle', function () {
+      var before = '<p>' + noMarkup(1) + 'foo &amp; bar' + brMarkup(2) + 'Another line' +
+          brMarkup(3) + 'This will be changed' + brMarkup(4) + 'This, too' + brMarkup(5) + 'End</p>',
+          after = '<p>' + noMarkup(1) + 'foo &amp; bar' + brMarkup(2) + 'Another line' +
+              brMarkup(3) + 'This has been changed' + brMarkup(4) + 'End</p>';
+
+      var diff = diffService.diff(before, after);
+      var affected = diffService.detectAffectedLineRange(diff);
+      expect(affected).toEqual({"from": 3, "to": 5});
+    });
+    it('detects changed line numbers at the beginning', function () {
+        var before = '<p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat</p>',
+          after = '<p>sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat</p>';
+
+      before = lineNumberingService.insertLineNumbers(before, 20);
+        var diff = diffService.diff(before, after);
+
+      var affected = diffService.detectAffectedLineRange(diff);
+      expect(affected).toEqual({"from": 1, "to": 2});
+    });
+  });
 });

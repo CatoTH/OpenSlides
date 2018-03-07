@@ -352,6 +352,28 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
+// Service for choosing the paragraph of a given motion that is to be amended
+.factory('AmendmentParagraphChooseForm', [
+    function () {
+        return {
+            // ngDialog for motion form
+            getDialog: function (motion, successCb) {
+                return {
+                    template: 'static/templates/motions/amendment-paragraph-choose-form.html',
+                    controller: 'AmendmentParagraphChooseCtrl',
+                    className: 'ngdialog-theme-default wide-form',
+                    closeByEscape: false,
+                    closeByDocument: false,
+                    resolve: {
+                        motion: function () { return motion; },
+                        successCb: function() { return successCb; },
+                    }
+                };
+            }
+        };
+    }
+])
+
 // Service for generic motion form (create and update)
 .factory('MotionForm', [
     'gettextCatalog',
@@ -371,7 +393,7 @@ angular.module('OpenSlidesApp.motions.site', [
         Tag, User, Workflow, Agenda, AgendaTree) {
         return {
             // ngDialog for motion form
-            getDialog: function (motion) {
+            getDialog: function (motion, paragraphNo) {
                 return {
                     template: 'static/templates/motions/motion-form.html',
                     controller: motion ? 'MotionUpdateCtrl' : 'MotionCreateCtrl',
@@ -380,6 +402,7 @@ angular.module('OpenSlidesApp.motions.site', [
                     closeByDocument: false,
                     resolve: {
                         motionId: function () {return motion ? motion.id : void 0;},
+                        paragraphNo: function () {return paragraphNo;},
                     },
                 };
             },
@@ -1251,23 +1274,6 @@ angular.module('OpenSlidesApp.motions.site', [
         // pagination
         $scope.pagination = osTablePagination.createInstance('MotionTablePagination');
 
-        // update state
-        $scope.updateState = function (motion, state_id) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {'state': state_id});
-        };
-        // reset state
-        $scope.resetState = function (motion) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {});
-        };
-        // update recommendation
-        $scope.updateRecommendation = function (motion, recommendation_id) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {'recommendation': recommendation_id});
-        };
-        // reset recommendation
-        $scope.resetRecommendation = function (motion) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {});
-        };
-
         $scope.hasTag = function (motion, tag) {
             return _.indexOf(motion.tags_id, tag.id) > -1;
         };
@@ -1393,6 +1399,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'ngDialog',
     'gettextCatalog',
     'MotionForm',
+    'AmendmentParagraphChooseForm',
     'ChangeRecommendationCreate',
     'ChangeRecommendationView',
     'MotionStateAndRecommendationParser',
@@ -1417,7 +1424,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'WebpageTitle',
     'EditingWarning',
     function($scope, $http, $timeout, $window, $filter, operator, ngDialog, gettextCatalog,
-            MotionForm, ChangeRecommendationCreate, ChangeRecommendationView,
+            MotionForm, AmendmentParagraphChooseForm, ChangeRecommendationCreate, ChangeRecommendationView,
             MotionStateAndRecommendationParser, MotionChangeRecommendation, Motion, MotionComment,
             Category, Mediafile, Tag, User, Workflow, Config, motionId, MotionInlineEditing,
             MotionCommentsInlineEditing, Editor, Projector, ProjectionDefault, MotionBlock,
@@ -1430,29 +1437,8 @@ angular.module('OpenSlidesApp.motions.site', [
         Workflow.bindAll({}, $scope, 'workflows');
         MotionBlock.bindAll({}, $scope, 'motionBlocks');
         Motion.bindAll({}, $scope, 'motions');
-        $scope.$watch(function () {
-            return MotionChangeRecommendation.lastModified();
-        }, function () {
-            $scope.change_recommendations = [];
-            $scope.title_change_recommendation = null;
-            MotionChangeRecommendation.filter({
-                'where': {'motion_version_id': {'==': motion.active_version}}
-            }).forEach(function(change) {
-                if (change.isTextRecommendation()) {
-                    $scope.change_recommendations.push(change);
-                }
-                if (change.isTitleRecommendation()) {
-                    $scope.title_change_recommendation = change;
-                }
-            });
 
-            if ($scope.change_recommendations.length === 0) {
-                $scope.setProjectionMode($scope.projectionModes[0]);
-            }
-            if ($scope.change_recommendations.length > 0) {
-                $scope.disableMotionInlineEditing();
-            }
-        });
+
         $scope.$watch(function () {
             return Projector.lastModified();
         }, function () {
@@ -1482,6 +1468,7 @@ angular.module('OpenSlidesApp.motions.site', [
             WebpageTitle.updateTitle(webpageTitle);
 
             $scope.createChangeRecommendation.setVersion(motion, motion.active_version);
+            $scope.viewChangeRecommendations.setVersion(motion, motion.active_version);
         });
         $scope.projectionModes = [
             {mode: 'original',
@@ -1592,26 +1579,31 @@ angular.module('OpenSlidesApp.motions.site', [
         };
         // open dialog for new amendment
         $scope.newAmendment = function () {
-            var dialog = MotionForm.getDialog();
-            if (typeof dialog.scope === 'undefined') {
-                dialog.scope = {};
+            var openMainDialog = function (paragraphNo) {
+                var dialog = MotionForm.getDialog(null, paragraphNo);
+                if (typeof dialog.scope === 'undefined') {
+                    dialog.scope = {};
+                }
+                dialog.scope = $scope;
+                ngDialog.open(dialog);
+            };
+
+            if (Config.get('motions_amendments_text_mode').value === 'paragraph') {
+                var dialog = AmendmentParagraphChooseForm.getDialog($scope.motion, openMainDialog);
+                if (typeof dialog.scope === 'undefined') {
+                    dialog.scope = {};
+                }
+                dialog.scope = $scope;
+                ngDialog.open(dialog);
+            } else {
+                openMainDialog();
             }
-            dialog.scope = $scope;
-            ngDialog.open(dialog);
         };
         // follow recommendation
         $scope.followRecommendation = function () {
             $http.post('/rest/motions/motion/' + motion.id + '/follow_recommendation/', {
                 'recommendationExtension': $scope.recommendationExtension
             });
-        };
-        // update state
-        $scope.updateState = function (state_id) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {'state': state_id});
-        };
-        // reset state
-        $scope.reset_state = function () {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {});
         };
         // toggle functions for meta information
         $scope.toggleCategory = function (category) {
@@ -1657,14 +1649,6 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.addMotionToRecommendationField = function (motion) {
             $scope.recommendationExtension += MotionStateAndRecommendationParser.formatMotion(motion);
         };
-        // update recommendation
-        $scope.updateRecommendation = function (recommendation_id) {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {'recommendation': recommendation_id});
-        };
-        // reset recommendation
-        $scope.resetRecommendation = function () {
-            $http.put('/rest/motions/motion/' + motion.id + '/set_recommendation/', {});
-        };
         // create poll
         $scope.create_poll = function () {
             $http.post('/rest/motions/motion/' + motion.id + '/create_poll/', {});
@@ -1697,6 +1681,7 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.inlineEditing.setVersion(motion, version.id);
             $scope.reasonInlineEditing.setVersion(motion, version.id);
             $scope.createChangeRecommendation.setVersion(motion, version.id);
+            $scope.viewChangeRecommendations.setVersion(motion, motion.active_version);
         };
         // permit specific version
         $scope.permitVersion = function (version) {
@@ -1835,7 +1820,7 @@ angular.module('OpenSlidesApp.motions.site', [
 
         // Change recommendation viewing
         $scope.viewChangeRecommendations = ChangeRecommendationView;
-        $scope.viewChangeRecommendations.init($scope, Config.get('motions_recommendation_text_mode').value);
+        $scope.viewChangeRecommendations.init($scope, motion, Config.get('motions_recommendation_text_mode').value);
 
         // PDF creating functions
         $scope.pdfExport = function () {
@@ -2003,6 +1988,31 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
+.controller('AmendmentParagraphChooseCtrl', [
+    '$scope',
+    '$state',
+    'Motion',
+    'motion',
+    'successCb',
+    function($scope, $state, Motion, motion, successCb) {
+        $scope.model = angular.copy(motion);
+        $scope.model.paragraph_selected = null;
+
+        $scope.paragraphs = motion.getTextParagraphs().map(function(text, index) {
+            // This prevents an error in ng-repeater's duplication detection if two identical paragraphs occur
+            return {
+                "paragraphNo": index,
+                "text": text
+            };
+        });
+
+        $scope.gotoMotionForm = function() {
+            successCb($scope.model.paragraph_selected);
+            $scope.closeThisDialog();
+        };
+    }
+])
+
 .controller('MotionCreateCtrl', [
     '$scope',
     '$state',
@@ -2011,6 +2021,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'operator',
     'Motion',
     'MotionForm',
+    'paragraphNo',
     'Category',
     'Config',
     'Mediafile',
@@ -2019,7 +2030,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'Workflow',
     'Agenda',
     'ErrorMessage',
-    function($scope, $state, gettext, gettextCatalog, operator, Motion, MotionForm,
+    function($scope, $state, gettext, gettextCatalog, operator, Motion, MotionForm, paragraphNo,
         Category, Config, Mediafile, Tag, User, Workflow, Agenda, ErrorMessage) {
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -2036,10 +2047,15 @@ angular.module('OpenSlidesApp.motions.site', [
         // Set default values for create form
         // ... for amendments add parent_id
         if (isAmendment) {
-            if (Config.get('motions_amendments_apply_text').value) {
+            if (Config.get('motions_amendments_text_mode').value === 'fulltext') {
                 $scope.model.text = $scope.$parent.motion.getText();
             }
-            $scope.model.title = $scope.$parent.motion.getTitle();
+            if (Config.get('motions_amendments_text_mode').value === 'paragraph' && paragraphNo !== undefined) {
+                var paragraphs = $scope.$parent.motion.getTextParagraphs($scope.$parent.motion.active_version, false);
+                $scope.model.text = paragraphs[paragraphNo];
+            }
+            $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + $scope.$parent.motion.getTitle();
+            $scope.model.paragraphNo = paragraphNo;
             $scope.model.parent_id = $scope.$parent.motion.id;
             $scope.model.category_id = $scope.$parent.motion.category_id;
             $scope.model.motion_block_id = $scope.$parent.motion.motion_block_id;
@@ -2055,6 +2071,14 @@ angular.module('OpenSlidesApp.motions.site', [
         // save motion
         $scope.save = function (motion, gotoDetailView) {
             motion.agenda_type = motion.showAsAgendaItem ? 1 : 2;
+
+            if ($scope.model.paragraphNo !== undefined) {
+                var orig_paragraphs = $scope.$parent.motion.getTextParagraphs($scope.$parent.motion.active_version, false);
+                $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
+                    return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
+                });
+            }
+
             // The attribute motion.agenda_parent_id is set by the form, see form definition.
             Motion.create(motion).then(
                 function(success) {

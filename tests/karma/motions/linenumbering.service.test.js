@@ -22,6 +22,46 @@ describe('linenumbering', function () {
     lineNumberingService = _lineNumberingService_;
   }));
 
+  describe('paragraph splitting', function () {
+      it('breaks simple DIVs', function () {
+          var htmlIn = '<DIV class="testclass">Test <strong>1</strong></DIV>' + "\n" + '<p>Test <em>2</em> 3</p>';
+          var out = lineNumberingService.splitToParagraphs(htmlIn);
+          expect(out.length).toBe(2);
+          expect(out[0]).toBe('<div class="testclass">Test <strong>1</strong></div>');
+          expect(out[1]).toBe('<p>Test <em>2</em> 3</p>');
+      });
+      it('ignores root-level text-nodes', function () {
+          var htmlIn = '<DIV class="testclass">Test <strong>3</strong></DIV>' + "\n New line";
+          var out = lineNumberingService.splitToParagraphs(htmlIn);
+          expect(out.length).toBe(1);
+          expect(out[0]).toBe('<div class="testclass">Test <strong>3</strong></div>');
+      });
+      it('splits UL-Lists', function () {
+          var htmlIn = "<UL class='testclass'>\n<li>Node 1</li>\n  <li class='second'>Node <strong>2</strong></li><li><p>Node 3</p></li></UL>";
+          var out = lineNumberingService.splitToParagraphs(htmlIn);
+          expect(out.length).toBe(3);
+          expect(out[0]).toBe('<ul class="testclass"><li>Node 1</li></ul>');
+          expect(out[1]).toBe('<ul class="testclass"><li class="second">Node <strong>2</strong></li></ul>');
+          expect(out[2]).toBe('<ul class="testclass"><li><p>Node 3</p></li></ul>');
+      });
+      it('splits OL-Lists', function () {
+          var htmlIn = "<OL start='2' class='testclass'>\n<li>Node 1</li>\n  <li class='second'>Node <strong>2</strong></li><li><p>Node 3</p></li></OL>";
+          var out = lineNumberingService.splitToParagraphs(htmlIn);
+          expect(out.length).toBe(3);
+          expect(out[0]).toBe('<ol start="2" class="testclass"><li>Node 1</li></ol>');
+          expect(out[1]).toBe('<ol start="3" class="testclass"><li class="second">Node <strong>2</strong></li></ol>');
+          expect(out[2]).toBe('<ol start="4" class="testclass"><li><p>Node 3</p></li></ol>');
+      });
+  });
+
+  describe('getting line number range', function () {
+      it('extracts the line number range, example 1', function () {
+        var html = '<p>' + noMarkup(2) + 'et accusam et justo duo dolores et ea <span style="color: #ff0000;"><strike>rebum </strike></span><span style="color: #006400;">Inserted Text</span>. Stet clita kasd ' + brMarkup(3) + 'gubergren,</p>';
+        var range = lineNumberingService.getLineNumberRange(html);
+        expect(range).toEqual({"from": 2, "to": 3});
+      });
+  });
+
   describe('line numbering: test nodes', function () {
     it('breaks very short lines', function () {
       var textNode = document.createTextNode("0123");

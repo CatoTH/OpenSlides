@@ -103,14 +103,14 @@
           <div ng-repeat="change in (changes = (change_recommendations | orderBy: 'line_from')) ">
 
             <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
-              ng-bind-html="motion.getTextBetweenChangeRecommendations(null, changes[$index - 1], change, line) | trusted">
+              ng-bind-html="motion.getTextBetweenChanges(null, changes[$index - 1], change, line) | trusted">
             </div>
             <div class="diff-box diff-box-{{ change.id }} clearfix motion-text motion-text-diff line-numbers-{{ config('motions_default_line_numbering') }}">
               <div ng-bind-html="change.getDiff(motion, null, line) | trusted"></div>
             </div>
           </div>
           <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
-            ng-bind-html="motion.getTextRemainderAfterLastChangeRecommendation(null, changes, line) | trusted">
+            ng-bind-html="motion.getTextRemainderAfterLastChange(null, changes, line) | trusted">
           </div>
 
         </div>

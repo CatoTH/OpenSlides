@@ -1,0 +1,43 @@
+.paragraph-select-list {
+  display: table;
+  border: 1px solid #d3d3d3;
+  width: 100%;
+  margin-bottom: 10px;
+
+  .paragraph-select-holder {
+    display: table-row;
+    cursor: pointer;
+    border-bottom: 1px solid #d3d3d3;
+
+    .paragraph-select {
+      display: table-cell;
+      width: 30px;
+      padding-top: 5px;
+      text-align: center;
+    }
+    .text-holder {
+      display: table-cell;
+      background-color: white;
+      padding: 5px 10px;
+
+      :last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    &:hover {
+      .text-holder {
+        background-color: #f0f0f0;
+      }
+    }
+    &.selected {
+      .paragraph-select {
+        background-color: #ddd;
+      }
+      .text-holder {
+        background-color: #ddd;
+      }
+
+    }
+  }
+}

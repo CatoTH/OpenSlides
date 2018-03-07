@@ -261,6 +261,10 @@ angular.module('OpenSlidesApp.motions', [
                     }
                     return this.versions[index] || {};
                 },
+                isParagraphBasedAmendment: function () {
+                    var version = this.getVersion();
+                    return this.isAmendment && version.amendment_paragraphs;
+                },
                 getTitle: function (versionId) {
                     return this.getVersion(versionId).title;
                 },
@@ -305,14 +309,14 @@ angular.module('OpenSlidesApp.motions', [
 
                     return lineNumberingService.insertLineNumbers(html, lineLength, highlight, callback);
                 },
-                getTextBetweenChangeRecommendations: function (versionId, change1, change2, highlight) {
+                getTextBetweenChanges: function (versionId, change1, change2, highlight) {
                     var line_from = (change1 ? change1.line_to : 1),
                         line_to = (change2 ? change2.line_from : null);
 
                     if (line_from > line_to) {
-                        throw 'Invalid call of getTextBetweenChangeRecommendations: change1 needs to be before change2';
+                        throw 'Invalid call of getTextBetweenChanges: change1 needs to be before change2';
                     }
-                    if (line_from == line_to) {
+                    if (line_from === line_to) {
                         return '';
                     }
 
@@ -338,7 +342,7 @@ angular.module('OpenSlidesApp.motions', [
 
                     return html;
                 },
-                getTextRemainderAfterLastChangeRecommendation: function(versionId, changes, highlight) {
+                getTextRemainderAfterLastChange: function(versionId, changes, highlight) {
                     var maxLine = 0;
                     for (var i = 0; i < changes.length; i++) {
                         if (changes[i].line_to > maxLine) {
@@ -372,18 +376,36 @@ angular.module('OpenSlidesApp.motions', [
                     }
                     return html;
                 },
-                _getTextWithChangeRecommendations: function (versionId, highlight, lineBreaks, statusCompareCb) {
+                _getTextWithChanges: function (versionId, highlight, lineBreaks, recommendation_filter, amendment_filter) {
                     var lineLength = Config.get('motions_line_length').value,
                         html = this.getVersion(versionId).text,
-                        changes = this.getTextChangeRecommendations(versionId, 'DESC');
+                        change_recommendations = this.getTextChangeRecommendations(versionId, 'DESC'),
+                        amendments = this.getParagraphBasedAmendments();
 
-                    for (var i = 0; i < changes.length; i++) {
-                        var change = changes[i];
-                        if (typeof statusCompareCb === 'undefined' || statusCompareCb(change.rejected)) {
-                            html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, 1);
-                            html = diffService.replaceLines(html, change.text, change.line_from, change.line_to);
+                    var allChanges = [];
+                    change_recommendations.filter(recommendation_filter).forEach(function(change) {
+                        allChanges.push({"text": change.text, "line_from": change.line_from, "line_to": change.line_to});
+                    });
+                    amendments.filter(amendment_filter).forEach(function(amend) {
+                        var change = amend.getAmendmentsAffectedLinesChanged();
+                        allChanges.push({"text": change.text, "line_from": change.line_from, "line_to": change.line_to});
+                    });
+
+                    // Changes need to be applied from the bottom up, to prevent conflicts with changing line numbers.
+                    allChanges.sort(function(change1, change2) {
+                        if (change1.line_from < change2.line_from) {
+                            return 1;
+                        } else if (change1.line_from > change2.line_from) {
+                            return -1;
+                        }  else {
+                            return 0;
                         }
-                    }
+                    });
+
+                    allChanges.forEach(function(change) {
+                        html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, 1);
+                        html = diffService.replaceLines(html, change.text, change.line_from, change.line_to);
+                    });
 
                     if (lineBreaks) {
                         html = lineNumberingService.insertLineNumbers(html, lineLength, highlight, null, 1);
@@ -392,13 +414,17 @@ angular.module('OpenSlidesApp.motions', [
                     return html;
                 },
                 getTextWithAllChangeRecommendations: function (versionId, highlight, lineBreaks) {
-                    return this._getTextWithChangeRecommendations(versionId, highlight, lineBreaks, function() {
-                        return true;
+                    return this._getTextWithChanges(versionId, highlight, lineBreaks, function() {
+                        return true; // All change recommendations
+                    }, function() {
+                        return false; // No amendments
                     });
                 },
-                getTextWithoutRejectedChangeRecommendations: function (versionId, highlight, lineBreaks) {
-                    return this._getTextWithChangeRecommendations(versionId, highlight, lineBreaks, function(rejected) {
-                        return !rejected;
+                getTextWithAgreedChanges: function (versionId, highlight, lineBreaks) {
+                    return this._getTextWithChanges(versionId, highlight, lineBreaks, function(recommendation) {
+                        return !recommendation.rejected;
+                    }, function(amendment) {
+                        return (amendment.state && amendment.state.name === 'accepted');
                     });
                 },
                 getTextByMode: function(mode, versionId, highlight, lineBreaks) {
@@ -424,10 +450,10 @@ angular.module('OpenSlidesApp.motions', [
                             var changes = this.getTextChangeRecommendations(versionId, 'ASC');
                             text = '';
                             for (var i = 0; i < changes.length; i++) {
-                                text += this.getTextBetweenChangeRecommendations(versionId, (i === 0 ? null : changes[i - 1]), changes[i], highlight);
+                                text += this.getTextBetweenChanges(versionId, (i === 0 ? null : changes[i - 1]), changes[i], highlight);
                                 text += changes[i].getDiff(this, versionId, highlight);
                             }
-                            text += this.getTextRemainderAfterLastChangeRecommendation(versionId, changes);
+                            text += this.getTextRemainderAfterLastChange(versionId, changes);
 
                             if (!lineBreaks) {
                                 text = lineNumberingService.stripLineNumbers(text);
@@ -437,10 +463,170 @@ angular.module('OpenSlidesApp.motions', [
                             text = this.getTextWithAllChangeRecommendations(versionId, highlight, lineBreaks);
                             break;
                         case 'agreed':
-                            text = this.getTextWithoutRejectedChangeRecommendations(versionId, highlight, lineBreaks);
+                            text = this.getTextWithAgreedChanges(versionId, highlight, lineBreaks);
                             break;
                     }
                     return text;
+                },
+                getTextParagraphs: function(versionId, lineBreaks) {
+                    /*
+                     * @param versionId [if undefined, active_version will be used]
+                     * @param lineBreaks [if line numbers / breaks should be included in the result]
+                     */
+                    var text;
+                    if (lineBreaks) {
+                        text = this.getTextWithLineBreaks(versionId, highlight);
+                    } else {
+                        text = this.getVersion(versionId).text;
+                    }
+
+                    return lineNumberingService.splitToParagraphs(text);
+                },
+                getAmendmentParagraphsByMode: function (mode, versionId, lineBreaks) {
+                    /*
+                     * @param mode ['original', 'diff', 'changed']
+                     * @param versionId [if undefined, active_version will be used]
+                     * @param lineBreaks [if line numbers / breaks should be included in the result]
+                     *
+                     * Structure of the return array elements:
+                     * {
+                     *   "paragraphNo": paragraph number, starting with 0
+                     *   "lineFrom": First line number of the affected paragraph
+                     *   "lineTo": Last line number of the affected paragraph
+                     *   "text": the actual text
+                     * }
+                     */
+
+                    lineBreaks = (lineBreaks === undefined ? true : lineBreaks);
+                    var original_text = this.getParentMotion().getTextByMode('original', null, null, true);
+                    var original_paragraphs = lineNumberingService.splitToParagraphs(original_text);
+
+                    var output = [];
+
+                    this.getVersion(versionId).amendment_paragraphs.forEach(function(paragraph_amend, paragraphNo) {
+                        if (paragraph_amend === null) {
+                            return;
+                        }
+                        if (original_paragraphs[paragraphNo] === undefined) {
+                            throw "The amendment appears to have more paragraphs than the motion. This means, the data might be corrupt";
+                        }
+                        var paragraph_orig = original_paragraphs[paragraphNo];
+                        var line_range = lineNumberingService.getLineNumberRange(paragraph_orig);
+                        var line_length = Config.get('motions_line_length').value;
+                        paragraph_orig = lineNumberingService.stripLineNumbers(paragraph_orig);
+
+                        var text = null;
+
+                        switch (mode) {
+                            case "diff":
+                                if (lineBreaks) {
+                                    text = diffService.diff(paragraph_orig, paragraph_amend, line_length, line_range.from);
+                                } else {
+                                    text = diffService.diff(paragraph_orig, paragraph_amend);
+                                }
+                                break;
+                            case "original":
+                                text = paragraph_orig;
+                                if (lineBreaks) {
+                                    text = lineNumberingService.insertLineNumbers(text, line_length, null, null, line_range.from);
+                                }
+                                break;
+                            case "changed":
+                                text = paragraph_amend;
+                                if (lineBreaks) {
+                                    text = lineNumberingService.insertLineNumbers(text, line_length, null, null, line_range.from);
+                                }
+                                break;
+                            default:
+                                throw "Invalid text mode: " + mode;
+                        }
+                        output.push({
+                            "paragraphNo": paragraphNo,
+                            "lineFrom": line_range.from,
+                            "lineTo": line_range.to,
+                            "text": text
+                        });
+                    });
+
+                    return output;
+                },
+                getAmendmentsAffectedLinesChanged: function () {
+                    var paragraph_diff = this.getAmendmentParagraphsByMode("diff")[0],
+                        paragraph_changed = this.getAmendmentParagraphsByMode("changed")[0],
+                        affected_lines = diffService.detectAffectedLineRange(paragraph_diff.text);
+
+                    var extracted_lines = diffService.extractRangeByLineNumbers(paragraph_changed.text, affected_lines.from, affected_lines.to);
+
+                    var diff_html = extracted_lines.outerContextStart + extracted_lines.innerContextStart +
+                            extracted_lines.html + extracted_lines.innerContextEnd + extracted_lines.outerContextEnd;
+
+                    return {
+                        "line_from": affected_lines.from,
+                        "line_to": affected_lines.to,
+                        "text": diff_html
+                    };
+                },
+                getUnifiedChangeObject: function () {
+                    var paragraph = this.getAmendmentParagraphsByMode("diff")[0];
+                    var affected_lines = diffService.detectAffectedLineRange(paragraph.text);
+                    var extracted_lines = diffService.extractRangeByLineNumbers(paragraph.text, affected_lines.from, affected_lines.to);
+                    var lineLength = Config.get('motions_line_length').value;
+
+                    var diff_html = extracted_lines.outerContextStart + extracted_lines.innerContextStart +
+                            extracted_lines.html + extracted_lines.innerContextEnd + extracted_lines.outerContextEnd;
+                    diff_html = lineNumberingService.insertLineNumbers(diff_html, lineLength, null, null, affected_lines.from);
+
+                    var acceptance_state = null;
+                    var rejection_state = null;
+                    this.state.getRecommendations().forEach(function(state) {
+                        if (state.name === "accepted") {
+                            acceptance_state = state.id;
+                        }
+                        if (state.name === "rejected") {
+                            rejection_state = state.id;
+                        }
+                    });
+
+                    // The interface of this object needs to be synchronized with the same method in MotionChangeRecommendation
+                    //
+                    // The change object needs to be cached to prevent confusing Angular's change detection
+                    // Otherwise, a new object would be created with every call, leading to flickering
+                    var amendment = this;
+
+                    if (this._change_object === undefined) {
+                        // Properties that are guaranteed to be constant
+                        this._change_object = {
+                            "type": "amendment",
+                            "id": "amendment-" + amendment.id,
+                            "original": amendment,
+                            "saveStatus": function () {
+                                // The status needs to be reset first, as the workflow does not allow changing from
+                                // acceptance to rejection directly or vice-versa.
+                                amendment.setState(null).then(function () {
+                                    if (amendment._change_object.accepted) {
+                                        amendment.setState(acceptance_state);
+                                    }
+                                    if (amendment._change_object.rejected) {
+                                        amendment.setState(rejection_state);
+                                    }
+                                });
+                            },
+                            "getDiff": function (motion, version, highlight) {
+                                if (highlight > 0) {
+                                    diff_html = lineNumberingService.highlightLine(diff_html, highlight);
+                                }
+                                return diff_html;
+                            }
+                        };
+                    }
+
+                    // Properties that might change when the Amendment is edited
+                    this._change_object.line_from = affected_lines.from;
+                    this._change_object.line_to = affected_lines.to;
+                    this._change_object.rejected = (this.state && this.state.id === rejection_state);
+                    this._change_object.accepted = (this.state && this.state.id === acceptance_state);
+
+                    return this._change_object;
                 },
                 setTextStrippingLineBreaks: function (text) {
                     this.text = lineNumberingService.stripLineNumbers(text);
@@ -464,6 +650,14 @@ angular.module('OpenSlidesApp.motions', [
                     }
                     return MotionStateAndRecommendationParser.parse(name);
                 },
+                // ID of the state - or null, if to be reset
+                setState: function(state_id) {
+                    if (state_id === null) {
+                        return $http.put('/rest/motions/motion/' + this.id + '/set_state/', {});
+                    } else {
+                        return $http.put('/rest/motions/motion/' + this.id + '/set_state/', {'state': state_id});
+                    }
+                },
                 // full recommendation string - optional with custom recommendationextension
                 // depended by state and provided by a custom comment field
                 getRecommendationName: function () {
@@ -479,6 +673,14 @@ angular.module('OpenSlidesApp.motions', [
                         }
                     }
                     return MotionStateAndRecommendationParser.parse(recommendation);
+                },
+                // ID of the state - or null, if to be reset
+                setRecommendation: function(recommendation_id) {
+                    if (recommendation_id === null) {
+                        return $http.put('/rest/motions/motion/' + this.id + '/set_recommendation/', {});
+                    } else {
+                        return $http.put('/rest/motions/motion/' + this.id + '/set_recommendation/', {'recommendation': recommendation_id});
+                    }
                 },
                 // link name which is shown in search result
                 getSearchResultName: function () {
@@ -554,6 +756,23 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 hasAmendments: function () {
                     return DS.filter('motions/motion', {parent_id: this.id}).length > 0;
+                },
+                getParagraphBasedAmendments: function () {
+                    return DS.filter('motions/motion', {parent_id: this.id}).filter(function(amendment) {
+                        return (amendment.isParagraphBasedAmendment());
+                    });
+                },
+                getParentMotion: function () {
+                    if (this.parent_id > 0) {
+                        var parents = DS.filter('motions/motion', {id: this.parent_id});
+                        if (parents.length > 0) {
+                            return parents[0];
+                        } else {
+                            return null;
+                        }
+                    } else {
+                        return null;
+                    }
                 },
                 isAllowed: function (action) {
                     /*
@@ -964,6 +1183,36 @@ angular.module('OpenSlidesApp.motions', [
                     }
                     title = title.replace('%FROM%', this.line_from).replace('%TO%', (this.line_to - 1));
                     return title;
+                },
+                getUnifiedChangeObject: function () {
+                    // The interface of this object needs to be synchronized with the same method in Motion
+                    //
+                    // The change object needs to be cached to prevent confusing Angular's change detection
+                    // Otherwise, a new object would be created with every call, leading to flickering
+                    var recommendation = this;
+
+                    if (this._change_object === undefined) {
+                        // Properties that are guaranteed to be constant
+                        this._change_object = {
+                            "type": "recommendation",
+                            "id": "recommendation-" + recommendation.id,
+                            "original": recommendation,
+                            "saveStatus": function () {
+                                recommendation.rejected = recommendation._change_object.rejected;
+                                recommendation.saveStatus();
+                            },
+                            "getDiff": function (motion, version, highlight) {
+                                return recommendation.getDiff(motion, version, highlight);
+                            }
+                        };
+                    }
+                    // Properties that might change when the Change Recommendation is edited
+                    this._change_object.line_from = recommendation.line_from;
+                    this._change_object.line_to = recommendation.line_to;
+                    this._change_object.rejected = recommendation.rejected;
+                    this._change_object.accepted = !recommendation.rejected;
+
+                    return this._change_object;
                 }
             }
         });

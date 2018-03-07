@@ -574,11 +574,11 @@
                 <i class="fa fa-cog pointer" uib-dropdown-toggle id="stateDropdown{{ motion.id }}"></i>
                 <ul class="dropdown-menu" aria-labelledby="stateDropdown{{ motion.id }}">
                   <li ng-repeat="state in motion.state.getNextStates()">
-                    <a href ng-click="updateState(motion, state.id)">{{ state.action_word | translate }}</a>
+                    <a href ng-click="motion.setState(state.id)">{{ state.action_word | translate }}</a>
                   </li>
                   <li class="divider" ng-if="motion.state.getNextStates().length"></li>
                   <li>
-                    <a href ng-if="motion.isAllowed('reset_state')" ng-click="resetState(motion)">
+                    <a href ng-if="motion.isAllowed('reset_state')" ng-click="motion.setState(null)">
                       <i class="fa fa-exclamation-triangle"></i>
                       <translate>Reset state</translate>
                     </a>
@@ -598,13 +598,13 @@
                 <i class="fa fa-cog pointer" uib-dropdown-toggle id="recommendationDropdown{{ motion.id }}"></i>
                 <ul class="dropdown-menu" aria-labelledby="recommendationDropdown{{ motion.id }}">
                   <li ng-repeat="recommendation in motion.state.getRecommendations()">
-                    <a href ng-click="updateRecommendation(motion, recommendation.id)">
+                    <a href ng-click="motion.setRecommendation(recommendation.id)">
                       {{ recommendation.recommendation_label | translate }}
                     </a>
                   </li>
                   <li class="divider" ng-if="motion.state.getRecommendations().length && motion.recommendation"></li>
                   <li ng-if="motion.recommendation">
-                    <a href ng-click="resetRecommendation(motion)">
+                    <a href ng-click="motion.setRecommendation(null)">
                       <i class="fa fa-exclamation-triangle"></i>
                       <translate>Reset recommendation</translate>
                     </a>

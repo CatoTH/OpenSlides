@@ -23,6 +23,42 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             return fragment.querySelector('os-linebreak.os-line-number.line-number-' + lineNumber);
         };
 
+        /**
+         * @param {Element} element
+         */
+        this._getFirstLineNumberNode = function(element) {
+            if (element.nodeType === TEXT_NODE) {
+                return null;
+            }
+            if (element.nodeName === 'OS-LINEBREAK') {
+                return element;
+            }
+            var found = element.querySelectorAll('OS-LINEBREAK');
+            if (found.length > 0) {
+                return found.item(0);
+            } else {
+                return null;
+            }
+        };
+
+        /**
+         * @param {Element} element
+         */
+        this._getLastLineNumberNode = function(element) {
+            if (element.nodeType === TEXT_NODE) {
+                return null;
+            }
+            if (element.nodeName === 'OS-LINEBREAK') {
+                return element;
+            }
+            var found = element.querySelectorAll('OS-LINEBREAK');
+            if (found.length > 0) {
+                return found.item(found.length - 1);
+            } else {
+                return null;
+            }
+        };
+
         this._getNodeContextTrace = function(node) {
             var context = [],
                 currNode = node;
@@ -169,14 +205,14 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         };
 
         this._serializeTag = function(node) {
-            if (node.nodeType == DOCUMENT_FRAGMENT_NODE) {
+            if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
                 // Fragments are only placeholders and do not have an HTML representation
                 return '';
             }
             var html = '<' + node.nodeName;
             for (var i = 0; i < node.attributes.length; i++) {
                 var attr = node.attributes[i];
-                if (attr.name != 'os-li-number') {
+                if (attr.name !== 'os-li-number') {
                     html += ' ' + attr.name + '="' + attr.value + '"';
                 }
             }
@@ -226,21 +262,21 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
                 return '';
             }
-            if (node.nodeName == 'OS-LINEBREAK') {
+            if (node.nodeName === 'OS-LINEBREAK') {
                 return '';
             }
 
             var html = this._serializeTag(node);
 
             for (var i = 0, found = false; i < node.childNodes.length && !found; i++) {
-                if (node.childNodes[i] == toChildTrace[0]) {
+                if (node.childNodes[i] === toChildTrace[0]) {
                     found = true;
                     var remainingTrace = toChildTrace;
                     remainingTrace.shift();
                     if (!lineNumberingService._isOsLineNumberNode(node.childNodes[i])) {
                         html += this._serializePartialDomToChild(node.childNodes[i], remainingTrace, stripLineNumbers);
                     }
-                } else if (node.childNodes[i].nodeType == TEXT_NODE) {
+                } else if (node.childNodes[i].nodeType === TEXT_NODE) {
                     html += node.childNodes[i].nodeValue;
                 } else {
                     if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
@@ -263,13 +299,13 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             if (lineNumberingService._isOsLineNumberNode(node) || lineNumberingService._isOsLineBreakNode(node)) {
                 return '';
             }
-            if (node.nodeName == 'OS-LINEBREAK') {
+            if (node.nodeName === 'OS-LINEBREAK') {
                 return '';
             }
 
             var html = '';
             for (var i = 0, found = false; i < node.childNodes.length; i++) {
-                if (node.childNodes[i] == fromChildTrace[0]) {
+                if (node.childNodes[i] === fromChildTrace[0]) {
                     found = true;
                     var remainingTrace = fromChildTrace;
                     remainingTrace.shift();
@@ -277,7 +313,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                         html += this._serializePartialDomFromChild(node.childNodes[i], remainingTrace, stripLineNumbers);
                     }
                 } else if (found) {
-                    if (node.childNodes[i].nodeType == TEXT_NODE) {
+                    if (node.childNodes[i].nodeType === TEXT_NODE) {
                         html += node.childNodes[i].nodeValue;
                     } else {
                         if (!stripLineNumbers || (!lineNumberingService._isOsLineNumberNode(node.childNodes[i]) &&
@@ -291,12 +327,16 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 console.trace();
                 throw "Inconsistency or invalid call of this function detected (from)";
             }
-            if (node.nodeType != DOCUMENT_FRAGMENT_NODE) {
+            if (node.nodeType !== DOCUMENT_FRAGMENT_NODE) {
                 html += '</' + node.nodeName + '>';
             }
             return html;
         };
 
+        /**
+         * @param {string} html
+         * @return {DocumentFragment}
+         */
         this.htmlToFragment = function(html) {
             var fragment = document.createDocumentFragment(),
                 div = document.createElement('DIV');
@@ -407,7 +447,6 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 previousHtmlEndSnippet = '',
                 followingHtmlStartSnippet = '',
                 fakeOl, offset;
-
 
             fromChildTraceAbs.shift();
             var previousHtml = this._serializePartialDomToChild(fragment, fromChildTraceAbs, false);
@@ -537,13 +576,13 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         this._insertDanglingSpace = function(element) {
             if (element.childNodes.length > 0) {
                 var lastChild = element.childNodes[element.childNodes.length - 1];
-                if (lastChild.nodeType == TEXT_NODE && !lastChild.nodeValue.match(/[\S]/) && element.childNodes.length > 1) {
+                if (lastChild.nodeType === TEXT_NODE && !lastChild.nodeValue.match(/[\S]/) && element.childNodes.length > 1) {
                     // If the text node only contains whitespaces, chances are high it's just space between block elmeents,
                     // like a line break between </LI> and </UL>
                     lastChild = element.childNodes[element.childNodes.length - 2];
                 }
-                if (lastChild.nodeType == TEXT_NODE) {
-                    if (lastChild.nodeValue === '' || lastChild.nodeValue.substr(-1) != ' ') {
+                if (lastChild.nodeType === TEXT_NODE) {
+                    if (lastChild.nodeValue === '' || lastChild.nodeValue.substr(-1) !== ' ') {
                         lastChild.nodeValue += ' ';
                     }
                 } else {
@@ -693,6 +732,70 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             return html;
         };
 
+        this._getAllNextSiblings = function(element) {
+            var elements = [];
+            while (element.nextSibling) {
+                elements.push(element.nextSibling);
+                element = element.nextSibling;
+            }
+            return elements;
+        };
+
+        this._getAllPrevSiblingsReversed = function(element) {
+            var elements = [];
+            while (element.previousSibling) {
+                elements.push(element.previousSibling);
+                element = element.previousSibling;
+            }
+            return elements;
+        };
+
+        /**
+         * This returns the line number range in which changes (insertions, deletions) are encountered.
+         * As in extractRangeByLineNumbers(), "to" refers to the line breaking element, i.e. the start of the following line.
+         *
+         * @param {string} diffHtml
+         */
+        this.detectAffectedLineRange = function (diffHtml) {
+            var fragment = this.htmlToFragment(diffHtml);
+
+            this._insertInternalLineMarkers(fragment);
+            this._insertInternalLiNumbers(fragment);
+
+            var changes = fragment.querySelectorAll('ins, del, .insert, .delete'),
+                firstChange = changes.item(0),
+                lastChange = changes.item(changes.length - 1),
+                i, j;
+
+            if (!firstChange || !lastChange) {
+                // There are no changes
+                return null;
+            }
+
+            var firstTrace = this._getNodeContextTrace(firstChange),
+                lastLineNumberBefore = null;
+            for (j = firstTrace.length - 1; j >= 0 && lastLineNumberBefore === null; j--) {
+                var prevSiblings = this._getAllPrevSiblingsReversed(firstTrace[j]);
+                for (i = 0; i < prevSiblings.length && lastLineNumberBefore === null; i++) {
+                    lastLineNumberBefore = this._getLastLineNumberNode(prevSiblings[i]);
+                }
+            }
+
+            var lastTrace = this._getNodeContextTrace(lastChange),
+                firstLineNumberAfter = null;
+            for (j = lastTrace.length - 1; j >= 0 && firstLineNumberAfter === null; j--) {
+                var nextSiblings = this._getAllNextSiblings(lastTrace[j]);
+                for (i = 0; i < nextSiblings.length && firstLineNumberAfter === null; i++) {
+                    firstLineNumberAfter = this._getFirstLineNumberNode(nextSiblings[i]);
+                }
+            }
+
+            return {
+                "from": parseInt(lastLineNumberBefore.getAttribute("data-line-number")),
+                "to": parseInt(firstLineNumberAfter.getAttribute("data-line-number"))
+            };
+        };
+
         /**
          * @param {string} htmlOld
          * @param {string} htmlNew
@@ -702,13 +805,13 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             htmlOld = this._normalizeHtmlForDiff(htmlOld);
             htmlNew = this._normalizeHtmlForDiff(htmlNew);
 
-            if (htmlOld == htmlNew) {
+            if (htmlOld === htmlNew) {
                 return this.TYPE_REPLACEMENT;
             }
 
             var i, foundDiff;
             for (i = 0, foundDiff = false; i < htmlOld.length && i < htmlNew.length && foundDiff === false; i++) {
-                if (htmlOld[i] != htmlNew[i]) {
+                if (htmlOld[i] !== htmlNew[i]) {
                     foundDiff = true;
                 }
             }
@@ -718,11 +821,11 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 type = this.TYPE_REPLACEMENT;
 
             if (remainderOld.length > remainderNew.length) {
-                if (remainderOld.substr(remainderOld.length - remainderNew.length) == remainderNew) {
+                if (remainderOld.substr(remainderOld.length - remainderNew.length) === remainderNew) {
                     type = this.TYPE_DELETION;
                 }
             } else if (remainderOld.length < remainderNew.length) {
-                if (remainderNew.substr(remainderNew.length - remainderOld.length) == remainderOld) {
+                if (remainderNew.substr(remainderNew.length - remainderOld.length) === remainderOld) {
                     type = this.TYPE_INSERTION;
                 }
             }
@@ -867,7 +970,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
 
             for (i in ns) {
-                if (ns[i].rows.length == 1 && typeof(os[i]) != "undefined" && os[i].rows.length == 1) {
+                if (ns[i].rows.length === 1 && typeof(os[i]) !== "undefined" && os[i].rows.length === 1) {
                     newArr[ns[i].rows[0]] = {text: newArr[ns[i].rows[0]], row: os[i].rows[0]};
                     oldArr[os[i].rows[0]] = {text: oldArr[os[i].rows[0]], row: ns[i].rows[0]};
                 }
@@ -1198,10 +1301,10 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
          * This function calculates the diff between two strings and tries to fix problems with the resulting HTML.
          * If lineLength and firstLineNumber is given, line numbers will be returned es well
          *
-         * @param {number} lineLength
-         * @param {number} firstLineNumber
          * @param {string} htmlOld
          * @param {string} htmlNew
+         * @param {number} lineLength - optional
+         * @param {number} firstLineNumber - optional
          * @returns {string}
          */
         this.diff = function (htmlOld, htmlNew, lineLength, firstLineNumber) {
@@ -1287,7 +1390,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                     remainderOld = oldText, remainderNew = newText;
 
                 while (remainderOld.length > 0 && remainderNew.length > 0 && !foundDiff) {
-                    if (remainderOld[0] == remainderNew[0]) {
+                    if (remainderOld[0] === remainderNew[0]) {
                         commonStart += remainderOld[0];
                         remainderOld = remainderOld.substr(1);
                         remainderNew = remainderNew.substr(1);
@@ -1298,7 +1401,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 
                 foundDiff = false;
                 while (remainderOld.length > 0 && remainderNew.length > 0 && !foundDiff) {
-                    if (remainderOld[remainderOld.length - 1] == remainderNew[remainderNew.length - 1]) {
+                    if (remainderOld[remainderOld.length - 1] === remainderNew[remainderNew.length - 1]) {
                         commonEnd = remainderOld[remainderOld.length - 1] + commonEnd;
                         remainderNew = remainderNew.substr(0, remainderNew.length - 1);
                         remainderOld = remainderOld.substr(0, remainderOld.length - 1);
