@@ -1517,6 +1517,13 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.lineNumberMode = mode;
         };
 
+        $scope.showAmendmentContext = false;
+        $scope.setShowAmendmentContext = function($event) {
+            $event.preventDefault();
+            $event.stopPropagation();
+            $scope.showAmendmentContext = !$scope.showAmendmentContext;
+        }
+
         if (motion.parent_id) {
             Motion.bindOne(motion.parent_id, $scope, 'parent');
         }

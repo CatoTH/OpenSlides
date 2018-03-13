@@ -57,4 +57,15 @@ ul.os-split-after, ol.os-split-after {
     &.line-numbers-inline .insert .os-line-number {
         display: none;
     }
+    .paragraph-context {
+        opacity: 0.5;
+    }
+    &.amendment-context {
+        .paragraph-context {
+            opacity: 1;
+        }
+    }
+    .amendment-line-header {
+        margin: 10px 0 0 0;
+    }
 }

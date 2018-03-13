@@ -58,7 +58,7 @@ describe('linenumbering', function () {
       it('extracts the line number range, example 1', function () {
         var html = '<p>' + noMarkup(2) + 'et accusam et justo duo dolores et ea <span style="color: #ff0000;"><strike>rebum </strike></span><span style="color: #006400;">Inserted Text</span>. Stet clita kasd ' + brMarkup(3) + 'gubergren,</p>';
         var range = lineNumberingService.getLineNumberRange(html);
-        expect(range).toEqual({"from": 2, "to": 3});
+        expect(range).toEqual({"from": 2, "to": 4});
       });
   });
 

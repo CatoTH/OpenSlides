@@ -589,7 +589,9 @@ angular.module('OpenSlidesApp.motions.lineNumbering', [])
 
         /**
          * @param {string} html
-         * @returns {object} {"from": 23, "to": 42}
+         * @returns {object}
+         *          {"from": 23, "to": 42} ; "to" refers to the line breaking element at the end of the last line,
+         *                                   i.e. the line number of the following line
          */
         this.getLineNumberRange = function (html) {
             var fragment = this._htmlToFragment(html),
@@ -604,8 +606,8 @@ angular.module('OpenSlidesApp.motions.lineNumbering', [])
                 if (range.from === null || number < range.from) {
                     range.from = number;
                 }
-                if (range.to === null || number > range.to) {
-                    range.to = number;
+                if (range.to === null || (number + 1) > range.to) {
+                    range.to = number + 1;
                 }
             }
             return range;

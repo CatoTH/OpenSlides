@@ -372,7 +372,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
          * Returns the HTML snippet between two given line numbers.
          *
          * Hint:
-         * - The last line (toLine) is not included anymore, as the number refers to the line breaking element
+         * - The last line (toLine) is not included anymore, as the number refers to the line breaking element at the end of the line
          * - if toLine === null, then everything from fromLine to the end of the fragment is returned
          *
          * In addition to the HTML snippet, additional information is provided regarding the most specific DOM element
@@ -566,6 +566,16 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         };
 
         /*
+         * Convenience method that takes the html-attribute from an extractRangeByLineNumbers()-method,
+         * wraps it with the context and adds line numbers.
+         */
+        this.formatDiffWithLineNumbers = function(diff, lineLength, firstLine) {
+            var text = diff.outerContextStart + diff.innerContextStart + diff.html + diff.innerContextEnd + diff.outerContextEnd;
+            text = lineNumberingService.insertLineNumbers(text, lineLength, null, null, firstLine);
+            return text;
+        };
+
+        /*
          * This is a workardoun to prevent the last word of the inserted text from accidently being merged with the
          * first word of the following line.
          *
@@ -752,7 +762,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
 
         /**
          * This returns the line number range in which changes (insertions, deletions) are encountered.
-         * As in extractRangeByLineNumbers(), "to" refers to the line breaking element, i.e. the start of the following line.
+         * As in extractRangeByLineNumbers(), "to" refers to the line breaking element at the end, i.e. the start of the following line.
          *
          * @param {string} diffHtml
          */

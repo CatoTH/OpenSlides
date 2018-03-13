@@ -320,6 +320,9 @@ angular.module('OpenSlidesApp.motions', [
                         return '';
                     }
 
+                    return this.getTextInLineRange(versionId, line_from, line_to, highlight);
+                },
+                getTextInLineRange: function (versionId, line_from, line_to, highlight) {
                     var lineLength = Config.get('motions_line_length').value,
                         html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength),
                         data;
@@ -492,7 +495,8 @@ angular.module('OpenSlidesApp.motions', [
                      * {
                      *   "paragraphNo": paragraph number, starting with 0
                      *   "lineFrom": First line number of the affected paragraph
-                     *   "lineTo": Last line number of the affected paragraph
+                     *   "lineTo": Last line number of the affected paragraph;
+                     *             refers to the line breaking element at the end, i.e. the start of the following line
                      *   "text": the actual text
                      * }
                      */
@@ -550,6 +554,70 @@ angular.module('OpenSlidesApp.motions', [
 
                     return output;
                 },
+                getAmendmentParagraphsLinesDiff: function (versionId) {
+                    /*
+                     * @param versionId [if undefined, active_version will be used]
+                     *
+                     * Structure of the return array elements:
+                     * {
+                     *   "paragraphNo": paragraph number, starting with 0
+                     *   "paragraphLineFrom": First line number of the affected paragraph
+                     *   "paragraphLineTo": End of the affected paragraph (line number + 1)
+                     *   "diffLineFrom": First line number of the affected lines
+                     *   "diffLineTo": End of the affected lines (line number + 1)
+                     *   "textPre": The beginning of the paragraph, before the diff
+                     *   "text": the diff
+                     *   "textPost": The end of the paragraph, after the diff
+                     * }
+                     */
+
+                    var original_text = this.getParentMotion().getTextByMode('original', null, null, true);
+                    var original_paragraphs = lineNumberingService.splitToParagraphs(original_text);
+
+                    var output = [];
+
+                    this.getVersion(versionId).amendment_paragraphs.forEach(function(paragraph_amend, paragraphNo) {
+                        if (paragraph_amend === null) {
+                            return;
+                        }
+                        if (original_paragraphs[paragraphNo] === undefined) {
+                            throw "The amendment appears to have more paragraphs than the motion. This means, the data might be corrupt";
+                        }
+                        var line_length = Config.get('motions_line_length').value,
+                            paragraph_orig = original_paragraphs[paragraphNo],
+                            paragraph_line_range = lineNumberingService.getLineNumberRange(paragraph_orig),
+                            diff = diffService.diff(paragraph_orig, paragraph_amend, line_length, paragraph_line_range.from),
+                            affected_lines = diffService.detectAffectedLineRange(diff);
+
+
+                        var textPre = '';
+                        var textPost = '';
+                        if (affected_lines.from > paragraph_line_range.from) {
+                            textPre = diffService.extractRangeByLineNumbers(diff, paragraph_line_range.from, affected_lines.from);
+                            textPre = diffService.formatDiffWithLineNumbers(textPre, line_length, paragraph_line_range.from);
+                        }
+                        if (paragraph_line_range.to > affected_lines.to) {
+                            textPost = diffService.extractRangeByLineNumbers(diff, affected_lines.to, paragraph_line_range.to);
+                            textPost = diffService.formatDiffWithLineNumbers(textPost, line_length, affected_lines.to);
+                        }
+
+                        var text = diffService.extractRangeByLineNumbers(diff, affected_lines.from, affected_lines.to);
+                        text = diffService.formatDiffWithLineNumbers(text, line_length, affected_lines.from);
+
+                        output.push({
+                            "paragraphNo": paragraphNo,
+                            "paragraphLineFrom": paragraph_line_range.from,
+                            "paragraphLineTo": paragraph_line_range.to,
+                            "diffLineFrom": affected_lines.from,
+                            "diffLineTo": affected_lines.to,
+                            "textPre": textPre,
+                            "text": text,
+                            "textPost": textPost
+                        });
+                    });
+
+                    return output;
+                },
                 getAmendmentsAffectedLinesChanged: function () {
                     var paragraph_diff = this.getAmendmentParagraphsByMode("diff")[0],
                         paragraph_changed = this.getAmendmentParagraphsByMode("changed")[0],
@@ -572,9 +640,7 @@ angular.module('OpenSlidesApp.motions', [
                     var extracted_lines = diffService.extractRangeByLineNumbers(paragraph.text, affected_lines.from, affected_lines.to);
                     var lineLength = Config.get('motions_line_length').value;
 
-                    var diff_html = extracted_lines.outerContextStart + extracted_lines.innerContextStart +
-                            extracted_lines.html + extracted_lines.innerContextEnd + extracted_lines.outerContextEnd;
-                    diff_html = lineNumberingService.insertLineNumbers(diff_html, lineLength, null, null, affected_lines.from);
+                    var diff_html = diffService.formatDiffWithLineNumbers(extracted_lines, lineLength, affected_lines.from);
 
                     var acceptance_state = null;
                     var rejection_state = null;
