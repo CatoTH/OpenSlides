@@ -89,6 +89,26 @@ angular.module('OpenSlidesApp.motions.site', [
                     }
                 ]
             })
+            .state('motions.motion.amendments', {
+                url: '/{id:int}/amendments',
+                controller: 'MotionAmendmentCtrl',
+                params: {
+                    motionId: null,
+                },
+                resolve: {
+                    motionId: ['$stateParams', function($stateParams) {
+                        return $stateParams.id;
+                    }],
+                }
+            })
+            .state('motions.motion.allamendments', {
+                url: '/amendments',
+                templateUrl: 'static/templates/motions/motion-amendments.html',
+                controller: 'MotionAmendmentCtrl',
+                resolve: {
+                    motionId: function() { return void 0; },
+                }
+            })
             .state('motions.motion.import', {
                 url: '/import',
                 controller: 'MotionImportCtrl',
@@ -1081,8 +1101,8 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.$watch(function () {
             return Motion.lastModified();
         }, function () {
-            // always order by identifier (after custom ordering)
-            $scope.motions = _.orderBy(Motion.getAll(), ['identifier']);
+            // get all main motions and order by identifier (after custom ordering)
+            $scope.motions = _.orderBy(Motion.filter({parent_id: undefined}), ['identifier']);
             _.forEach($scope.motions, function (motion) {
                 MotionComment.populateFields(motion);
                 motion.personalNote = PersonalNoteManager.getNote(motion);
@@ -1188,11 +1208,6 @@ angular.module('OpenSlidesApp.motions.site', [
                 comment: [],
             };
             $scope.filter.booleanFilters = {
-                isAmendment: {
-                    value: undefined,
-                    choiceYes: gettext('Is an amendment'),
-                    choiceNo: gettext('Is not an amendment'),
-                },
                 isFavorite: {
                     value: undefined,
                     choiceYes: gettext('Marked as favorite'),
@@ -2231,6 +2246,54 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
+.controller('MotionAmendmentCtrl', [
+    '$scope',
+    'Motion',
+    'Config',
+    'motionId',
+    'MotionComment',
+    'PersonalNoteManager',
+    function ($scope, Motion, Config, motionId, MotionComment, PersonalNoteManager) {
+        $scope.$watch(function () {
+            return Motion.lastModified();
+        }, function () {
+            // check, if special motion is given
+            if (motionId) {
+                $scope.specialMotion = Motion.get(motionId);
+                if (!$scope.specialMotion.hasAmendments()) {
+                    $scope.specialMotion = void 0;
+                }
+            }
+            var amendments;
+            if ($scope.specialMotion) {
+                amendments = Motion.filter({parent_id: $scope.specialMotion.id});
+            } else {
+                amendments = _.filter(Motion.getAll(), function (motion) {
+                    return motion.parent_id;
+                });
+            }
+            // always order by identifier (after custom ordering)
+            $scope.amendments = _.orderBy(amendments, ['identifier']);
+
+            _.forEach($scope.amendments, function (motion) {
+                MotionComment.populateFields(motion);
+                motion.personalNote = PersonalNoteManager.getNote(motion);
+                // For filtering, we cannot filter for .personalNote.star
+                motion.star = motion.personalNote ? motion.personalNote.star : false;
+                motion.hasPersonalNote = motion.personalNote ? !!motion.personalNote.note : false;
+                if (motion.star === undefined) {
+                    motion.star = false;
+                }
+            });
+        });
+
+        $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
+        $scope.setLineNumberMode = function(mode) {
+            $scope.lineNumberMode = mode;
+        };
+    }
+])
+
 .controller('MotionImportCtrl', [
     '$scope',
     '$q',
@@ -2503,7 +2566,6 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
-
 .controller('CategoryListCtrl', [
     '$scope',
     'Category',
@@ -2516,8 +2578,8 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.sortColumn = 'name';
         $scope.reverse = false;
         // function to sort by clicked column
-        $scope.toggleSort = function ( column ) {
-            if ( $scope.sortColumn === column ) {
+        $scope.toggleSort = function (column) {
+            if ($scope.sortColumn === column) {
                 $scope.reverse = !$scope.reverse;
             }
             $scope.sortColumn = column;
@@ -2544,7 +2606,7 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.formFields = CategoryForm.getFormFields();
         $scope.save = function (category) {
             Category.create(category).then(
-                function(success) {
+                function (success) {
                     $scope.closeThisDialog();
                 },
                 function (error) {
@@ -2561,14 +2623,14 @@ angular.module('OpenSlidesApp.motions.site', [
     'categoryId',
     'CategoryForm',
     'ErrorMessage',
-    function($scope, Category, categoryId, CategoryForm, ErrorMessage) {
+    function ($scope, Category, categoryId, CategoryForm, ErrorMessage) {
         $scope.alert = {};
         $scope.model = angular.copy(Category.get(categoryId));
         $scope.formFields = CategoryForm.getFormFields();
         $scope.save = function (category) {
             Category.inject(category);
             Category.save(category).then(
-                function(success) {
+                function (success) {
                     $scope.closeThisDialog();
                 },
                 function (error) {
@@ -2590,7 +2652,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'categoryId',
     'Motion',
     'ErrorMessage',
-    function($scope, $stateParams, $http, Category, categoryId, Motion, ErrorMessage) {
+    function ($scope, $stateParams, $http, Category, categoryId, Motion, ErrorMessage) {
         Category.bindOne(categoryId, $scope, 'category');
         Motion.bindAll({}, $scope, 'motions');
         $scope.filter = { category_id: categoryId,

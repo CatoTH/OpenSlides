@@ -820,6 +820,9 @@ angular.module('OpenSlidesApp.motions', [
                     });
                     return (changes.length > 0 ? changes[0] : null);
                 },
+                getAmendments: function () {
+                    return DS.filter('motions/motion', {parent_id: this.id});
+                },
                 hasAmendments: function () {
                     return DS.filter('motions/motion', {parent_id: this.id}).length > 0;
                 },
