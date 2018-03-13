@@ -2,17 +2,17 @@
     <!-- inline editing -->
     <div class="pull-right inline-editing-activator"
          ng-if="motion.isAllowed('update') && version == motion.getVersion(-1).id && viewChangeRecommendations.mode == 'original'">
-        <button ng-if="!inlineEditing.active && change_recommendations.length == 0" ng-click="enableMotionInlineEditing()"
+        <button ng-if="!inlineEditing.active && !has_proposed_changes" ng-click="enableMotionInlineEditing()"
                 class="btn btn-sm btn-default">
             <i class="fa fa-pencil-square-o"></i>
             <translate>Inline editing</translate>
         </button>
-        <button ng-if="inlineEditing.active && change_recommendations.length == 0" ng-click="disableMotionInlineEditing()"
+        <button ng-if="inlineEditing.active && !has_proposed_changes" ng-click="disableMotionInlineEditing()"
                 class="btn btn-sm btn-default">
             <i class="fa fa-times-circle"></i>
             <translate>Inline editing</translate>
         </button>
-        <button ng-if="change_recommendations.length > 0" class="btn btn-sm btn-default" disabled
+        <button ng-if="has_proposed_changes" class="btn btn-sm btn-default" disabled
                 title="{{ 'Editing the text is not possible anymore once there are change recommendations.' | translate }}">
             <i class="fa fa-pencil-square-o"></i>
             <translate>Inline editing</translate>
@@ -43,8 +43,7 @@
 </div>
 
 <!-- View Modes (Original, Diff, Changed) -->
-<div class="motion-toolbar"
-     ng-if="change_recommendations.length > 0 || title_change_recommendation || motion.getParagraphBasedAmendments().length > 0">
+<div class="motion-toolbar" ng-if="has_proposed_changes">
     <div class="toolbar-left">
 
         <!-- change recommendations for resonsive size medium/large (button group) -->

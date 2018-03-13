@@ -100,17 +100,17 @@
 
         <!-- The actual diff view -->
         <div class="motion-text-with-diffs line-numbers-{{ config('motions_default_line_numbering') }}">
-          <div ng-repeat="change in (changes = (change_recommendations | orderBy: 'line_from')) ">
-
+          <div ng-repeat="change in amendments_crs">
             <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
-              ng-bind-html="motion.getTextBetweenChanges(null, changes[$index - 1], change, line) | trusted">
+                  ng-if="amendments_crs[$index - 1].line_to < change.line_from"
+                  ng-bind-html="motion.getTextBetweenChanges(version, amendments_crs[$index - 1], change, highlight) | trusted">
             </div>
             <div class="diff-box diff-box-{{ change.id }} clearfix motion-text motion-text-diff line-numbers-{{ config('motions_default_line_numbering') }}">
-              <div ng-bind-html="change.getDiff(motion, null, line) | trusted"></div>
+              <div ng-bind-html="change.getDiff(motion, null, highlight) | trusted"></div>
             </div>
           </div>
           <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
-            ng-bind-html="motion.getTextRemainderAfterLastChange(null, changes, line) | trusted">
+            ng-bind-html="motion.getTextRemainderAfterLastChange(version, amendments_crs, highlight) | trusted">
           </div>
 
         </div>

@@ -1827,7 +1827,7 @@ angular.module('OpenSlidesApp.motions.site', [
 
         // Change recommendation viewing
         $scope.viewChangeRecommendations = ChangeRecommendationView;
-        $scope.viewChangeRecommendations.init($scope, motion, Config.get('motions_recommendation_text_mode').value);
+        $scope.viewChangeRecommendations.initSite($scope, motion, Config.get('motions_recommendation_text_mode').value);
 
         // PDF creating functions
         $scope.pdfExport = function () {

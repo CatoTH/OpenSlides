@@ -11,7 +11,7 @@
       <translate>Reject all change recommendations</translate>
     </button>
 
-    <ul ng-if="change_recommendations.length > 0 || title_change_recommendation">
+    <ul ng-if="has_proposed_changes">
         <li ng-if="title_change_recommendation">
             <a href='' ng-click="viewChangeRecommendations.scrollToDiffBox(title_change_recommendation.id)">
                 <span class="line-number"><translate>Title</translate>:</span>
@@ -49,7 +49,7 @@
         </li>
     </ul>
 
-    <div ng-if="amendments_crs.length == 0 && !title_change_recommendation" class="no-changes">
+    <div ng-if="!has_proposed_changes" class="no-changes">
         <translate>No change recommendations yet</translate>
     </div>
 </section>

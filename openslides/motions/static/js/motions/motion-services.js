@@ -394,7 +394,8 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
         var $scope, motion;
 
         var obj = {
-            mode: 'original'
+            mode: 'original',
+            context: null
         };
 
         obj.diffFormatterCb = function (change, oldFragment, newFragment) {
@@ -514,6 +515,7 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             $scope.amendments_crs = [];
             $scope.change_recommendations = [];
             $scope.paragraph_amendments = [];
+            $scope.has_proposed_changes = false;
 
             var rebuild_amendments_crs = function () {
                 $scope.amendments_crs = $scope.change_recommendations.map(function (cr) {
@@ -567,6 +569,17 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
                         change.saveStatus();
                     };
                 });
+
+                $scope.has_proposed_changes = ($scope.amendments_crs.length > 0);
+
+                if (obj.context === 'site') {
+                    if (!$scope.has_proposed_changes) {
+                        $scope.setProjectionMode($scope.projectionModes[0]);
+                    }
+                    if ($scope.has_proposed_changes) {
+                        $scope.disableMotionInlineEditing();
+                    }
+                }
             };
 
             $scope.$watch(function () {
@@ -585,13 +598,6 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
                     }
                 });
                 rebuild_amendments_crs();
-
-                if ($scope.change_recommendations.length === 0) {
-                    $scope.setProjectionMode($scope.projectionModes[0]);
-                }
-                if ($scope.change_recommendations.length > 0) {
-                    $scope.disableMotionInlineEditing();
-                }
             });
 
             $scope.$watch(function () {
@@ -606,7 +612,17 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             motion = _motion;
         };
 
-        obj.init = function (_scope, _motion, viewMode) {
+        obj.initProjector = function (_scope, _motion, viewMode) {
+            obj.context = 'projector';
+            $scope = _scope;
+            motion = _motion;
+
+            obj.set_amendments_crs_watcher($scope, motion);
+            obj.mode = viewMode;
+        };
+
+        obj.initSite = function (_scope, _motion, viewMode) {
+            obj.context = 'site';
             $scope = _scope;
             motion = _motion;
 
