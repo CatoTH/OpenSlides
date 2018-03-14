@@ -102,7 +102,7 @@
         <div class="motion-text-with-diffs line-numbers-{{ config('motions_default_line_numbering') }}">
           <div ng-repeat="change in amendments_crs">
             <div class="motion-text original-text line-numbers-{{ config('motions_default_line_numbering') }}"
-                  ng-if="amendments_crs[$index - 1].line_to < change.line_from"
+                  ng-if="$index === 0 || amendments_crs[$index - 1].line_to < change.line_from"
                   ng-bind-html="motion.getTextBetweenChanges(version, amendments_crs[$index - 1], change, highlight) | trusted">
             </div>
             <div class="diff-box diff-box-{{ change.id }} clearfix motion-text motion-text-diff line-numbers-{{ config('motions_default_line_numbering') }}">

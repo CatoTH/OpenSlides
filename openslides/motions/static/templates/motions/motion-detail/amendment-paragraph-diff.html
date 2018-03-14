@@ -13,6 +13,9 @@
 <div ng-class="{'col-sm-8': (lineNumberMode != 'outside'), 'col-sm-12': (lineNumberMode == 'outside')}"
      ng-if="motion.isParagraphBasedAmendment()">
     <section class="motion-text-holder" ng-init="paragraphs = motion.getAmendmentParagraphsLinesDiff()">
+        <div class="alert alert-info" ng-if="paragraphs.length === 0">
+            <translate>No changes at the text</translate>
+        </div>
         <div ng-repeat="paragraph in paragraphs" class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}"
              ng-class="{'amendment-context': showAmendmentContext}">
 

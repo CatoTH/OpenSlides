@@ -48,7 +48,7 @@
     <div class="motion-text-with-diffs line-numbers-{{ lineNumberMode }}">
         <div ng-repeat="change in amendments_crs">
             <div class="motion-text original-text line-numbers-{{ lineNumberMode }}"
-                 ng-if="amendments_crs[$index - 1].line_to < change.line_from"
+                 ng-if="$index === 0 || amendments_crs[$index - 1].line_to < change.line_from"
                  ng-bind-html="motion.getTextBetweenChanges(version, amendments_crs[$index - 1], change, highlight) | trusted"></div>
 
             <div ng-class="{'diff-box': motion.isAllowed('can_manage'), 'collides': change.getCollissions().length > 0}"
@@ -57,7 +57,7 @@
                     <i class="fa fa-warning" uib-tooltip="{{ 'This change collides with another one. Only one can be accepted.' | translate }}"></i>
                 </div>
                 <div class="action-row" ng-if="motion.isAllowed('can_manage')">
-                    <div class="btn-group" data-toggle="buttons">
+                    <div class="btn-group" data-toggle="buttons" ng-if="change.type == 'recommendation'">
                         <label class="btn btn-sm btn-default"
                                ng-class="{active: change.accepted, disabled: change.getAcceptedCollissions().length > 0}"
                                title="{{ 'Not rejected' | translate }}" ng-click="change.setAccepted($event)">
@@ -89,11 +89,11 @@
                         <i class="fa fa-pencil"></i>
                     </button>
 
-                    <div class="btn btn-default btn-sm pull-right btn-amend-info"
-                         ng-if="change.type == 'amendment'">
+                    <a ng-if="change.type == 'amendment'" ui-sref="motions.motion.detail({id: change.original.id})"
+                       class="btn btn-default btn-sm pull-right btn-amend-info">
                         <i class="fa fa-info"></i>
                         {{ change.original.identifier }}
-                    </div>
+                    </a>
                 </div>
                 <div class="status-row" ng-if="!motion.isAllowed('can_manage') && change.rejected">
                     <translate>Rejected</translate>

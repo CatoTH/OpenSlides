@@ -25,6 +25,7 @@ class MotionSlide(ProjectorElement):
             yield motion
             yield motion.agenda_item
             yield motion.state.workflow
+            yield from motion.get_paragraph_based_amendments()
             yield from motion.submitters.all()
             yield from motion.supporters.all()
             yield from MotionChangeRecommendation.objects.filter(motion_version=motion.get_active_version().id)

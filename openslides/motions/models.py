@@ -725,6 +725,13 @@ class Motion(RESTModelMixin, models.Model):
         """
         return config['motions_amendments_enabled'] and self.parent is not None
 
+    def is_paragraph_based_amendment(self):
+        """
+        Returns True if the motion is an amendment that stores the changes on a per-paragraph-basis
+        and is therefore eligible to be shown in diff-view.
+        """
+        return self.is_amendment() and self.amendment_paragraphs
+
     def get_amendments_deep(self):
         """
         Generator that yields all amendments of this motion including all
@@ -733,6 +740,12 @@ class Motion(RESTModelMixin, models.Model):
         for amendment in self.amendments.all():
             yield amendment
             yield from amendment.get_amendments_deep()
+
+    def get_paragraph_based_amendments(self):
+        """
+        Returns a list of all paragraph-based amendments to this motion
+        """
+        return list(filter(lambda amend: amend.is_paragraph_based_amendment(), self.amendments.all()))
 
 
 class MotionVersion(RESTModelMixin, models.Model):

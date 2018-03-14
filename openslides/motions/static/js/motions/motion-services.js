@@ -522,7 +522,9 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
                     return cr.getUnifiedChangeObject();
                 }).concat(
                     $scope.paragraph_amendments.filter(function(amend) {
-                        return (amend.recommendation && amend.recommendation.name === 'accepted');
+                        // Only amendments that have a recommendation of "accepted" and have not been officially rejected
+                        // are to be shown in the diff-view
+                        return (amend.recommendation && amend.recommendation.name === 'accepted' && amend.state.name !== 'rejected');
                     }).map(function (amend) {
                         return amend.getUnifiedChangeObject();
                     })
