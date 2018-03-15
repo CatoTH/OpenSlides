@@ -427,7 +427,7 @@ angular.module('OpenSlidesApp.motions', [
                     return this._getTextWithChanges(versionId, highlight, lineBreaks, function(recommendation) {
                         return !recommendation.rejected;
                     }, function(amendment) {
-                        return (amendment.state && amendment.state.name === 'accepted');
+                        return (amendment.state && amendment.state.name !== 'rejected');
                     });
                 },
                 getTextByMode: function(mode, versionId, highlight, lineBreaks) {

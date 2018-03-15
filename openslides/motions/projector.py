@@ -29,6 +29,8 @@ class MotionSlide(ProjectorElement):
             yield from motion.submitters.all()
             yield from motion.supporters.all()
             yield from MotionChangeRecommendation.objects.filter(motion_version=motion.get_active_version().id)
+            if motion.parent:
+                yield motion.parent
 
     def get_collection_elements_required_for_this(self, collection_element, config_entry):
         output = super().get_collection_elements_required_for_this(collection_element, config_entry)
