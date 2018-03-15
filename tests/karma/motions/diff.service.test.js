@@ -738,4 +738,30 @@ describe('linenumbering', function () {
       expect(affected).toEqual({"from": 1, "to": 2});
     });
   });
+
+  describe('stripping ins/del-styles/tags', function () {
+    it('deletes to be deleted nodes', function () {
+        var inHtml = '<p>Test <span class="delete">Test 2</span> Another test <del>Test 3</del></p><p class="delete">Test 4</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test  Another test </P>');
+    });
+
+    it('produces empty paragraphs, if necessary', function () {
+        var inHtml = '<p class="delete">Test <span class="delete">Test 2</span> Another test <del>Test 3</del></p><p class="delete">Test 4</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('');
+    });
+
+    it('Removes INS-tags', function () {
+        var inHtml = '<p>Test <ins>Test <strong>2</strong></ins> Another test</p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test Test <STRONG>2</STRONG> Another test</P>');
+    });
+
+    it('Removes .insert-classes', function () {
+        var inHtml = '<p class="insert">Test <strong>1</strong></p><p class="insert anotherclass">Test <strong>2</strong></p>';
+        var stripped = diffService.diffHtmlToFinalText(inHtml);
+        expect(stripped).toBe('<P>Test <STRONG>1</STRONG></P><P class="anotherclass">Test <STRONG>2</STRONG></P>');
+    });
+  });
 });

@@ -578,7 +578,7 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
 
                 $scope.has_proposed_changes = ($scope.amendments_crs.length > 0);
                 $scope.changed_version_has_accepted_collissions = ($scope.amendments_crs.find(function(change) {
-                    return (change.getCollissions(true).length !== 0)
+                    return (change.getCollissions(true).length !== 0);
                 }) !== undefined);
 
                 if (obj.context === 'site') {

@@ -624,13 +624,13 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getAmendmentsAffectedLinesChanged: function () {
                     var paragraph_diff = this.getAmendmentParagraphsByMode("diff")[0],
-                        paragraph_changed = this.getAmendmentParagraphsByMode("changed")[0],
                         affected_lines = diffService.detectAffectedLineRange(paragraph_diff.text);
 
-                    var extracted_lines = diffService.extractRangeByLineNumbers(paragraph_changed.text, affected_lines.from, affected_lines.to);
+                    var extracted_lines = diffService.extractRangeByLineNumbers(paragraph_diff.text, affected_lines.from, affected_lines.to);
 
                     var diff_html = extracted_lines.outerContextStart + extracted_lines.innerContextStart +
                             extracted_lines.html + extracted_lines.innerContextEnd + extracted_lines.outerContextEnd;
+                    diff_html = diffService.diffHtmlToFinalText(diff_html);
 
                     return {
                         "line_from": affected_lines.from,

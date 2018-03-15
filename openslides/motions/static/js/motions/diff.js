@@ -807,6 +807,38 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         };
 
         /**
+         * Removes .delete-nodes and <del>-Tags (including content)
+         * Removes the .insert-classes and the wrapping <ins>-Tags (while maintaining content)
+         * @param html
+         */
+        this.diffHtmlToFinalText = function(html) {
+            var fragment = this.htmlToFragment(html);
+
+            var delNodes = fragment.querySelectorAll('.delete, del');
+            for (var i = 0; i < delNodes.length; i++) {
+                delNodes[i].parentNode.removeChild(delNodes[i]);
+            }
+
+            var insNodes = fragment.querySelectorAll('ins');
+            for (i = 0; i < insNodes.length; i++) {
+                var ins = insNodes[i];
+                while (ins.childNodes.length > 0) {
+                    var child = ins.childNodes.item(0);
+                    ins.removeChild(child);
+                    ins.parentNode.insertBefore(child, ins);
+                }
+                ins.parentNode.removeChild(ins);
+            }
+
+            var insertNodes = fragment.querySelectorAll('.insert');
+            for (i = 0;i < insertNodes.length; i++) {
+                this.removeCSSClass(insertNodes[i], 'insert');
+            }
+
+            return this._serializeDom(fragment, false);
+        };
+
+        /**
          * @param {string} htmlOld
          * @param {string} htmlNew
          * @returns {number}
