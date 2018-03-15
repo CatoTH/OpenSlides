@@ -2,6 +2,7 @@ from typing import Dict  # noqa
 
 from django.db import transaction
 from django.utils.translation import ugettext as _
+from rest_framework import serializers
 
 from ..poll.serializers import default_votes_validator
 from ..utils.rest_api import (
@@ -325,7 +326,7 @@ class MotionSerializer(ModelSerializer):
     polls = MotionPollSerializer(many=True, read_only=True)
     reason = CharField(allow_blank=True, required=False, write_only=True)
     state_required_permission_to_see = SerializerMethodField()
-    text = CharField(write_only=True)
+    text = CharField(write_only=True, allow_blank=True)
     title = CharField(max_length=255, write_only=True)
     amendment_paragraphs = AmendmentParagraphsJSONSerializerField(required=False, write_only=True)
     versions = MotionVersionSerializer(many=True, read_only=True)
@@ -384,6 +385,11 @@ class MotionSerializer(ModelSerializer):
             data['amendment_paragraphs'] = list(map(lambda entry: validate_html(entry) if type(entry) is str else None,
                                                     data['amendment_paragraphs']))
             data['text'] = ''
+        else:
+            if 'text' in data and len(data['text']) == 0:
+                raise serializers.ValidationError({
+                    'text': _('This field may not be blank.')
+                })
 
         return data
 

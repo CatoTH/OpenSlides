@@ -427,7 +427,7 @@ angular.module('OpenSlidesApp.motions.site', [
                 };
             },
             // angular-formly fields for motion form
-            getFormFields: function (isCreateForm) {
+            getFormFields: function (isCreateForm, isParagraphBasedAmendment) {
                 var workflows = Workflow.getAll();
                 var images = Mediafile.getAllImages();
                 var formFields = [
@@ -466,7 +466,7 @@ angular.module('OpenSlidesApp.motions.site', [
                     type: 'editor',
                     templateOptions: {
                         label: gettextCatalog.getString('Text'),
-                        required: true
+                        required: !isParagraphBasedAmendment // Deleting the whole paragraph in an amendment should be possible
                     },
                     data: {
                         ckeditorOptions: Editor.getOptions()
@@ -1467,6 +1467,7 @@ angular.module('OpenSlidesApp.motions.site', [
             return Motion.lastModified(motionId);
         }, function () {
             $scope.motion = Motion.get(motionId);
+            $scope.amendment_diff_paragraphs = $scope.motion.getAmendmentParagraphsLinesDiff();
             MotionComment.populateFields($scope.motion);
             if (motion.comments) {
                 $scope.stateExtension = $scope.motion.comments[$scope.commentFieldForStateId];
@@ -1537,7 +1538,7 @@ angular.module('OpenSlidesApp.motions.site', [
             $event.preventDefault();
             $event.stopPropagation();
             $scope.showAmendmentContext = !$scope.showAmendmentContext;
-        }
+        };
 
         if (motion.parent_id) {
             Motion.bindOne(motion.parent_id, $scope, 'parent');
@@ -2064,7 +2065,8 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.alert = {};
 
         // Check whether this is a new amendment.
-        var isAmendment = $scope.$parent.motion && $scope.$parent.motion.id;
+        var isAmendment = $scope.$parent.motion && $scope.$parent.motion.id,
+            isParagraphBasedAmendment = false;
 
         // Set default values for create form
         // ... for amendments add parent_id
@@ -2075,6 +2077,7 @@ angular.module('OpenSlidesApp.motions.site', [
             if (Config.get('motions_amendments_text_mode').value === 'paragraph' && paragraphNo !== undefined) {
                 var paragraphs = $scope.$parent.motion.getTextParagraphs($scope.$parent.motion.active_version, false);
                 $scope.model.text = paragraphs[paragraphNo];
+                isParagraphBasedAmendment = true;
             }
             $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + $scope.$parent.motion.getTitle();
             $scope.model.paragraphNo = paragraphNo;
@@ -2088,7 +2091,7 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.model.workflow_id = Config.get('motions_workflow').value;
         }
         // get all form fields
-        $scope.formFields = MotionForm.getFormFields(true);
+        $scope.formFields = MotionForm.getFormFields(true, isParagraphBasedAmendment);
 
         // save motion
         $scope.save = function (motion, gotoDetailView) {
@@ -2149,9 +2152,18 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.model = angular.copy(motion);
         $scope.model.disable_versioning = false;
         $scope.model.more = false;
+        if (motion.isParagraphBasedAmendment()) {
+            motion.getVersion(motion.active_version).amendment_paragraphs.forEach(function(paragraph_amend, paragraphNo) {
+                // Hint: this assumes there is only one modified paragraph
+                if (paragraph_amend !== null) {
+                    $scope.model.text = paragraph_amend;
+                    $scope.model.paragraphNo = paragraphNo;
+                }
+            });
+        }
 
         // get all form fields
-        $scope.formFields = MotionForm.getFormFields();
+        $scope.formFields = MotionForm.getFormFields(false, motion.isParagraphBasedAmendment());
         // override default values for update form
         for (var i = 0; i < $scope.formFields.length; i++) {
             if ($scope.formFields[i].key == "identifier") {
@@ -2188,6 +2200,14 @@ angular.module('OpenSlidesApp.motions.site', [
 
         // Save motion
         $scope.save = function (motion, gotoDetailView) {
+            if ($scope.model.paragraphNo !== undefined) {
+                var parentMotion = $scope.model.getParentMotion();
+                var orig_paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
+                $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
+                    return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
+                });
+            }
+
             // inject the changed motion (copy) object back into DS store
             Motion.inject(motion);
             // save changed motion object on server

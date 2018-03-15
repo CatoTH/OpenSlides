@@ -571,8 +571,13 @@ angular.module('OpenSlidesApp.motions', [
                      * }
                      */
 
+                    if (!this.isParagraphBasedAmendment()) {
+                        return [];
+                    }
+
                     var original_text = this.getParentMotion().getTextByMode('original', null, null, true);
                     var original_paragraphs = lineNumberingService.splitToParagraphs(original_text);
+
 
                     var output = [];
 
@@ -588,7 +593,6 @@ angular.module('OpenSlidesApp.motions', [
                             paragraph_line_range = lineNumberingService.getLineNumberRange(paragraph_orig),
                             diff = diffService.diff(paragraph_orig, paragraph_amend, line_length, paragraph_line_range.from),
                             affected_lines = diffService.detectAffectedLineRange(diff);
-
 
                         var textPre = '';
                         var textPost = '';
