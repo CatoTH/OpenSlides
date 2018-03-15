@@ -427,7 +427,13 @@ angular.module('OpenSlidesApp.motions', [
                     return this._getTextWithChanges(versionId, highlight, lineBreaks, function(recommendation) {
                         return !recommendation.rejected;
                     }, function(amendment) {
-                        return (amendment.state && amendment.state.name !== 'rejected');
+                        if (amendment.state && amendment.state.name === 'rejected') {
+                            return false;
+                        }
+                        if (amendment.state && amendment.state.name === 'accepted') {
+                            return true;
+                        }
+                        return (amendment.recommendation && amendment.recommendation.name === 'accepted');
                     });
                 },
                 getTextByMode: function(mode, versionId, highlight, lineBreaks) {
