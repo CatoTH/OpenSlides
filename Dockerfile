@@ -26,6 +26,7 @@ USER openslides
 RUN wget https://github.com/OpenSlides/openslides-saml/archive/master.zip -P $HOME
 RUN cd $HOME && unzip master.zip && cd openslides-saml-master && $HOME/.yarn/bin/yarn --non-interactive
 USER root
+RUN mkdir /app/static
 RUN cp -r /home/openslides/openslides-saml-master/openslides_saml /app/
 RUN rm -r /home/openslides/master.zip /home/openslides/openslides-saml-master/
 
