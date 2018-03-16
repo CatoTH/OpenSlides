@@ -1113,6 +1113,23 @@ angular.module('OpenSlidesApp.motions', [
                     }
                 );
             },
+            getFormField : function (id) {
+                var fields = this.getNoSpecialCommentsFields();
+                var field = fields[id];
+                if (field) {
+                    return {
+                        key: 'comment_' + id,
+                        type: 'editor',
+                        templateOptions: {
+                            label: field.name,
+                        },
+                        data: {
+                            ckeditorOptions: Editor.getOptions()
+                        },
+                        hide: !operator.hasPerms("motions.can_manage_comments")
+                    };
+                }
+            },
             populateFields: function (motion) {
                 // Populate content of motion.comments to the single comment
                 var fields = this.getCommentsFields();

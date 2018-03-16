@@ -91,7 +91,7 @@ angular.module('OpenSlidesApp.motions.site', [
             })
             .state('motions.motion.amendments', {
                 url: '/{id:int}/amendments',
-                controller: 'MotionAmendmentCtrl',
+                controller: 'MotionAmendmentStateCtrl',
                 params: {
                     motionId: null,
                 },
@@ -104,7 +104,7 @@ angular.module('OpenSlidesApp.motions.site', [
             .state('motions.motion.allamendments', {
                 url: '/amendments',
                 templateUrl: 'static/templates/motions/motion-amendments.html',
-                controller: 'MotionAmendmentCtrl',
+                controller: 'MotionAmendmentStateCtrl',
                 resolve: {
                     motionId: function() { return void 0; },
                 }
@@ -631,6 +631,34 @@ angular.module('OpenSlidesApp.motions.site', [
 
                 return formFields;
             }
+        };
+    }
+])
+
+.factory('MotionCommentForm', [
+    'MotionComment',
+    function (MotionComment) {
+        return {
+            // ngDialog for motion comment form
+            getDialog: function (motion, commentFieldId) {
+                return {
+                    template: 'static/templates/motions/motion-comment-form.html',
+                    controller: 'MotionCommentCtrl',
+                    className: 'ngdialog-theme-default wide-form',
+                    closeByEscape: false,
+                    closeByDocument: false,
+                    resolve: {
+                        motionId: function () {return motion.id;},
+                        commentFieldId: function () {return commentFieldId;},
+                    },
+                };
+            },
+            // angular-formly fields for motion comment form
+            getFormFields: function (commentFieldId) {
+                return [
+                    MotionComment.getFormField(commentFieldId)
+                ];
+            },
         };
     }
 ])
@@ -2229,6 +2257,73 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
+.controller('MotionCommentCtrl', [
+    '$scope',
+    'Motion',
+    'MotionComment',
+    'MotionCommentForm',
+    'motionId',
+    'commentFieldId',
+    'gettextCatalog',
+    'ErrorMessage',
+    function ($scope, Motion, MotionComment, MotionCommentForm, motionId, commentFieldId,
+        gettextCatalog, ErrorMessage) {
+        $scope.alert = {};
+
+        // set initial values for form model by create deep copy of motion object
+        // so list/detail view is not updated while editing
+        var motion = Motion.get(motionId);
+        $scope.model = angular.copy(motion);
+        $scope.formFields = MotionCommentForm.getFormFields(commentFieldId);
+
+        var fields = MotionComment.getNoSpecialCommentsFields();
+        var title = gettextCatalog.getString('Edit comment %%comment%% of motion %%motion%%');
+        title = title.replace('%%comment%%', fields[commentFieldId].name);
+        $scope.title = title.replace('%%motion%%', motion.getTitle());
+
+        $scope.model.title = motion.getTitle(-1);
+        $scope.model.text = motion.getText(-1);
+        $scope.model.reason = motion.getReason(-1);
+
+        if (motion.isParagraphBasedAmendment()) {
+            motion.getVersion(motion.active_version).amendment_paragraphs.forEach(function(paragraph_amend, paragraphNo) {
+                // Hint: this assumes there is only one modified paragraph
+                if (paragraph_amend !== null) {
+                    $scope.model.text = paragraph_amend;
+                    $scope.model.paragraphNo = paragraphNo;
+                }
+            });
+        }
+
+        $scope.save = function (motion) {
+            if (motion.isParagraphBasedAmendment()) {
+                motion.getVersion(motion.active_version).amendment_paragraphs.forEach(function(paragraph_amend, paragraphNo) {
+                    // Hint: this assumes there is only one modified paragraph
+                    if (paragraph_amend !== null) {
+                        $scope.model.text = paragraph_amend;
+                        $scope.model.paragraphNo = paragraphNo;
+                    }
+                });
+            }
+
+            // inject the changed motion (copy) object back into DS store
+            Motion.inject(motion);
+            // save changed motion object on server
+            Motion.save(motion).then(
+                function(success) {
+                    $scope.closeThisDialog();
+                },
+                function (error) {
+                    // save error: revert all changes by restore
+                    // (refresh) original motion object from server
+                    Motion.refresh(motion);
+                    $scope.alert = ErrorMessage.forAlert(error);
+                }
+            );
+        };
+    }
+])
+
 .controller('MotionPollUpdateCtrl', [
     '$scope',
     'gettextCatalog',
@@ -2266,20 +2361,31 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
+.controller('MotionAmendmentStateCtrl', [
+    '$scope',
+    'motionId',
+    function ($scope, motionId) {
+        $scope.motionId = motionId;
+    }
+])
+
 .controller('MotionAmendmentCtrl', [
     '$scope',
+    '$sessionStorage',
     'Motion',
-    'Config',
-    'motionId',
     'MotionComment',
     'PersonalNoteManager',
-    function ($scope, Motion, Config, motionId, MotionComment, PersonalNoteManager) {
+    'ngDialog',
+    'MotionCommentForm',
+    'gettext',
+    function ($scope, $sessionStorage, Motion, MotionComment, PersonalNoteManager, ngDialog,
+        MotionCommentForm, gettext) {
         $scope.$watch(function () {
             return Motion.lastModified();
         }, function () {
             // check, if special motion is given
-            if (motionId) {
-                $scope.specialMotion = Motion.get(motionId);
+            if ($scope.motionId) {
+                $scope.specialMotion = Motion.get($scope.motionId);
                 if (!$scope.specialMotion.hasAmendments()) {
                     $scope.specialMotion = void 0;
                 }
@@ -2304,12 +2410,44 @@ angular.module('OpenSlidesApp.motions.site', [
                 if (motion.star === undefined) {
                     motion.star = false;
                 }
+
+                // add a custom sort attribute
+                var diffLine = motion.getAmendmentParagraphsLinesDiff()[0].diffLineFrom;
+                motion.parentMotionAndLineNumber = Motion.get(motion.parent_id).identifier + ' ' +
+                    diffLine;
             });
         });
 
-        $scope.lineNumberMode = Config.get('motions_default_line_numbering').value;
-        $scope.setLineNumberMode = function(mode) {
-            $scope.lineNumberMode = mode;
+        // Save expand state so the session
+        if ($sessionStorage.amendmentTableExpandState) {
+            $scope.toggleExpandContent();
+        }
+        $scope.saveExpandState = function (state) {
+            $sessionStorage.amendmentTableExpandState = state;
+        }
+
+        // add custom sorting
+        $scope.sortOptions.unshift({
+            name: 'parentMotionAndLineNumber',
+            display_name: gettext('Parent motion and line number'),
+        });
+        if (!$scope.sort.column || $scope.sort.column === 'identifier') {
+            $scope.sort.column = 'parentMotionAndLineNumber';
+        }
+
+        $scope.isCommentExpandable = function (comment) {
+            comment = $(comment).text();
+            return comment.length > 30;
+        };
+        $scope.getCommentPreview = function (comment) {
+            comment = $(comment).text();
+            if (comment.length > 30) {
+                comment = comment.substr(0, 30) + '...';
+            }
+            return comment;
+        };
+        $scope.editComment = function (motion, fieldId) {
+            ngDialog.open(MotionCommentForm.getDialog(motion, fieldId));
         };
     }
 ])
@@ -2743,6 +2881,7 @@ angular.module('OpenSlidesApp.motions.site', [
         gettext('Name of recommender');
         gettext('Default text version for change recommendations');
         gettext('Will be displayed as label before selected recommendation. Use an empty value to disable the recommendation system.');
+        gettext('Edit comment %%comment%% of motion %%motion%%');
 
         // subgroup Amendments
         gettext('Amendments');

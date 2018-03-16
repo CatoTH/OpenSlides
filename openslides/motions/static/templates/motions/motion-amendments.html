@@ -1,3 +1,5 @@
+<div ng-controller="MotionListCtrl">
+<div ng-controller="MotionAmendmentCtrl">
 <div class="header">
   <div class="title">
     <div class="submenu">
@@ -5,7 +7,8 @@
         <i class="fa fa-angle-double-left fa-lg"></i>
         <translate>Back to overview</translate>
       </a>
-      <button type="button" class="btn btn-sm btn-default" ng-click="toggleExpandContent()">
+      <button type="button" class="btn btn-sm btn-default"
+        ng-click="toggleExpandContent(); saveExpandState(expandContent)">
         <i class="fa fa-arrows-h fa-lg"></i>
         <span ng-if="!expandContent" translate>Expand</span>
         <span ng-if="expandContent" translate>Reduce</span>
@@ -14,6 +17,7 @@
     <h1 translate>Amendments</h1>
     <h2 ng-if="specialMotion" translate>
       <a ui-sref="motions.motion.detail({id: specialMotion.id})">
+        <translate>Motion</translate>
         <span ng-if="specialMotion.identifier">
           {{ specialMotion.identifier }} &mdash;
         </span>
@@ -23,13 +27,9 @@
   </div>
 </div>
 
-<div class="details" ng-controller="MotionListCtrl">
+<div class="details">
 
-  <div>
-    <ng-include src="'static/templates/motions/motion-detail/toolbar-line-numbering.html'"></ng-include>
-  </div>
-
-  <div class="spacer-top-lg italic row">
+  <div class="spacer-top italic row">
     <div class="col-md-6">
       {{ amendmentsFiltered.length }} /
       {{ amendments.length }}
@@ -74,7 +74,7 @@
       </div>
       <div class="no-projector-spacer" os-perms="!core.can_manage_projector"></div>
       <!-- data -->
-      <div class="col-xs-2 content">
+      <div class="col-xs-3 content">
         <div class="id-col">
           <span ng-show="amendment.identifier">
             {{ amendment.identifier }}
@@ -165,22 +165,10 @@
           </div>
         </div>
       </div>
-      <div class="col-xs-3 diff-space">
-        <!-- The original paragraph -->
-        <section class="motion-text-holder" ng-init="oldParagraph = amendment.getAmendmentParagraphsByMode('original')[0]">
-          <div class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}">
-            <h3 class="amendment-line-header">&nbsp;</h3> <!--spacer-->
-            <div class="paragraph-context" ng-bind-html="oldParagraph.textPre | trusted"></div>
-            <div ng-bind-html="oldParagraph.text | trusted"></div>
-            <div class="paragraph-context" ng-bind-html="oldParagraph.textPost | trusted"></div>
-          </div>
-        </section> <!-- original paragraph end -->
-      </div>
-      <div class="col-xs-3 diff-space">
-
+      <div class="col-xs-5">
         <!-- The diff -->
         <section class="motion-text-holder" ng-init="paragraphs = amendment.getAmendmentParagraphsLinesDiff()">
-          <div ng-repeat="paragraph in paragraphs" class="motion-text motion-text-diff line-numbers-{{ lineNumberMode }}">
+          <div ng-repeat="paragraph in paragraphs" class="motion-text motion-text-diff line-numbers-none">
 
             <h3 ng-if="paragraph.diffLineTo == paragraph.diffLineFrom + 1" class="amendment-line-header">
               {{ ('In line %FROM%' | translate).replace('%FROM%', paragraph.diffLineFrom) }}:
@@ -189,14 +177,32 @@
               {{ ('From line %FROM% to %TO%' | translate).replace('%FROM%', paragraph.diffLineFrom).replace('%TO%', paragraph.diffLineTo - 1) }}:
             </h3>
 
-            <div class="paragraph-context" ng-bind-html="paragraph.textPre | trusted"></div>
             <div ng-bind-html="paragraph.text | trusted"></div>
-            <div class="paragraph-context" ng-bind-html="paragraph.textPost | trusted"></div>
           </div>
         </section> <!-- Diff end -->
       </div>
-      <div class="col-xs-3" style="width: calc(25% - 70px);">
-        <translate>Comments</translate>...
+      <div class="col-xs-4" style="width: calc(33.33% - 70px);">
+        <div ng-repeat="(id, field) in noSpecialCommentsFields">
+          <div ng-mouseover="field.hover=true" ng-mouseleave="field.hover=false">
+            <i class="fa pointer spacer-right" ng-class="field[amendment.id] ? 'fa-caret-down' : 'fa-caret-right'"
+              ng-click="field[amendment.id] = !field[amendment.id]"
+              ng-if="isCommentExpandable(amendment.comments[id])"></i>
+            <strong>{{ field.name }}</strong>
+            <i class="fa fa-pencil pointer" os-perms="motions.can_manage_comments"
+              ng-show="field.hover && amendment.hover" ng-click="editComment(amendment, id)"></i>
+          </div>
+          <div ng-if="!field[amendment.id]">
+            {{ getCommentPreview(amendment.comments[id]) }}
+          </div>
+          <div ng-if="field[amendment.id]" ng-bind-html="amendment.comments[id]"></div>
+        </div>
+
+        <div class="spacer-top" os-perms="motions.can_manage">
+          <a href="">
+            <translate>Create modified amendment</translate>
+          </a>
+        </div>
+
       </div>
     </div>
 
@@ -214,4 +220,6 @@
     </ul>
 
   </div> <!-- container -->
+</div>
+</div>
 </div>
