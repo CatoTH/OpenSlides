@@ -2049,7 +2049,7 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.model = angular.copy(motion);
         $scope.model.paragraph_selected = null;
 
-        $scope.paragraphs = motion.getTextParagraphs().map(function(text, index) {
+        $scope.paragraphs = motion.getTextParagraphs(motion.active_version, true).map(function(text, index) {
             // This prevents an error in ng-repeater's duplication detection if two identical paragraphs occur
             return {
                 "paragraphNo": index,
@@ -2424,7 +2424,7 @@ angular.module('OpenSlidesApp.motions.site', [
         }
         $scope.saveExpandState = function (state) {
             $sessionStorage.amendmentTableExpandState = state;
-        }
+        };
 
         // add custom sorting
         $scope.sortOptions.unshift({

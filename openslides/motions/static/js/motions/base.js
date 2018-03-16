@@ -484,7 +484,7 @@ angular.module('OpenSlidesApp.motions', [
                      */
                     var text;
                     if (lineBreaks) {
-                        text = this.getTextWithLineBreaks(versionId, highlight);
+                        text = this.getTextWithLineBreaks(versionId);
                     } else {
                         text = this.getVersion(versionId).text;
                     }
