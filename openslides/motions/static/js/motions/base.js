@@ -699,8 +699,18 @@ angular.module('OpenSlidesApp.motions', [
                     // Properties that might change when the Amendment is edited
                     this._change_object.line_from = affected_lines.from;
                     this._change_object.line_to = affected_lines.to;
-                    this._change_object.rejected = (this.state && this.state.id === rejection_state);
-                    this._change_object.accepted = (this.state && this.state.id === acceptance_state);
+
+                    this._change_object.accepted = false;
+                    this._change_object.rejected = false;
+                    if (this.state && this.state.name === 'rejected') {
+                        this._change_object.rejected = true;
+                    } else if (this.state && this.state.name === 'accepted') {
+                        this._change_object.accepted = true;
+                    } else if (this.recommendation.name === 'rejected') {
+                        this._change_object.rejected = true;
+                    } else if  (this.recommendation.name === 'accepted') {
+                        this._change_object.accepted = true;
+                    }
 
                     return this._change_object;
                 },

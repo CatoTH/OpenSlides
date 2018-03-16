@@ -456,7 +456,8 @@ angular.module('OpenSlidesApp.motions.site', [
                     templateOptions: {
                         label: gettextCatalog.getString('Title'),
                         required: true
-                    }
+                    },
+                    hide: isParagraphBasedAmendment
                 },
                 {
                     template: '<p class="spacer-top-lg no-padding">' + Config.translate(Config.get('motions_preamble').value) + '</p>'
@@ -2107,7 +2108,7 @@ angular.module('OpenSlidesApp.motions.site', [
                 $scope.model.text = paragraphs[paragraphNo];
                 isParagraphBasedAmendment = true;
             }
-            $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + $scope.$parent.motion.getTitle();
+            $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + $scope.$parent.motion.identifier;
             $scope.model.paragraphNo = paragraphNo;
             $scope.model.parent_id = $scope.$parent.motion.id;
             $scope.model.category_id = $scope.$parent.motion.category_id;
