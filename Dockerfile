@@ -1,7 +1,7 @@
 FROM python:3.5
 RUN apt-get -y update && apt-get -y upgrade
 
-RUN apt-get install -y libpq-dev supervisor curl vim
+RUN apt-get install -y libpq-dev supervisor curl vim zip libxmlsec1-dev
 ## BUILD JS STUFF
 RUN wget https://nodejs.org/dist/v6.11.3/node-v6.11.3-linux-x64.tar.xz -P /tmp
 RUN cd /tmp && tar xfvJ node-v6.11.3-linux-x64.tar.xz
@@ -19,6 +19,15 @@ RUN $HOME/.yarn/bin/yarn --non-interactive
 USER root
 COPY requirements_*.txt /app/
 RUN pip install -r /app/requirements_big_mode.txt
+
+# SAML plugin
+RUN pip install python3-saml
+USER openslides
+RUN wget https://github.com/OpenSlides/openslides-saml/archive/master.zip -P $HOME
+RUN cd $HOME && unzip master.zip && cd openslides-saml-master && $HOME/.yarn/bin/yarn --non-interactive
+USER root
+RUN cp -r /home/openslides/openslides-saml-master/openslides_saml /app/
+RUN rm -r /home/openslides/master.zip /home/openslides/openslides-saml-master/
 
 ## Clean up
 RUN apt-get remove -y python3-pip wget curl
