@@ -1870,7 +1870,7 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.createChangeRecommendation = ChangeRecommendationCreate;
         $scope.createChangeRecommendation.init($scope, motion);
 
-        // Change recommendation viewing
+        // Change recommendation and amendment viewing
         $scope.viewChangeRecommendations = ChangeRecommendationView;
         $scope.viewChangeRecommendations.initSite($scope, motion, Config.get('motions_recommendation_text_mode').value);
 
@@ -2913,6 +2913,7 @@ angular.module('OpenSlidesApp.motions.site', [
         gettext('Prefix for the identifier for amendments');
         gettext('Apply text for new amendments');
         gettext('The title of the motion is always applied.');
+        gettext('Amendment to');
 
         // subgroup Supporters
         gettext('Supporters');

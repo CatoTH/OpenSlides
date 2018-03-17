@@ -651,12 +651,12 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             }, obj.repositionOriginalAnnotations);
 
             var checkGotoOriginal = function () {
-                if ($scope.change_recommendations.length === 0 && $scope.title_change_recommendation === null) {
+                if ($scope.amendments_crs.length === 0 && $scope.title_change_recommendation === null) {
                     obj.mode = 'original';
                 }
             };
             $scope.$watch(function () {
-                return $scope.change_recommendations.length;
+                return $scope.amendments_crs.length;
             }, checkGotoOriginal);
             $scope.$watch(function () {
                 return $scope.title_change_recommendation;
