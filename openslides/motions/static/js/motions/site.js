@@ -413,7 +413,11 @@ angular.module('OpenSlidesApp.motions.site', [
         Tag, User, Workflow, Agenda, AgendaTree) {
         return {
             // ngDialog for motion form
-            getDialog: function (motion, paragraphNo) {
+            // If motion is given and not null, we're editing an already existing motion
+            // If parentMotion is give, we're dealing with an amendment
+            // If paragraphNo is given as well, the amendment is paragraph-based
+            // If paragraphTextPre is given, we're creating a modified version of another paragraph-based amendment
+            getDialog: function (motion, parentMotion, paragraphNo, paragraphTextPre) {
                 return {
                     template: 'static/templates/motions/motion-form.html',
                     controller: motion ? 'MotionUpdateCtrl' : 'MotionCreateCtrl',
@@ -421,9 +425,11 @@ angular.module('OpenSlidesApp.motions.site', [
                     closeByEscape: false,
                     closeByDocument: false,
                     resolve: {
+                        parentMotion: function () {return parentMotion;},
                         motionId: function () {return motion ? motion.id : void 0;},
                         paragraphNo: function () {return paragraphNo;},
-                    },
+                        paragraphTextPre: function () {return paragraphTextPre;}
+                    }
                 };
             },
             // angular-formly fields for motion form
@@ -1632,19 +1638,13 @@ angular.module('OpenSlidesApp.motions.site', [
         // open dialog for new amendment
         $scope.newAmendment = function () {
             var openMainDialog = function (paragraphNo) {
-                var dialog = MotionForm.getDialog(null, paragraphNo);
-                if (typeof dialog.scope === 'undefined') {
-                    dialog.scope = {};
-                }
+                var dialog = MotionForm.getDialog(null, motion, paragraphNo);
                 dialog.scope = $scope;
                 ngDialog.open(dialog);
             };
 
             if (Config.get('motions_amendments_text_mode').value === 'paragraph') {
                 var dialog = AmendmentParagraphChooseForm.getDialog($scope.motion, openMainDialog);
-                if (typeof dialog.scope === 'undefined') {
-                    dialog.scope = {};
-                }
                 dialog.scope = $scope;
                 ngDialog.open(dialog);
             } else {
@@ -2073,7 +2073,9 @@ angular.module('OpenSlidesApp.motions.site', [
     'operator',
     'Motion',
     'MotionForm',
+    'parentMotion',
     'paragraphNo',
+    'paragraphTextPre',
     'Category',
     'Config',
     'Mediafile',
@@ -2082,7 +2084,7 @@ angular.module('OpenSlidesApp.motions.site', [
     'Workflow',
     'Agenda',
     'ErrorMessage',
-    function($scope, $state, gettext, gettextCatalog, operator, Motion, MotionForm, paragraphNo,
+    function($scope, $state, gettext, gettextCatalog, operator, Motion, MotionForm, parentMotion, paragraphNo, paragraphTextPre,
         Category, Config, Mediafile, Tag, User, Workflow, Agenda, ErrorMessage) {
         Category.bindAll({}, $scope, 'categories');
         Mediafile.bindAll({}, $scope, 'mediafiles');
@@ -2094,25 +2096,29 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.alert = {};
 
         // Check whether this is a new amendment.
-        var isAmendment = $scope.$parent.motion && $scope.$parent.motion.id,
+        var isAmendment = parentMotion && parentMotion.id,
             isParagraphBasedAmendment = false;
 
         // Set default values for create form
         // ... for amendments add parent_id
         if (isAmendment) {
             if (Config.get('motions_amendments_text_mode').value === 'fulltext') {
-                $scope.model.text = $scope.$parent.motion.getText();
+                $scope.model.text = parentMotion.getText();
             }
             if (Config.get('motions_amendments_text_mode').value === 'paragraph' && paragraphNo !== undefined) {
-                var paragraphs = $scope.$parent.motion.getTextParagraphs($scope.$parent.motion.active_version, false);
-                $scope.model.text = paragraphs[paragraphNo];
+                if (paragraphTextPre !== undefined) {
+                    $scope.model.text = paragraphTextPre;
+                } else {
+                    var paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
+                    $scope.model.text = paragraphs[paragraphNo];
+                }
                 isParagraphBasedAmendment = true;
             }
-            $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + $scope.$parent.motion.identifier;
+            $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + parentMotion.identifier;
             $scope.model.paragraphNo = paragraphNo;
-            $scope.model.parent_id = $scope.$parent.motion.id;
-            $scope.model.category_id = $scope.$parent.motion.category_id;
-            $scope.model.motion_block_id = $scope.$parent.motion.motion_block_id;
+            $scope.model.parent_id = parentMotion.id;
+            $scope.model.category_id = parentMotion.category_id;
+            $scope.model.motion_block_id = parentMotion.motion_block_id;
             Motion.bindOne($scope.model.parent_id, $scope, 'parent');
         }
         // ... preselect default workflow
@@ -2126,8 +2132,8 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.save = function (motion, gotoDetailView) {
             motion.agenda_type = motion.showAsAgendaItem ? 1 : 2;
 
-            if ($scope.model.paragraphNo !== undefined) {
-                var orig_paragraphs = $scope.$parent.motion.getTextParagraphs($scope.$parent.motion.active_version, false);
+            if (isAmendment && $scope.model.paragraphNo !== undefined) {
+                var orig_paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
                 $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
                     return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
                 });
@@ -2189,6 +2195,7 @@ angular.module('OpenSlidesApp.motions.site', [
                     $scope.model.paragraphNo = paragraphNo;
                 }
             });
+            $scope.model.title = motion.getTitle();
         }
 
         // get all form fields
@@ -2375,11 +2382,12 @@ angular.module('OpenSlidesApp.motions.site', [
     '$sessionStorage',
     'Motion',
     'MotionComment',
+    'MotionForm',
     'PersonalNoteManager',
     'ngDialog',
     'MotionCommentForm',
     'gettext',
-    function ($scope, $sessionStorage, Motion, MotionComment, PersonalNoteManager, ngDialog,
+    function ($scope, $sessionStorage, Motion, MotionComment, MotionForm, PersonalNoteManager, ngDialog,
         MotionCommentForm, gettext) {
         $scope.$watch(function () {
             return Motion.lastModified();
@@ -2449,6 +2457,21 @@ angular.module('OpenSlidesApp.motions.site', [
         };
         $scope.editComment = function (motion, fieldId) {
             ngDialog.open(MotionCommentForm.getDialog(motion, fieldId));
+        };
+
+        $scope.createModifiedAmendment = function (amendment) {
+            var paragraphNo = null,
+                paragraphText = null;
+            // We assume there is only one affected paragraph
+            amendment.getVersion(amendment.active_version).amendment_paragraphs.forEach(function(parText, parNo) {
+                if (parText !== null) {
+                    paragraphNo = parNo;
+                    paragraphText = parText;
+                }
+            });
+            if (paragraphNo !== null) {
+                ngDialog.open(MotionForm.getDialog(null, amendment.getParentMotion(), paragraphNo, paragraphText));
+            }
         };
     }
 ])
