@@ -1,7 +1,13 @@
 <div class="header motion-header">
   <div class="title">
     <div class="submenu">
-      <a ui-sref="motions.motion.list" class="btn btn-sm btn-default">
+      <a ng-if="motion.isAmendment" ui-sref="motions.motion.amendments({id: motion.getParentMotion().id })"
+        class="btn btn-sm btn-default">
+        <i class="fa fa-angle-double-left fa-lg"></i>
+        <translate>Back to overview</translate>
+      </a>
+      <a ng-if="!motion.isAmendment" ui-sref="motions.motion.list"
+        class="btn btn-sm btn-default">
         <i class="fa fa-angle-double-left fa-lg"></i>
         <translate>Back to overview</translate>
       </a>
@@ -65,28 +71,29 @@
       </a>
     </div>
 
-      <h1 class="motion-title">
-          <span ng-if="!motion.isAmendment && viewChangeRecommendations.mode == 'original'">
-            <span class="title-change-indicator" ng-if="title_change_recommendation"
-                  ng-click="viewChangeRecommendations.scrollToDiffBox(title_change_recommendation.id)"></span>
-            <span class="change-title" ng-if="motion.isAllowed('update') && !title_change_recommendation"></span>
-          </span>
+    <h1 class="motion-title">
+        <span ng-if="!motion.isAmendment && viewChangeRecommendations.mode == 'original'">
+          <span class="title-change-indicator" ng-if="title_change_recommendation"
+                ng-click="viewChangeRecommendations.scrollToDiffBox(title_change_recommendation.id)"></span>
+          <span class="change-title" ng-if="motion.isAllowed('update') && !title_change_recommendation"></span>
+        </span>
 
-          <span>{{ motion.getTitleWithChanges(viewChangeRecommendations.mode) }}</span>
+        <a ui-sref="motions.motion.detail({id: motion.getParentMotion().id })" ng-if="motion.isAmendment">
+          {{ motion.getTitleWithChanges(viewChangeRecommendations.mode) }}
+        </a>
+        <span ng-if="!motion.isAmendment">
+          {{ motion.getTitleWithChanges(viewChangeRecommendations.mode) }}
+        </span>
 
-          <i class="fa pointer" ng-class="motion.personalNote.star ? 'fa-star' : 'fa-star-o'"
-             ng-if="operator.user"
-             title="{{ 'Set as favorite' | translate }}" ng-click="toggleStar()"></i>
-      </h1>
+        <i class="fa pointer" ng-class="motion.personalNote.star ? 'fa-star' : 'fa-star-o'"
+           ng-if="operator.user"
+           title="{{ 'Set as favorite' | translate }}" ng-click="toggleStar()"></i>
+    </h1>
 
-      <div class="row">
+    <div class="row">
       <div class="col-sm-6">
         <h2>
             <translate>Motion</translate> {{ motion.identifier }}
-            <span ng-if="parent">
-              (<translate>Amendment of motion</translate>
-              <a ui-sref="motions.motion.detail({id: parent.id})">{{ parent.identifier || parent.getTitle() }}</a>)
-            </span>
             <span ng-if="motion.versions.length > 1" >| Version {{ motion.getVersion(version).version_number }}</span>
             <span ng-if="motion.active_version != version" class="label label-warning">
               <i class="fa fa-exclamation-triangle"></i>
@@ -208,7 +215,7 @@
           </div>
 
           <!-- Recommendation -->
-          <div ng-if="config('motions_recommendations_by') != '' || motion.recommendation">
+          <div ng-if="config('motions_recommendations_by')">
             <h3 ng-if="!motion.isAllowed('change_recommendation')" class="heading">
               {{ config('motions_recommendations_by') }}
             </h3>

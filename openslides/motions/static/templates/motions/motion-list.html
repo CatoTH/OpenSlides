@@ -222,7 +222,7 @@
             </span>
           </div>
           <!-- recommendation -->
-          <div ng-if="motion.recommendation">
+          <div ng-if="motion.recommendation && config('motions_recommendations_by')">
             <span ng-mouseover="motion.recommendationHover=true" ng-mouseleave="motion.recommendationHover=false"
                 class="dropdown-hover-space">
               <span class="label" ng-class="'label-'+motion.recommendation.css_class" uib-tooltip="{{ config('motions_recommendations_by') }}">

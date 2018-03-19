@@ -797,6 +797,9 @@ angular.module('OpenSlidesApp.motions.site', [
             getFormFields: function (singleMotion, motions, formatChangeCallback) {
                 var fields = [];
                 var commentsAvailable = _.keys(noSpecialCommentsFields).length !== 0;
+                var someMotionsHaveAmendments = _.some(motions, function (motion) {
+                    return motion.hasAmendments();
+                });
                 var getMetaInformationOptions = function (disabled) {
                     if (!disabled) {
                         disabled = {};
@@ -845,6 +848,19 @@ angular.module('OpenSlidesApp.motions.site', [
                             },
                         }
                     ];
+                }
+                if (someMotionsHaveAmendments) {
+                    fields.push({
+                        key: 'amendments',
+                        type: 'radio-buttons',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Amendments'),
+                            options: [
+                                {name: gettextCatalog.getString('Include'), value: true},
+                                {name: gettextCatalog.getString('Exclude'), value: false},
+                            ],
+                        },
+                    });
                 }
                 if (operator.hasPerms('motions.can_manage')) {
                     fields.push.apply(fields, [
@@ -1010,6 +1026,7 @@ angular.module('OpenSlidesApp.motions.site', [
             pdfFormat: 'pdf',
             changeRecommendationMode: Config.get('motions_recommendation_text_mode').value,
             lineNumberMode: Config.get('motions_default_line_numbering').value,
+            amendments: false,
             include: {
                 text: true,
                 reason: true,
@@ -1025,7 +1042,24 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.motions = motions;
         $scope.singleMotion = singleMotion;
 
+        // Add amendments to motions. The amendments are sorted by their identifier
+        var prepareAmendments = function (motions) {
+            var allMotions = [];
+            _.forEach(motions, function (motion) {
+                allMotions.push(motion)
+                allMotions = allMotions.concat(
+                    _.sortBy(motion.getAmendments(), function (amendment) {
+                        return amendment.identifier;
+                    })
+                );
+            });
+            return allMotions;
+        };
+
         $scope.export = function () {
+            if ($scope.params.amendments) {
+                motions = prepareAmendments(motions);
+            }
             switch ($scope.params.format) {
                 case 'pdf':
                     if ($scope.params.pdfFormat === 'pdf') {
@@ -2105,16 +2139,17 @@ angular.module('OpenSlidesApp.motions.site', [
             if (Config.get('motions_amendments_text_mode').value === 'fulltext') {
                 $scope.model.text = parentMotion.getText();
             }
-            if (Config.get('motions_amendments_text_mode').value === 'paragraph' && paragraphNo !== undefined) {
-                if (paragraphTextPre !== undefined) {
-                    $scope.model.text = paragraphTextPre;
-                } else {
-                    var paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
-                    $scope.model.text = paragraphs[paragraphNo];
-                }
+            if (Config.get('motions_amendments_text_mode').value === 'paragraph'
+                && paragraphNo !== undefined) {
+                var paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
+                $scope.model.text = paragraphs[paragraphNo];
                 isParagraphBasedAmendment = true;
             }
+            if (paragraphTextPre !== undefined) {
+                $scope.model.text = paragraphTextPre;
+            }
             $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + parentMotion.identifier;
+            console.log(paragraphNo);
             $scope.model.paragraphNo = paragraphNo;
             $scope.model.parent_id = parentMotion.id;
             $scope.model.category_id = parentMotion.category_id;
@@ -2133,6 +2168,9 @@ angular.module('OpenSlidesApp.motions.site', [
             motion.agenda_type = motion.showAsAgendaItem ? 1 : 2;
 
             if (isAmendment && $scope.model.paragraphNo !== undefined) {
+                console.log("NO");
+                console.log($scope.model.paragraphNo);
+                console.log($scope.model.paragraphNo !== undefined);
                 var orig_paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
                 $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
                     return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
@@ -2380,28 +2418,26 @@ angular.module('OpenSlidesApp.motions.site', [
 .controller('MotionAmendmentCtrl', [
     '$scope',
     '$sessionStorage',
+    '$state',
     'Motion',
     'MotionComment',
     'MotionForm',
     'PersonalNoteManager',
     'ngDialog',
     'MotionCommentForm',
+    'AmendmentCsvExport',
     'gettext',
-    function ($scope, $sessionStorage, Motion, MotionComment, MotionForm, PersonalNoteManager, ngDialog,
-        MotionCommentForm, gettext) {
-        $scope.$watch(function () {
-            return Motion.lastModified();
-        }, function () {
-            // check, if special motion is given
-            if ($scope.motionId) {
-                $scope.specialMotion = Motion.get($scope.motionId);
-                if (!$scope.specialMotion.hasAmendments()) {
-                    $scope.specialMotion = void 0;
-                }
-            }
+    function ($scope, $sessionStorage, $state, Motion, MotionComment, MotionForm,
+        PersonalNoteManager, ngDialog, MotionCommentForm, AmendmentCsvExport, gettext) {
+        if ($scope.motionId) {
+            $scope.leadMotion = Motion.get($scope.motionId);
+        }
+
+        var updateMotions = function () {
+            // check, if lead motion is given
             var amendments;
-            if ($scope.specialMotion) {
-                amendments = Motion.filter({parent_id: $scope.specialMotion.id});
+            if ($scope.leadMotion) {
+                amendments = Motion.filter({parent_id: $scope.leadMotion.id});
             } else {
                 amendments = _.filter(Motion.getAll(), function (motion) {
                     return motion.parent_id;
@@ -2410,22 +2446,51 @@ angular.module('OpenSlidesApp.motions.site', [
             // always order by identifier (after custom ordering)
             $scope.amendments = _.orderBy(amendments, ['identifier']);
 
-            _.forEach($scope.amendments, function (motion) {
-                MotionComment.populateFields(motion);
-                motion.personalNote = PersonalNoteManager.getNote(motion);
+            _.forEach($scope.amendments, function (amendment) {
+                MotionComment.populateFields(amendment);
+                amendment.personalNote = PersonalNoteManager.getNote(amendment);
                 // For filtering, we cannot filter for .personalNote.star
-                motion.star = motion.personalNote ? motion.personalNote.star : false;
-                motion.hasPersonalNote = motion.personalNote ? !!motion.personalNote.note : false;
-                if (motion.star === undefined) {
-                    motion.star = false;
+                amendment.star = amendment.personalNote ? amendment.personalNote.star : false;
+                amendment.hasPersonalNote = amendment.personalNote ? !!amendment.personalNote.note : false;
+                if (amendment.star === undefined) {
+                    amendment.star = false;
                 }
 
                 // add a custom sort attribute
-                var diffLine = motion.getAmendmentParagraphsLinesDiff()[0].diffLineFrom;
-                motion.parentMotionAndLineNumber = Motion.get(motion.parent_id).identifier + ' ' +
-                    diffLine;
+                var parentMotion = amendment.getParentMotion();
+                amendment.parentMotionAndLineNumber = parentMotion.identifier
+                if (amendment.isParagraphBasedAmendment()) {
+                    var paragraphs = amendment.getAmendmentParagraphsLinesDiff();
+                    var diffLine = '0';
+                    if (paragraphs.length) {
+                        diffLine = paragraphs[0].diffLineFrom;
+                    }
+                    amendment.parentMotionAndLineNumber += ' ' + diffLine;
+                }
             });
-        });
+
+            // Get all lead motions
+            $scope.leadMotions = _.orderBy(Motion.filter({parent_id: undefined}), ['identifier']);
+        };
+
+        $scope.$watch(function () {
+            return Motion.lastModified();
+        }, updateMotions);
+
+        $scope.selectLeadMotion = function (motion) {
+            $scope.leadMotion = motion;
+            updateMotions();
+            if ($scope.leadMotion) {
+                $state.transitionTo('motions.motion.amendments',
+                    {id: $scope.leadMotion.id},
+                    {notify: false}
+                );
+            } else {
+                $state.transitionTo('motions.motion.allamendments', {},
+                    {notify: false}
+                );
+            }
+        };
 
         // Save expand state so the session
         if ($sessionStorage.amendmentTableExpandState) {
@@ -2444,14 +2509,14 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.sort.column = 'parentMotionAndLineNumber';
         }
 
-        $scope.isCommentExpandable = function (comment) {
+        $scope.isTextExpandable = function (comment, characters) {
             comment = $(comment).text();
-            return comment.length > 30;
+            return comment.length > characters;
         };
-        $scope.getCommentPreview = function (comment) {
+        $scope.getTextPreview = function (comment, characters) {
             comment = $(comment).text();
-            if (comment.length > 30) {
-                comment = comment.substr(0, 30) + '...';
+            if (comment.length > characters) {
+                comment = comment.substr(0, characters) + '...';
             }
             return comment;
         };
@@ -2460,18 +2525,24 @@ angular.module('OpenSlidesApp.motions.site', [
         };
 
         $scope.createModifiedAmendment = function (amendment) {
-            var paragraphNo = null,
-                paragraphText = null;
-            // We assume there is only one affected paragraph
-            amendment.getVersion(amendment.active_version).amendment_paragraphs.forEach(function(parText, parNo) {
-                if (parText !== null) {
-                    paragraphNo = parNo;
-                    paragraphText = parText;
-                }
-            });
-            if (paragraphNo !== null) {
-                ngDialog.open(MotionForm.getDialog(null, amendment.getParentMotion(), paragraphNo, paragraphText));
+            var paragraphNo,
+                paragraphText;
+            if (amendment.isParagraphBasedAmendment()) {
+                // We assume there is only one affected paragraph
+                amendment.getVersion(amendment.active_version).amendment_paragraphs.forEach(function(parText, parNo) {
+                    if (parText !== null) {
+                        paragraphNo = parNo;
+                        paragraphText = parText;
+                    }
+                });
+            } else {
+                paragraphText = amendment.getText();
             }
+            ngDialog.open(MotionForm.getDialog(null, amendment.getParentMotion(), paragraphNo, paragraphText));
+        };
+
+        $scope.exportCsv = function () {
+            AmendmentCsvExport.export($scope.amendmentsFiltered);
         };
     }
 ])

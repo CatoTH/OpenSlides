@@ -15,19 +15,52 @@
       </button>
     </div>
     <h1 translate>Amendments</h1>
-    <h2 ng-if="specialMotion" translate>
-      <a ui-sref="motions.motion.detail({id: specialMotion.id})">
-        <translate>Motion</translate>
-        <span ng-if="specialMotion.identifier">
-          {{ specialMotion.identifier }} &mdash;
+    <div ng-mouseover="selectHover=true" ng-mouseleave="selectHover=false"
+        class="dropdown-hover-space">
+      <h3>
+        <a ui-sref="motions.motion.detail({id: leadMotion.id})" ng-if="leadMotion">
+          <span ng-if="leadMotion.identifier">
+            {{ leadMotion.identifier }} &mdash;
+          </span>
+          {{ leadMotion.getTitle() }}
+        </a>
+        <span ng-if="!leadMotion" translate>
+          All motions
         </span>
-        {{ specialMotion.getTitle() }}
-      </a>
-    </h2>
+        <span ng-class="{'hiddenDiv': !selectHover}" uib-dropdown>
+          <i class="fa fa-cog pointer" uib-dropdown-toggle id="selectDropdown"></i>
+          <ul class="dropdown-menu" aria-labelledby="selectDropdown">
+            <li ng-repeat="motion in leadMotions">
+              <a href ng-click="selectLeadMotion(motion)">
+                <span ng-if="motion.identifier">
+                  {{ motion.identifier }} &mdash;
+                </span>
+                {{ motion.getTitle() | limitTo: 35 }}{{ motion.getTitle().length > 35 ? '...' : '' }}
+              </a>
+            </li>
+            <li class="divider" ng-if="amendment.state.getNextStates().length"></li>
+            <li>
+              <a href ng-click="selectLeadMotion(null)" translate>
+                All motions
+              </a>
+            </li>
+          </ul>
+        </span>
+      </h3>
+    </div>
   </div>
 </div>
 
 <div class="details">
+
+  <div class="row">
+    <div class="col-sm-12">
+      <button type="button" class="btn btn-default pull-right" ng-click="exportCsv()">
+        <i class="fa fa-file-text-o"></i>
+        <translate>Export as CSV</translate>
+      </button>
+    </div>
+  </div>
 
   <div class="spacer-top italic row">
     <div class="col-md-6">
@@ -74,16 +107,27 @@
       </div>
       <div class="no-projector-spacer" os-perms="!core.can_manage_projector"></div>
       <!-- data -->
-      <div class="col-xs-3 content">
-        <div class="id-col">
-          <span ng-show="amendment.identifier">
-            {{ amendment.identifier }}
-          </span>
-        </div>
-        <div class="id-col-space">
+      <div class="col-xs-2 content">
+        <div>
           <!-- ID and title -->
           <div>
-            <a class="title" ui-sref="motions.motion.detail({id: amendment.id})">{{ amendment.getTitle() }}</a>
+            <a class="title" ui-sref="motions.motion.detail({id: amendment.id})"
+              ng-if="amendment.identifier">
+            {{ amendment.identifier }}
+            <span ng-if="amendment.isParagraphBasedAmendment()"
+              ng-init="paragraph = amendment.getAmendmentParagraphsLinesDiff()[0]">
+              <span ng-if="paragraph.diffLineTo == paragraph.diffLineFrom + 1">
+                (<translate>Line</translate> {{ paragraph.diffLineFrom }})
+              </span>
+              <span ng-if="paragraph.diffLineTo != paragraph.diffLineFrom + 1">
+                (<translate>Lines</translate> {{ paragraph.diffLineFrom }}-{{ paragraph.diffLineTo }})
+              </span>
+            </span>
+            </a>
+            <a class="title" ui-sref="motions.motion.detail({id: amendment.id})"
+              ng-if="!amendment.identifier">
+              {{ amendment.getTitle() }}
+            </a>
             <a href="" ng-click="toggleStar(amendment)">
               <i class="fa" ng-class="amendment.personalNote.star ? 'fa-star' : 'fa-star-o'"
                 title="{{ 'Set as favorite' | translate }}" ng-if="(amendment.personalNote.star || amendment.hover) && operator.user"></i>
@@ -115,11 +159,15 @@
             </span>
           </div>
           <!-- recommendation -->
-          <div ng-if="amendment.recommendation">
+          <div ng-if="config('motions_recommendations_by')">
             <span ng-mouseover="amendment.recommendationHover=true" ng-mouseleave="amendment.recommendationHover=false"
                 class="dropdown-hover-space">
-              <span class="label" ng-class="'label-'+amendment.recommendation.css_class" uib-tooltip="{{ config('motions_recommendations_by') }}">
+              <span class="label" ng-if="amendment.recommendation" ng-class="'label-'+amendment.recommendation.css_class"
+                uib-tooltip="{{ config('motions_recommendations_by') }}">
                 {{ amendment.getRecommendationName() }}
+              </span>
+              <span class="label label-default" ng-if="!amendment.recommendation" translate>
+                No recomendation set
               </span>
               <span os-perms="motions.can_manage" ng-class="{'hiddenDiv': !amendment.recommendationHover}" uib-dropdown>
                 <i class="fa fa-cog pointer" uib-dropdown-toggle id="recommendationDropdown{{ amendment.id }}"></i>
@@ -165,34 +213,30 @@
           </div>
         </div>
       </div>
-      <div class="col-xs-5">
+      <div class="col-xs-6 col-space">
         <!-- The diff -->
-        <section class="motion-text-holder" ng-init="paragraphs = amendment.getAmendmentParagraphsLinesDiff()">
+        <section class="motion-text-holder" ng-if="amendment.isParagraphBasedAmendment()"
+          ng-init="paragraphs = amendment.getAmendmentParagraphsLinesDiff()">
           <div ng-repeat="paragraph in paragraphs" class="motion-text motion-text-diff line-numbers-none">
-
-            <h3 ng-if="paragraph.diffLineTo == paragraph.diffLineFrom + 1" class="amendment-line-header">
-              {{ ('In line %FROM%' | translate).replace('%FROM%', paragraph.diffLineFrom) }}:
-            </h3>
-            <h3 ng-if="paragraph.diffLineTo != paragraph.diffLineFrom + 1" class="amendment-line-header">
-              {{ ('From line %FROM% to %TO%' | translate).replace('%FROM%', paragraph.diffLineFrom).replace('%TO%', paragraph.diffLineTo - 1) }}:
-            </h3>
-
             <div ng-bind-html="paragraph.text | trusted"></div>
           </div>
         </section> <!-- Diff end -->
+        <div ng-if="!amendment.isParagraphBasedAmendment()">
+          {{ getTextPreview(amendment.getText(), 400) }}
+        </div>
       </div>
       <div class="col-xs-4" style="width: calc(33.33% - 70px);">
         <div ng-repeat="(id, field) in noSpecialCommentsFields">
-          <div ng-mouseover="field.hover=true" ng-mouseleave="field.hover=false">
+          <div class="nobr" ng-mouseover="field.hover=true" ng-mouseleave="field.hover=false">
             <i class="fa pointer spacer-right" ng-class="field[amendment.id] ? 'fa-caret-down' : 'fa-caret-right'"
               ng-click="field[amendment.id] = !field[amendment.id]"
-              ng-if="isCommentExpandable(amendment.comments[id])"></i>
+              ng-if="isTextExpandable(amendment.comments[id], 30)"></i>
             <strong>{{ field.name }}</strong>
             <i class="fa fa-pencil pointer" os-perms="motions.can_manage_comments"
               ng-show="field.hover && amendment.hover" ng-click="editComment(amendment, id)"></i>
           </div>
           <div ng-if="!field[amendment.id]">
-            {{ getCommentPreview(amendment.comments[id]) }}
+            {{ getTextPreview(amendment.comments[id], 30) }}
           </div>
           <div ng-if="field[amendment.id]" ng-bind-html="amendment.comments[id]"></div>
         </div>

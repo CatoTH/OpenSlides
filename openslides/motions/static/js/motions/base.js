@@ -560,9 +560,11 @@ angular.module('OpenSlidesApp.motions', [
 
                     return output;
                 },
-                getAmendmentParagraphsLinesDiff: function (versionId) {
+                getAmendmentParagraphsLinesByMode: function (mode, versionId, lineBreaks) {
                     /*
+                     * @param mode ['original', 'diff', 'changed']
                      * @param versionId [if undefined, active_version will be used]
+                     * @param lineBreaks [if line numbers / breaks should be included in the result]
                      *
                      * Structure of the return array elements:
                      * {
@@ -577,7 +579,7 @@ angular.module('OpenSlidesApp.motions', [
                      * }
                      */
 
-                    if (!this.isParagraphBasedAmendment()) {
+                    if (!this.isParagraphBasedAmendment() || !this.getParentMotion()) {
                         return [];
                     }
 
@@ -600,19 +602,43 @@ angular.module('OpenSlidesApp.motions', [
                             diff = diffService.diff(paragraph_orig, paragraph_amend, line_length, paragraph_line_range.from),
                             affected_lines = diffService.detectAffectedLineRange(diff);
 
+                        // TODO: Make this work..
+                        var base_paragraph;
+                        switch (mode) {
+                            case 'original':
+                                //base_paragraph = paragraph_orig;
+                                //base_paragraph = diffService.diff(paragraph_orig, paragraph_orig, line_length, paragraph_line_range.from);
+                                base_paragraph = diff;
+                                break;
+                            case 'diff':
+                                base_paragraph = diff;
+                                break;
+                            case 'changed':
+                                //base_paragraph = paragraph_amend;
+                                //base_paragraph = diffService.diff(paragraph_amend, paragraph_amend, line_length, paragraph_line_range.from);
+                                base_paragraph = diff;
+                                break;
+                        }
+
                         var textPre = '';
                         var textPost = '';
                         if (affected_lines.from > paragraph_line_range.from) {
-                            textPre = diffService.extractRangeByLineNumbers(diff, paragraph_line_range.from, affected_lines.from);
-                            textPre = diffService.formatDiffWithLineNumbers(textPre, line_length, paragraph_line_range.from);
+                            textPre = diffService.extractRangeByLineNumbers(base_paragraph, paragraph_line_range.from, affected_lines.from);
+                            if (lineBreaks) {
+                                textPre = diffService.formatDiffWithLineNumbers(textPre, line_length, paragraph_line_range.from);
+                            }
                         }
                         if (paragraph_line_range.to > affected_lines.to) {
-                            textPost = diffService.extractRangeByLineNumbers(diff, affected_lines.to, paragraph_line_range.to);
-                            textPost = diffService.formatDiffWithLineNumbers(textPost, line_length, affected_lines.to);
+                            textPost = diffService.extractRangeByLineNumbers(base_paragraph, affected_lines.to, paragraph_line_range.to);
+                            if (lineBreaks) {
+                                textPost = diffService.formatDiffWithLineNumbers(textPost, line_length, affected_lines.to);
+                            }
                         }
 
-                        var text = diffService.extractRangeByLineNumbers(diff, affected_lines.from, affected_lines.to);
-                        text = diffService.formatDiffWithLineNumbers(text, line_length, affected_lines.from);
+                        var text = diffService.extractRangeByLineNumbers(base_paragraph, affected_lines.from, affected_lines.to);
+                        if (lineBreaks) {
+                            text = diffService.formatDiffWithLineNumbers(text, line_length, affected_lines.from);
+                        }
 
                         output.push({
                             "paragraphNo": paragraphNo,
@@ -627,6 +653,13 @@ angular.module('OpenSlidesApp.motions', [
                     });
 
                     return output;
+                },
+                getAmendmentParagraphsLinesDiff: function (versionId) {
+                    /*
+                     * @param versionId [if undefined, active_version will be used]
+                     *
+                     */
+                    return this.getAmendmentParagraphsLinesByMode('diff', versionId, true);
                 },
                 getAmendmentsAffectedLinesChanged: function () {
                     var paragraph_diff = this.getAmendmentParagraphsByMode("diff")[0],
