@@ -89,9 +89,9 @@ angular.module('OpenSlidesApp.motions.site', [
                     }
                 ]
             })
-            .state('motions.motion.amendments', {
+            .state('motions.motion.amendment-list', {
                 url: '/{id:int}/amendments',
-                controller: 'MotionAmendmentStateCtrl',
+                controller: 'MotionAmendmentListStateCtrl',
                 params: {
                     motionId: null,
                 },
@@ -103,8 +103,8 @@ angular.module('OpenSlidesApp.motions.site', [
             })
             .state('motions.motion.allamendments', {
                 url: '/amendments',
-                templateUrl: 'static/templates/motions/motion-amendments.html',
-                controller: 'MotionAmendmentStateCtrl',
+                templateUrl: 'static/templates/motions/motion-amendment-list.html',
+                controller: 'MotionAmendmentListStateCtrl',
                 resolve: {
                     motionId: function() { return void 0; },
                 }
@@ -1046,7 +1046,7 @@ angular.module('OpenSlidesApp.motions.site', [
         var prepareAmendments = function (motions) {
             var allMotions = [];
             _.forEach(motions, function (motion) {
-                allMotions.push(motion)
+                allMotions.push(motion);
                 allMotions = allMotions.concat(
                     _.sortBy(motion.getAmendments(), function (amendment) {
                         return amendment.identifier;
@@ -1264,8 +1264,12 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.stateFilter = _.uniq($scope.stateFilter);
         };
 
+        // This value may be overritten, so the filters, sorting and pagination in an
+        // derived view are independent to this view.
+        var osTablePrefix = $scope.osTablePrefix || 'MotionTable';
+
         // Filtering
-        $scope.filter = osTableFilter.createInstance('MotionTableFilter');
+        $scope.filter = osTableFilter.createInstance(osTablePrefix + 'Filter');
 
         if (!$scope.filter.existsStorageEntry()) {
             $scope.filter.multiselectFilters = {
@@ -1332,7 +1336,7 @@ angular.module('OpenSlidesApp.motions.site', [
             updateStateFilter();
         };
         // Sorting
-        $scope.sort = osTableSort.createInstance('MotionTableSort');
+        $scope.sort = osTableSort.createInstance(osTablePrefix + 'Sort');
         if (!$scope.sort.column) {
             $scope.sort.column = 'identifier';
         }
@@ -1356,7 +1360,7 @@ angular.module('OpenSlidesApp.motions.site', [
         ];
 
         // pagination
-        $scope.pagination = osTablePagination.createInstance('MotionTablePagination');
+        $scope.pagination = osTablePagination.createInstance(osTablePrefix + 'Pagination');
 
         $scope.hasTag = function (motion, tag) {
             return _.indexOf(motion.tags_id, tag.id) > -1;
@@ -1410,19 +1414,19 @@ angular.module('OpenSlidesApp.motions.site', [
             ngDialog.open(MotionForm.getDialog(motion));
         };
         // Export dialog
-        $scope.openExportDialog = function () {
-            ngDialog.open(MotionExportForm.getDialog($scope.motionsFiltered));
+        $scope.openExportDialog = function (motions) {
+            ngDialog.open(MotionExportForm.getDialog(motions));
         };
-        $scope.pdfExport = function () {
-            MotionPdfExport.export($scope.motionsFiltered);
+        $scope.pdfExport = function (motions) {
+            MotionPdfExport.export(motions);
         };
 
         // *** select mode functions ***
         $scope.isSelectMode = false;
         // check all checkboxes from filtered motions
-        $scope.checkAll = function () {
+        $scope.checkAll = function (motions) {
             $scope.selectedAll = !$scope.selectedAll;
-            angular.forEach($scope.motionsFiltered, function (motion) {
+            _.forEach(motions, function (motion) {
                 motion.selected = $scope.selectedAll;
             });
         };
@@ -1430,13 +1434,13 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.uncheckAll = function () {
             if (!$scope.isSelectMode) {
                 $scope.selectedAll = false;
-                angular.forEach($scope.motions, function (motion) {
+                _.forEach($scope.motions, function (motion) {
                     motion.selected = false;
                 });
             }
         };
-        var selectModeAction = function (predicate) {
-            angular.forEach($scope.motionsFiltered, function (motion) {
+        var selectModeAction = function (motions, predicate) {
+            angular.forEach(motions, function (motion) {
                 if (motion.selected) {
                     predicate(motion);
                 }
@@ -1445,27 +1449,28 @@ angular.module('OpenSlidesApp.motions.site', [
             $scope.uncheckAll();
         };
         // delete selected motions
-        $scope.deleteMultiple = function () {
-            selectModeAction(function (motion) {
+        $scope.deleteMultiple = function (motions) {
+            selectModeAction(motions, function (motion) {
                 $scope.delete(motion);
             });
         };
         // set status for selected motions
-        $scope.setStatusMultiple = function (stateId) {
-            selectModeAction(function (motion) {
-                $scope.updateState(motion, stateId);
+        $scope.setStatusMultiple = function (motions, stateId) {
+            console.log(motions);
+            selectModeAction(motions, function (motion) {
+                $http.put('/rest/motions/motion/' + motion.id + '/set_state/', {'state': stateId});
             });
         };
         // set category for selected motions
-        $scope.setCategoryMultiple = function (categoryId) {
-            selectModeAction(function (motion) {
+        $scope.setCategoryMultiple = function (motions, categoryId) {
+            selectModeAction(motions, function (motion) {
                 motion.category_id = categoryId === 'no_category_selected' ? null : categoryId;
                 $scope.save(motion);
             });
         };
         // set status for selected motions
-        $scope.setMotionBlockMultiple = function (motionBlockId) {
-            selectModeAction(function (motion) {
+        $scope.setMotionBlockMultiple = function (motions, motionBlockId) {
+            selectModeAction(motions, function (motion) {
                 motion.motion_block_id = motionBlockId === 'no_motionBlock_selected' ? null : motionBlockId;
                 $scope.save(motion);
             });
@@ -2139,8 +2144,8 @@ angular.module('OpenSlidesApp.motions.site', [
             if (Config.get('motions_amendments_text_mode').value === 'fulltext') {
                 $scope.model.text = parentMotion.getText();
             }
-            if (Config.get('motions_amendments_text_mode').value === 'paragraph'
-                && paragraphNo !== undefined) {
+            if (Config.get('motions_amendments_text_mode').value === 'paragraph' &&
+                paragraphNo !== undefined) {
                 var paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
                 $scope.model.text = paragraphs[paragraphNo];
                 isParagraphBasedAmendment = true;
@@ -2407,15 +2412,16 @@ angular.module('OpenSlidesApp.motions.site', [
     }
 ])
 
-.controller('MotionAmendmentStateCtrl', [
+.controller('MotionAmendmentListStateCtrl', [
     '$scope',
     'motionId',
     function ($scope, motionId) {
         $scope.motionId = motionId;
+        $scope.osTablePrefix = 'AmendmentTable';
     }
 ])
 
-.controller('MotionAmendmentCtrl', [
+.controller('MotionAmendmentListCtrl', [
     '$scope',
     '$sessionStorage',
     '$state',
@@ -2458,7 +2464,7 @@ angular.module('OpenSlidesApp.motions.site', [
 
                 // add a custom sort attribute
                 var parentMotion = amendment.getParentMotion();
-                amendment.parentMotionAndLineNumber = parentMotion.identifier
+                amendment.parentMotionAndLineNumber = parentMotion.identifier;
                 if (amendment.isParagraphBasedAmendment()) {
                     var paragraphs = amendment.getAmendmentParagraphsLinesDiff();
                     var diffLine = '0';
@@ -2541,8 +2547,8 @@ angular.module('OpenSlidesApp.motions.site', [
             ngDialog.open(MotionForm.getDialog(null, amendment.getParentMotion(), paragraphNo, paragraphText));
         };
 
-        $scope.exportCsv = function () {
-            AmendmentCsvExport.export($scope.amendmentsFiltered);
+        $scope.exportCsv = function (motions) {
+            AmendmentCsvExport.export(motions);
         };
     }
 ])

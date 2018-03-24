@@ -1,7 +1,7 @@
 <div class="header motion-header">
   <div class="title">
     <div class="submenu">
-      <a ng-if="motion.isAmendment" ui-sref="motions.motion.amendments({id: motion.getParentMotion().id })"
+      <a ng-if="motion.isAmendment" ui-sref="motions.motion.amendment-list({id: motion.getParentMotion().id })"
         class="btn btn-sm btn-default">
         <i class="fa fa-angle-double-left fa-lg"></i>
         <translate>Back to overview</translate>
@@ -11,7 +11,7 @@
         <i class="fa fa-angle-double-left fa-lg"></i>
         <translate>Back to overview</translate>
       </a>
-      <a ng-if="motion.hasAmendments()" ui-sref="motions.motion.amendments({id: motion.id})"
+      <a ng-if="motion.hasAmendments()" ui-sref="motions.motion.amendment-list({id: motion.id})"
         class="btn btn-sm btn-default">
         <i class="fa fa-book fa-lg"></i>
         <translate>Amendments</translate>

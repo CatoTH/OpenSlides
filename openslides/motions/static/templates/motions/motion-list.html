@@ -42,7 +42,7 @@
       </button>
       <!-- Export button -->
       <button type="button" class="btn btn-default btn-sm pull-right"
-        os-perms="motions.can_manage" ng-click="openExportDialog()">
+        os-perms="motions.can_manage" ng-click="openExportDialog(motionsFiltered)">
         <i class="fa fa-upload"></i>
         <span ng-if="motionsFiltered.length === motions.length" translate>
           Export all
@@ -52,7 +52,7 @@
         </span>
       </button>
       <button type="button" class="btn btn-default btn-sm pull-right"
-        os-perms="!motions.can_manage" ng-click="pdfExport()">
+        os-perms="!motions.can_manage" ng-click="pdfExport(motionsFiltered)">
         <i class="fa fa-file-pdf-o"></i>
         <span ng-if="motionsFiltered.length === motions.length" translate>
           Export all
@@ -77,13 +77,13 @@
       <!-- state select -->
       <select ng-show="selectedAction == 'setStatus'" ng-model="selectedState" class="form-control input-sm">
         <option value="" translate>--- Select state ---</option>
-        <option ng-repeat="state in states" ng-disabled="state.workflowHeader" value="{{ state.id }}">
+        <option ng-repeat="state in states" ng-if="!state.divider" ng-disabled="state.workflowHeader" value="{{ state.id }}">
           {{ (state.workflowHeader ? state.headername : state.name) | translate }}
         </option>
       </select>
       <!-- set state button -->
       <a ng-show="selectedAction == 'setStatus' && selectedState"
-          ng-click="setStatusMultiple(selectedState)" class="btn btn-default btn-sm">
+          ng-click="setStatusMultiple(motionsFiltered, selectedState)" class="btn btn-default btn-sm">
         <translate>Set status</translate>
       </a>
       <!-- category select -->
@@ -97,7 +97,7 @@
       </select>
       <!-- set category button -->
       <a ng-show="selectedAction == 'setCategory' && selectedCategory"
-          ng-click="setCategoryMultiple(selectedCategory)" class="btn btn-default btn-sm">
+          ng-click="setCategoryMultiple(motionsFiltered, selectedCategory)" class="btn btn-default btn-sm">
         <translate>Set category</translate>
       </a>
       <!-- motionBlock select -->
@@ -110,13 +110,13 @@
       </select>
       <!-- set motion block button -->
       <a ng-show="selectedAction == 'setMotionBlock' && selectedMotionBlock"
-         ng-click="setMotionBlockMultiple(selectedMotionBlock)" class="btn btn-default btn-sm">
+         ng-click="setMotionBlockMultiple(motionsFilterd, selectedMotionBlock)" class="btn btn-default btn-sm">
         <translate>Set motion block</translate>
       </a>
       <!-- delete button -->
       <a ng-show="selectedAction == 'delete'"
         ng-bootbox-confirm="{{ 'Are you sure you want to delete all selected motions?' | translate }}"
-        ng-bootbox-confirm-action="deleteMultiple()"
+        ng-bootbox-confirm-action="deleteMultiple(motionsFiltered)"
         class="btn btn-default btn-sm btn-danger">
         <i class="fa fa-trash fa-lg"></i>
         <translate>Delete selected motions</translate>
@@ -143,7 +143,7 @@
     <div class="row header-row">
       <div class="col-xs-1 centered" ng-if="isSelectMode">
         <i class="fa text-danger pointer" ng-class=" selectedAll ? 'fa-check-square-o' : 'fa-square-o'"
-          ng-click="checkAll()"></i>
+          ng-click="checkAll(motionsFiltered)"></i>
       </div>
       <div class="col-xs-11 main-header" ng-style="{'width': isSelectMode ? '' : '100%'}">
         <ng-include src="'static/templates/motions/motion-table-filters.html'"></ng-include>
@@ -418,7 +418,7 @@
           <div class="centered" ng-if="motion.hasAmendments()"
             uib-tooltip="{{ motion.getAmendments().length }} {{ 'amendments' | translate }}"
             tooltip-class="nobr">
-            <a ui-sref="motions.motion.amendments({id: motion.id})" class="badge">
+            <a ui-sref="motions.motion.amendment-list({id: motion.id})" class="badge">
               <i class="fa fa-book"></i>
               {{ motion.getAmendments().length }}
             </a>

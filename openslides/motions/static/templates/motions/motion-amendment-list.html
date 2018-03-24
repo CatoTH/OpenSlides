@@ -1,5 +1,5 @@
 <div ng-controller="MotionListCtrl">
-<div ng-controller="MotionAmendmentCtrl">
+<div ng-controller="MotionAmendmentListCtrl">
 <div class="header">
   <div class="title">
     <div class="submenu">
@@ -55,20 +55,119 @@
 
   <div class="row">
     <div class="col-sm-12">
-      <button type="button" class="btn btn-default pull-right" ng-click="exportCsv()">
-        <i class="fa fa-file-text-o"></i>
-        <translate>Export as CSV</translate>
+      <!-- select mode -->
+      <button os-perms="motions.can_manage" class="btn btn-sm"
+          ng-class="$parent.isSelectMode ? 'btn-primary' : 'btn-default'"
+          ng-click="$parent.isSelectMode = !$parent.isSelectMode; uncheckAll()">
+        <i class="fa fa-check-square-o"></i>
+        <translate>Select ...</translate>
       </button>
+      <!-- Export dropdown -->
+      <div class="pull-right" uib-dropdown>
+        <button type="button" class="btn btn-default btn-sm" id="dropdownExport" uib-dropdown-toggle>
+          <i class="fa fa-upload"></i>
+          <span ng-if="amendmentsFiltered.length === amendments.length" translate>
+            Export all
+          </span>
+          <span ng-if="amendmentsFiltered.length !== amendments.length" translate>
+            Export filtered
+          </span>
+          <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownExport">
+          <!-- PDF export -->
+          <li os-perms="motions.can_manage">
+            <a href="" ng-click="openExportDialog(amendmentsFiltered)">
+              <i class="fa fa-file-pdf-o"></i>
+              <translate>Export dialog</translate>
+            </a>
+          </li>
+          <li os-perms="!motions.can_manage">
+            <a href="" ng-click="pdfExport(amendmentsFiltered)">
+              <i class="fa fa-file-pdf-o"></i>
+              PDF
+            </a>
+          </li>
+          <!-- CSV export -->
+          <li>
+            <a href="" ng-click="exportCsv(amendmentsFiltered)">
+              <i class="fa fa-file-text-o"></i>
+              CSV
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
-  <div class="spacer-top italic row">
+  <div uib-collapse="!isSelectMode" class="row spacer">
+    <div class="col-sm-12 text-left form-inline" ng-show="isSelectMode" os-perms="motions.can_manage">
+      <!-- actions -->
+      <select ng-model="selectedAction" class="form-control input-sm">
+        <option value="" translate>--- Select action ---</option>
+        <option value="delete" translate>Delete</option>
+        <option value="setStatus" translate>Set status</option>
+        <option value="setCategory" ng-if="categories.length" translate>Set category</option>
+        <option value="setMotionBlock" ng-if="motionBlocks.length" translate>Set motion block</option>
+      </select>
+      <!-- state select -->
+      <select ng-show="selectedAction == 'setStatus'" ng-model="selectedState" class="form-control input-sm">
+        <option value="" translate>--- Select state ---</option>
+        <option ng-repeat="state in states" ng-if="!state.divider" ng-disabled="state.workflowHeader" value="{{ state.id }}">
+          {{ (state.workflowHeader ? state.headername : state.name) | translate }}
+        </option>
+      </select>
+      <!-- set state button -->
+      <a ng-show="selectedAction == 'setStatus' && selectedState"
+          ng-click="setStatusMultiple(amendmentsFiltered, selectedState)" class="btn btn-default btn-sm">
+        <translate>Set status</translate>
+      </a>
+      <!-- category select -->
+      <select ng-show="selectedAction == 'setCategory'" ng-model="selectedCategory" class="form-control input-sm">
+        <option value="" translate>--- Select category ---</option>
+        <option ng-repeat="category in categories | orderBy: config('motions_export_category_sorting')"
+            value="{{ category.id }}">
+          {{ category.prefix }} &ndash; {{ category.name }}
+        </option>
+        <option value="no_category_selected" translate>No category</option>
+      </select>
+      <!-- set category button -->
+      <a ng-show="selectedAction == 'setCategory' && selectedCategory"
+          ng-click="setCategoryMultiple(amendmentsFiltered, selectedCategory)" class="btn btn-default btn-sm">
+        <translate>Set category</translate>
+      </a>
+      <!-- motionBlock select -->
+      <select ng-show="selectedAction == 'setMotionBlock'" ng-model="selectedMotionBlock" class="form-control input-sm">
+        <option value="" translate>--- Select motion block ---</option>
+        <option ng-repeat="motionBlock in motionBlocks" value="{{ motionBlock.id }}">
+          {{ motionBlock.title }}
+        </option>
+        <option value="no_motionBlock_selected" translate>No motion block</option>
+      </select>
+      <!-- set motion block button -->
+      <a ng-show="selectedAction == 'setMotionBlock' && selectedMotionBlock"
+         ng-click="setMotionBlockMultiple(amendmentsFiltered, selectedMotionBlock)" class="btn btn-default btn-sm">
+        <translate>Set motion block</translate>
+      </a>
+      <!-- delete button -->
+      <a ng-show="selectedAction == 'delete'"
+        ng-bootbox-confirm="{{ 'Are you sure you want to delete all selected amendments?' | translate }}"
+        ng-bootbox-confirm-action="deleteMultiple(amendmentsFiltered)"
+        class="btn btn-default btn-sm btn-danger">
+        <i class="fa fa-trash fa-lg"></i>
+        <translate>Delete selected amendments</translate>
+      </a>
+    </div>
+  </div>
+
+  <div class="spacer-top-lg italic row">
     <div class="col-md-6">
       {{ amendmentsFiltered.length }} /
       {{ amendments.length }}
-      <translate>amendments</translate>
+      <translate>amendments</translate><span ng-if="(amendments|filter:{selected:true}).length > 0">,
+      {{(amendments|filter:{selected:true}).length}} {{ "selected" | translate }}</span>
     </div>
-    <div class="col-md-6" ng-show="motionsFiltered.length > pagination.itemsPerPage">
+    <div class="col-md-6" ng-show="amendmentsFiltered.length > pagination.itemsPerPage">
       <span class="pull-right">
         <translate>Page</translate> {{ pagination.currentPage }} /
         {{ Math.ceil(amendmentsFiltered.length/pagination.itemsPerPage) }}
@@ -78,7 +177,11 @@
 
   <div class="os-table container-fluid">
     <div class="row header-row">
-      <div class="col-xs-12 main-header main-header-full">
+      <div class="col-xs-1 centered" ng-if="isSelectMode">
+        <i class="fa text-danger pointer" ng-class=" selectedAll ? 'fa-check-square-o' : 'fa-square-o'"
+          ng-click="checkAll(amendmentsFiltered)"></i>
+      </div>
+      <div class="col-xs-11 main-header" ng-style="{'width': isSelectMode ? '' : '100%'}">
         <ng-include src="'static/templates/motions/motion-table-filters.html'"></ng-include>
       </div>
     </div>
@@ -100,6 +203,12 @@
       | limitTo : pagination.itemsPerPage : pagination.limitBegin"
       ng-mouseover="amendment.hover=true" ng-mouseleave="amendment.hover=false"
       ng-class="{'projected': amendment.isProjected().length}">
+
+      <!-- select column -->
+      <div ng-show="isSelectMode" os-perms="motions.can_manage" class="col-xs-1 centered">
+        <i class="fa text-danger pointer" ng-click="amendment.selected=!amendment.selected"
+        ng-class="amendment.selected ? 'fa-check-square-o' : 'fa-square-o'"></i>
+      </div>
       <!-- projector column -->
       <div class="col-xs-1 centered projector" os-perms="core.can_manage_projector">
         <projector-button model="amendment" default-projector-id="defaultProjectorId">
@@ -225,26 +334,40 @@
           {{ getTextPreview(amendment.getText(), 400) }}
         </div>
       </div>
-      <div class="col-xs-4" style="width: calc(33.33% - 70px);">
-        <div ng-repeat="(id, field) in noSpecialCommentsFields">
-          <div class="nobr" ng-mouseover="field.hover=true" ng-mouseleave="field.hover=false">
-            <i class="fa pointer spacer-right" ng-class="field[amendment.id] ? 'fa-caret-down' : 'fa-caret-right'"
-              ng-click="field[amendment.id] = !field[amendment.id]"
-              ng-if="isTextExpandable(amendment.comments[id], 30)"></i>
-            <strong>{{ field.name }}</strong>
-            <i class="fa fa-pencil pointer" os-perms="motions.can_manage_comments"
-              ng-show="field.hover && amendment.hover" ng-click="editComment(amendment, id)"></i>
+      <div class="col-xs-4 content" ng-style="{'width': isSelectMode ? 'calc(33.33% - 120px)' : 'calc(33.33% - 70px)'}">
+        <div style="width: 90%;">
+          <div ng-repeat="(id, field) in noSpecialCommentsFields">
+            <div class="nobr" ng-mouseover="field.hover=true" ng-mouseleave="field.hover=false">
+              <i class="fa pointer spacer-right" ng-class="field[amendment.id] ? 'fa-caret-down' : 'fa-caret-right'"
+                ng-click="field[amendment.id] = !field[amendment.id]"
+                ng-if="isTextExpandable(amendment.comments[id], 30)"></i>
+              <strong>{{ field.name }}</strong>
+              <i class="fa fa-pencil pointer" os-perms="motions.can_manage_comments"
+                ng-show="field.hover && amendment.hover" ng-click="editComment(amendment, id)"></i>
+            </div>
+            <div ng-if="!field[amendment.id]">
+              {{ getTextPreview(amendment.comments[id], 30) }}
+            </div>
+            <div ng-if="field[amendment.id]" ng-bind-html="amendment.comments[id]"></div>
           </div>
-          <div ng-if="!field[amendment.id]">
-            {{ getTextPreview(amendment.comments[id], 30) }}
+
+          <div class="spacer-top" os-perms="motions.can_manage">
+            <button class="btn-link" ng-click="createModifiedAmendment(amendment)">
+              <translate>Create modified amendment</translate>
+            </button>
           </div>
-          <div ng-if="field[amendment.id]" ng-bind-html="amendment.comments[id]"></div>
         </div>
 
-        <div class="spacer-top" os-perms="motions.can_manage">
-          <button class="btn-link" ng-click="createModifiedAmendment(amendment)">
-            <translate>Create modified amendment</translate>
-          </button>
+        <div class="pull-right" style="width: 10%;">
+          <div class="centered" ng-if="config('motions_min_supporters') != 0"
+            uib-tooltip="{{ amendment.supporters.length }} {{ 'Supporters' | translate }}
+            {{ (config('motions_min_supporters') - amendment.supporters.length) > 0 ? '(' +  (config('motions_min_supporters') - amendment.supporters.length) + ' ' + ('needed' | translate) + ')': '' }}"
+            tooltip-class="nobr">
+            <span class="badge"
+              ng-class="amendment.supporters.length < config('motions_min_supporters') ? 'badge-info' : 'badge-success'">
+              {{ amendment.supporters.length }}
+            </span>
+          </div>
         </div>
 
       </div>
