@@ -522,18 +522,8 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
                 $scope.amendments_crs = $scope.change_recommendations.map(function (cr) {
                     return cr.getUnifiedChangeObject();
                 }).concat(
-                    $scope.paragraph_amendments.filter(function(amendment) {
-                        // If no accepted/rejected status is given, only amendments that have a recommendation
-                        // of "accepted" and have not been officially rejected are to be shown in the diff-view
-                        if (amendment.state && amendment.state.name === 'rejected') {
-                            return false;
-                        }
-                        if (amendment.state && amendment.state.name === 'accepted') {
-                            return true;
-                        }
-                        return (amendment.recommendation && amendment.recommendation.name === 'accepted');
-                    }).map(function (amend) {
-                        return amend.getUnifiedChangeObject();
+                    $scope.paragraph_amendments.map(function (amendment) {
+                        return amendment.getUnifiedChangeObject();
                     })
                 );
                 $scope.amendments_crs.sort(function (change1, change2) {
@@ -546,40 +536,9 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
                     }
                 });
 
-                // Each change object gets two extra functions for this view
-                $scope.amendments_crs.forEach(function(change) {
-                    change.getCollissions = function(onlyAccepted) {
-                        return $scope.amendments_crs.filter(function(otherChange) {
-                            if (onlyAccepted && !otherChange.accepted) {
-                                return false;
-                            }
-                            return (otherChange.id !== change.id && (
-                                (otherChange.line_from >= change.line_from && otherChange.line_from <= change.line_to) ||
-                                (otherChange.line_to >= change.line_from && otherChange.line_to <= change.line_to) ||
-                                (otherChange.line_from < change.line_from && otherChange.line_to > change.line_to)
-                            ));
-                        });
-                    };
-                    change.getAcceptedCollissions = function() {
-                        return change.getCollissions().filter(function(colliding) {
-                            return colliding.accepted;
-                        });
-                    };
-                    change.setAccepted = function($event) {
-                        if (change.getAcceptedCollissions().length > 0) {
-                            $event.preventDefault();
-                            $event.stopPropagation();
-                            return;
-                        }
-                        change.accepted = true;
-                        change.rejected = false;
-                        change.saveStatus();
-                    };
-                    change.setRejected = function($event) {
-                        change.rejected = true;
-                        change.accepted = false;
-                        change.saveStatus();
-                    };
+                // Set all crs and amendments for collission detection.
+                _.forEach($scope.amendments_crs, function (change) {
+                    change.setOtherChangesForCollission($scope.amendments_crs);
                 });
 
                 $scope.has_proposed_changes = ($scope.amendments_crs.length > 0);
@@ -618,7 +577,7 @@ angular.module('OpenSlidesApp.motions.motionservices', ['OpenSlidesApp.motions',
             $scope.$watch(function () {
                 return Motion.lastModified();
             }, function () {
-                $scope.paragraph_amendments = motion.getParagraphBasedAmendments();
+                $scope.paragraph_amendments = motion.getParagraphBasedAmendmentsForDiffView();
                 rebuild_amendments_crs();
             });
         };

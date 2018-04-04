@@ -2154,7 +2154,6 @@ angular.module('OpenSlidesApp.motions.site', [
                 $scope.model.text = paragraphTextPre;
             }
             $scope.model.title = gettextCatalog.getString('Amendment to') + ' ' + parentMotion.identifier;
-            console.log(paragraphNo);
             $scope.model.paragraphNo = paragraphNo;
             $scope.model.parent_id = parentMotion.id;
             $scope.model.category_id = parentMotion.category_id;
@@ -2173,9 +2172,6 @@ angular.module('OpenSlidesApp.motions.site', [
             motion.agenda_type = motion.showAsAgendaItem ? 1 : 2;
 
             if (isAmendment && $scope.model.paragraphNo !== undefined) {
-                console.log("NO");
-                console.log($scope.model.paragraphNo);
-                console.log($scope.model.paragraphNo !== undefined);
                 var orig_paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
                 $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
                     return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
@@ -2431,10 +2427,12 @@ angular.module('OpenSlidesApp.motions.site', [
     'PersonalNoteManager',
     'ngDialog',
     'MotionCommentForm',
+    'MotionChangeRecommendation',
     'AmendmentCsvExport',
     'gettext',
     function ($scope, $sessionStorage, $state, Motion, MotionComment, MotionForm,
-        PersonalNoteManager, ngDialog, MotionCommentForm, AmendmentCsvExport, gettext) {
+        PersonalNoteManager, ngDialog, MotionCommentForm, MotionChangeRecommendation,
+        AmendmentCsvExport, gettext) {
         if ($scope.motionId) {
             $scope.leadMotion = Motion.get($scope.motionId);
         }
@@ -2477,7 +2475,39 @@ angular.module('OpenSlidesApp.motions.site', [
 
             // Get all lead motions
             $scope.leadMotions = _.orderBy(Motion.filter({parent_id: undefined}), ['identifier']);
+
+            updateCollissions();
         };
+
+        var updateCollissions = function () {
+            $scope.collissions = {};
+            _.forEach($scope.amendments, function (amendment) {
+                var parentMotion = amendment.getParentMotion();
+                // get all change recommendations _and_ changes by amendments from the
+                // parent motion. From all get the unified change object.
+                var parentChangeRecommendations = _.filter(
+                    MotionChangeRecommendation.filter({
+                        'where': {'motion_version_id': {'==': parentMotion.active_version}}
+                    }), function (change) {
+                        return change.isTextRecommendation();
+                    }
+                );
+                var parentChanges = parentChangeRecommendations.map(function (cr) {
+                    return cr.getUnifiedChangeObject();
+                }).concat(
+                    _.map(parentMotion.getParagraphBasedAmendmentsForDiffView(), function (amendment) {
+                        return amendment.getUnifiedChangeObject();
+                    })
+                );
+                var change = amendment.getUnifiedChangeObject();
+                change.setOtherChangesForCollission(parentChanges);
+                $scope.collissions[amendment.id] = !!change.getCollissions().length;
+            });
+        };
+
+        $scope.$watch(function () {
+            return MotionChangeRecommendation.lastModified();
+        }, updateCollissions);
 
         $scope.$watch(function () {
             return Motion.lastModified();

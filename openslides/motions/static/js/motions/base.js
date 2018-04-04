@@ -228,8 +228,10 @@ angular.module('OpenSlidesApp.motions', [
     'OpenSlidesSettings',
     'Projector',
     'operator',
-    function(DS, $http, MotionPoll, MotionStateAndRecommendationParser, MotionChangeRecommendation, MotionComment, jsDataModel, gettext, gettextCatalog,
-        Config, lineNumberingService, diffService, OpenSlidesSettings, Projector, operator) {
+    'UnifiedChangeObjectCollission',
+    function(DS, $http, MotionPoll, MotionStateAndRecommendationParser, MotionChangeRecommendation,
+        MotionComment, jsDataModel, gettext, gettextCatalog, Config, lineNumberingService,
+        diffService, OpenSlidesSettings, Projector, operator, UnifiedChangeObjectCollission) {
         var name = 'motions/motion';
         return DS.defineResource({
             name: name,
@@ -739,11 +741,13 @@ angular.module('OpenSlidesApp.motions', [
                         this._change_object.rejected = true;
                     } else if (this.state && this.state.name === 'accepted') {
                         this._change_object.accepted = true;
-                    } else if (this.recommendation.name === 'rejected') {
+                    } else if (this.recommendation && this.recommendation.name === 'rejected') {
                         this._change_object.rejected = true;
-                    } else if  (this.recommendation.name === 'accepted') {
+                    } else if  (this.recommendation && this.recommendation.name === 'accepted') {
                         this._change_object.accepted = true;
                     }
+
+                    UnifiedChangeObjectCollission.populate(this._change_object);
 
                     return this._change_object;
                 },
@@ -882,6 +886,19 @@ angular.module('OpenSlidesApp.motions', [
                 getParagraphBasedAmendments: function () {
                     return DS.filter('motions/motion', {parent_id: this.id}).filter(function(amendment) {
                         return (amendment.isParagraphBasedAmendment());
+                    });
+                },
+                getParagraphBasedAmendmentsForDiffView: function () {
+                    return _.filter(this.getParagraphBasedAmendments(), function(amendment) {
+                        // If no accepted/rejected status is given, only amendments that have a recommendation
+                        // of "accepted" and have not been officially rejected are to be shown in the diff-view
+                        if (amendment.state && amendment.state.name === 'rejected') {
+                            return false;
+                        }
+                        if (amendment.state && amendment.state.name === 'accepted') {
+                            return true;
+                        }
+                        return (amendment.recommendation && amendment.recommendation.name === 'accepted');
                     });
                 },
                 getParentMotion: function () {
@@ -1244,8 +1261,10 @@ angular.module('OpenSlidesApp.motions', [
     'jsDataModel',
     'diffService',
     'lineNumberingService',
+    'UnifiedChangeObjectCollission',
     'gettextCatalog',
-    function (DS, Config, jsDataModel, diffService, lineNumberingService, gettextCatalog) {
+    function (DS, Config, jsDataModel, diffService, lineNumberingService,
+        UnifiedChangeObjectCollission, gettextCatalog) {
         return DS.defineResource({
             name: 'motions/motion-change-recommendation',
             useClass: jsDataModel,
@@ -1351,10 +1370,57 @@ angular.module('OpenSlidesApp.motions', [
                     this._change_object.rejected = recommendation.rejected;
                     this._change_object.accepted = !recommendation.rejected;
 
+                    UnifiedChangeObjectCollission.populate(this._change_object);
+
                     return this._change_object;
                 }
             }
         });
+    }
+])
+
+.factory('UnifiedChangeObjectCollission', [
+    function () {
+        return {
+            populate: function (obj) {
+                obj.otherChanges = [];
+                obj.setOtherChangesForCollission = function (changes) {
+                    obj.otherChanges = changes;
+                };
+                obj.getCollissions = function(onlyAccepted) {
+                    return obj.otherChanges.filter(function(otherChange) {
+                        if (onlyAccepted && !otherChange.accepted) {
+                            return false;
+                        }
+                        return (otherChange.id !== obj.id && (
+                            (otherChange.line_from >= obj.line_from && otherChange.line_from <= obj.line_to) ||
+                            (otherChange.line_to >= obj.line_from && otherChange.line_to <= obj.line_to) ||
+                            (otherChange.line_from < obj.line_from && otherChange.line_to > obj.line_to)
+                        ));
+                    });
+                };
+                obj.getAcceptedCollissions = function() {
+                    return obj.getCollissions().filter(function(colliding) {
+                        return colliding.accepted;
+                    });
+                };
+                obj.setAccepted = function($event) {
+                    if (obj.getAcceptedCollissions().length > 0) {
+                        $event.preventDefault();
+                        $event.stopPropagation();
+                        return;
+                    }
+                    obj.accepted = true;
+                    obj.rejected = false;
+                    obj.saveStatus();
+                };
+                obj.setRejected = function($event) {
+                    obj.rejected = true;
+                    obj.accepted = false;
+                    obj.saveStatus();
+                };
+            },
+        };
     }
 ])
 

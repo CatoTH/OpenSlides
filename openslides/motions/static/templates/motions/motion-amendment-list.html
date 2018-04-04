@@ -237,6 +237,9 @@
               ng-if="!amendment.identifier">
               {{ amendment.getTitle() }}
             </a>
+            <span ng-if="collissions[amendment.id]">
+              <i class="fa fa-warning text-danger" uib-tooltip="{{ 'This change collides with another one. Only one can be accepted.' | translate }}"></i>
+            </span>
             <a href="" ng-click="toggleStar(amendment)">
               <i class="fa" ng-class="amendment.personalNote.star ? 'fa-star' : 'fa-star-o'"
                 title="{{ 'Set as favorite' | translate }}" ng-if="(amendment.personalNote.star || amendment.hover) && operator.user"></i>
