@@ -162,6 +162,11 @@ class Motion(RESTModelMixin, models.Model):
     Users who submit this motion.
     """
 
+    custom_supporters = models.TextField(null=True, blank=True)
+    """
+    Custom free text field for supporters
+    """
+
     supporters = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='motion_supporters', blank=True)
     """
     Users who support this motion.

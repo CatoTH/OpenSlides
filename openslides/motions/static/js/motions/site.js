@@ -439,8 +439,22 @@ angular.module('OpenSlidesApp.motions.site', [
                     data: {
                         ckeditorOptions: Editor.getOptions()
                     }
-                },
-                {
+                }];
+                // custom supporters field
+                if (Config.get('motions_min_supporters').value > 0) {
+                    formFields.push({
+                        key: 'custom_supporters',
+                        type: 'textarea',
+                        templateOptions: {
+                            label: gettextCatalog.getString('Supporters'),
+                            description: 'Bitte mindestens ' + Config.get('motions_min_supporters').value + ' Unterstützer/innen (einschließlich Antragsteller/in) und die jeweiligen Kreisverbände angeben!'
+                        },
+                        data: {
+                            ckeditorOptions: Editor.getOptions()
+                        }
+                    });
+                }
+                formFields.push({
                     key: 'disable_versioning',
                     type: 'checkbox',
                     templateOptions: {
@@ -448,7 +462,7 @@ angular.module('OpenSlidesApp.motions.site', [
                         description: gettextCatalog.getString("Don't create a new version.")
                     },
                     hide: true
-                }];
+                });
 
                 // show as agenda item + parent item
                 if (isCreateForm) {
