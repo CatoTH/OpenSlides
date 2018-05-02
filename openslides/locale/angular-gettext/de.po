@@ -3954,3 +3954,82 @@ msgstr "unerledigt"
 #: motions/static/js/motions/base.js:1011
 msgid "withdrawed"
 msgstr "zurückgezogen"
+
+
+### CUSTOM
+
+msgid "All motions"
+msgstr "Alle Anträge"
+
+#: motions/static/js/motions/site.js:2161
+#: motions/static/js/motions/site.js:3037
+msgid "Amendment to"
+msgstr "Änderungsantrag zu"
+
+#: motions/static/js/motions/site.js:2164
+msgid "Amendment to motion"
+msgstr "Änderungsantrag zu Antrag"
+
+msgid "Are you sure you want to delete all selected amendments?"
+msgstr "Sollen wirklich alle ausgewählten Änderungsanträge gelöscht werden?"
+
+msgid ""
+"At least two amendments or change recommendations affecting the same line are to be integrated.\n"
+"                  This leads to undeterministic results.\n"
+"                  Please resolve this conflict by not accepting multiple changes affecting the same line."
+msgstr "Mindestens zwei Änderungsanträge oder Änderungsempfehlungen beziehen sich auf die gleiche Zeile. Dies führt zu unbestimmten Ergebnissen. Bitte lösen Sie diesen Konflikt auf durch Nicht-Annahme entsprechender Änderungen."
+
+#: motions/static/templates/motions/slide_motion.html:130
+msgid ""
+"At least two amendments or change recommendations affecting the same line are to be integrated.\n"
+"                This leads to undeterministic results.\n"
+"                Please resolve this conflict by not accepting multiple changes affecting the same line."
+msgstr "Mindestens zwei Änderungsanträge oder Änderungsempfehlungen beziehen sich auf die gleiche Zeile. Dies führt zu unbestimmten Ergebnissen. Bitte lösen Sie diesen Konflikt auf durch Nicht-Annahme entsprechender Änderungen."
+
+msgid "Choose the paragraph to amend"
+msgstr "Bitte einen zu ändernden Absatz auswählen!"
+
+msgid "Continue"
+msgstr "Weiter"
+
+#: motions/static/templates/motions/motion-amendment-list.html:364
+msgid "Create modified amendment"
+msgstr "Modifizierte Übernahme"
+
+#: motions/static/templates/motions/motion-amendment-list.html:158
+msgid "Delete selected amendments"
+msgstr "Ausgewählte Änderungsanträge löschen"
+
+msgid "Expand"
+msgstr "Maximieren"
+
+msgid "Reduce"
+msgstr "Minimieren"
+
+msgid "Export dialog"
+msgstr "Exportdialog"
+
+msgid "Line"
+msgstr "Zeile"
+
+msgid "Show entire motion text"
+msgstr "Vollständigen Antragstext anzeigen"
+
+#: motions/static/templates/motions/motion-detail/change-summary.html:
+msgid "Summary of changes"
+msgstr "Zusammenfassung der Änderungen"
+
+#: motions/static/templates/motions/motion-amendment-list.html:243
+#: motions/static/templates/motions/motion-detail/view-diff.html:57
+msgid "This change collides with another one. Only one can be accepted."
+msgstr "Diese Änderung kollidiert mit einer anderen. Nur eine kann angenommen werden."
+
+msgid "amendments"
+msgstr "Änderungsanträge"
+
+msgid "No recomendation set"
+msgstr "Keine Empfehlung gesetzt"
+
+msgid "No changes at the text"
+msgstr "Fehler: Die Textänderungen konnten leider nicht gespeichert werden. Bitte den Änderungsantrag noch einmal neu anlegen!"
+
