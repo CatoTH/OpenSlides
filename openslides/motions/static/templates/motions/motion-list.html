@@ -774,11 +774,9 @@
         </div>
         <div style="width: 10%;" class="pull-right optional">
           <div class="centered" ng-if="config('motions_min_supporters') != 0"
-            uib-tooltip="{{ motion.supporters.length }} {{ 'Supporters' | translate }}
-            {{ (config('motions_min_supporters') - motion.supporters.length) > 0 ? '(' +  (config('motions_min_supporters') - motion.supporters.length) + ' ' + ('needed' | translate) + ')': '' }}"
+            uib-tooltip="{{ motion.supporters.length }} {{ 'Supporters' | translate }}"
             tooltip-class="nobr">
-            <span class="badge"
-              ng-class="motion.supporters.length < config('motions_min_supporters') ? 'badge-info' : 'badge-success'">
+            <span class="badge badge-default">
               {{ motion.supporters.length }}
             </span>
           </div>
