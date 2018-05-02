@@ -159,7 +159,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_amendments_prefix',
-        default_value='-Ä',
+        default_value='-ÄA',
         label='Prefix for the identifier for amendments',
         weight=340,
         group='Motions',
@@ -167,7 +167,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_amendments_text_mode',
-        default_value='freestyle',
+        default_value='paragraph',
         input_type='choice',
         label='How to create new amendments',
         choices=(
@@ -183,7 +183,7 @@ def get_config_variables():
 
     yield ConfigVariable(
         name='motions_min_supporters',
-        default_value=0,
+        default_value=5,
         input_type='integer',
         label='Number of (minimum) required supporters for a motion',
         help_text='Choose 0 to disable the supporting system.',
