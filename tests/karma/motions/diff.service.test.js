@@ -546,6 +546,19 @@ describe('linenumbering', function () {
       expect(diff).toBe(expected);
     });
 
+    it('handles inserted paragraphs (4)', function () {
+      var before = "<p>This is a random first line that remains unchanged.</p>",
+          after = "<p>This is a random first line that remains unchanged.</p>" +
+              '<p style="text-align: justify;"><span style="color: #000000;">Inserting this line should not make any troubles, especially not affect the first line</span></p>' +
+              '<p style="text-align: justify;"><span style="color: #000000;">Neither should this line</span></p>',
+          expected = "<p>This is a random first line that remains unchanged.</p>" +
+              '<p style="text-align: justify;"><ins><span style="color: #000000;">Inserting this line should not make any troubles, especially not affect the first line</span></ins></p>' +
+              '<p style="text-align: justify;"><ins><span style="color: #000000;">Neither should this line</span></ins></p>';
+
+      var diff = diffService.diff(before, after);
+      expect(diff).toBe(expected);
+    });
+
     it('handles completely deleted paragraphs', function () {
         var before = "<P>Ihr könnt ohne Sorge fortgehen.'Da meckerte die Alte und machte sich getrost auf den Weg.</P>",
             after = "";
