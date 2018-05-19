@@ -1179,7 +1179,37 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
         };
 
         /**
-         *
+         * @param {string} html
+         * @return {boolean}
+         * @private
+         */
+        this._isValidInlineHtml = function(html) {
+            // If there are no HTML tags, we assume it's valid and skip further checks
+            if (!html.match(/<[^>]*>/)) {
+                return true;
+            }
+
+            // We check if this is a valid HTML that closes all its tags again using the innerHTML-Hack to correct
+            // the string and check if the number of HTML tags changes by this
+            var doc = document.createElement('div');
+            doc.innerHTML = html;
+            var tagsBefore = (html.match(/</g) || []).length;
+            var tagsCorrected = (doc.innerHTML.match(/</g) || []).length;
+            if (tagsBefore !== tagsCorrected) {
+                // The HTML has changed => it was not valid
+                return false;
+            }
+
+            // If there is any block element inside, we consider it as broken, as this string will be displayed
+            // inside of <ins>/<del> tags
+            if (html.match(/<(div|p|ul|li|blockquote)\W/i)) {
+                return false;
+            }
+
+            return true;
+        };
+
+        /**
          * @param {string} html
          * @returns {boolean}
          * @private
@@ -1214,7 +1244,7 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
             }
             while (!!(found = findIns.exec(html))) {
                 inner = found[1].replace(/<br[^>]*>/gi, '');
-                if (inner.match(/<[^>]*>/)) {
+                if (!this._isValidInlineHtml(inner)) {
                     return true;
                 }
             }
