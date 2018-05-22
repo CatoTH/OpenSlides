@@ -213,6 +213,7 @@ angular.module('OpenSlidesApp.motions', [
 .factory('Motion', [
     'DS',
     '$http',
+    '$cacheFactory',
     'MotionPoll',
     'MotionStateAndRecommendationParser',
     'MotionChangeRecommendation',
@@ -228,9 +229,12 @@ angular.module('OpenSlidesApp.motions', [
     'ProjectHelper',
     'operator',
     'UnifiedChangeObjectCollission',
-    function(DS, $http, MotionPoll, MotionStateAndRecommendationParser, MotionChangeRecommendation,
+    function(DS, $http, $cacheFactory, MotionPoll, MotionStateAndRecommendationParser, MotionChangeRecommendation,
         MotionComment, jsDataModel, gettext, gettextCatalog, Config, lineNumberingService,
         diffService, OpenSlidesSettings, Projector, ProjectHelper, operator, UnifiedChangeObjectCollission) {
+
+        var diffCache = $cacheFactory('motion.service');
+
         var name = 'motions/motion';
         return DS.defineResource({
             name: name,
@@ -519,6 +523,14 @@ angular.module('OpenSlidesApp.motions', [
                      */
 
                     lineBreaks = (lineBreaks === undefined ? true : lineBreaks);
+
+                    var cacheKey = 'getAmendmentParagraphsByMode ' + mode + ' ' + versionId + ' ' + lineBreaks +
+                        lineNumberingService.djb2hash(JSON.stringify(this.getVersion(versionId).amendment_paragraphs)),
+                        cached = diffCache.get(cacheKey);
+                    if (!angular.isUndefined(cached)) {
+                        return cached;
+                    }
+
                     var original_text = this.getParentMotion().getTextByMode('original', null, null, true);
                     var original_paragraphs = lineNumberingService.splitToParagraphs(original_text);
 
@@ -569,6 +581,8 @@ angular.module('OpenSlidesApp.motions', [
                         });
                     });
 
+                    diffCache.put(cacheKey, output);
+
                     return output;
                 },
                 getAmendmentParagraphsLinesByMode: function (mode, versionId, lineBreaks) {
@@ -594,9 +608,15 @@ angular.module('OpenSlidesApp.motions', [
                         return [];
                     }
 
+                    var cacheKey = 'getAmendmentParagraphsLinesByMode ' + mode + ' ' + versionId + ' ' + lineBreaks +
+                        lineNumberingService.djb2hash(JSON.stringify(this.getVersion(versionId).amendment_paragraphs)),
+                        cached = diffCache.get(cacheKey);
+                    if (!angular.isUndefined(cached)) {
+                        return cached;
+                    }
+
                     var original_text = this.getParentMotion().getTextByMode('original', null, null, true);
                     var original_paragraphs = lineNumberingService.splitToParagraphs(original_text);
-
 
                     var output = [];
 
@@ -666,6 +686,8 @@ angular.module('OpenSlidesApp.motions', [
                             "textPost": textPost
                         });
                     });
+
+                    diffCache.put(cacheKey, output);
 
                     return output;
                 },
