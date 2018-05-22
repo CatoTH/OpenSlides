@@ -164,11 +164,9 @@
           <!-- Amendments -->
           <div ng-if="!motion.isAmendment && motion.isAllowed('can_see_amendments')">
             <h3 translate>Amendments</h3>
-            <div ng-repeat="amendment in amendments | orderBy: 'identifier'">
-              <a ui-sref="motions.motion.detail({id: amendment.id})">
-                <translate>Motion</translate> {{ amendment.identifier || amendment.getTitle() }}
-              </a>
-            </div>
+            <a ng-if="motion.hasAmendments()" ui-sref="motions.motion.amendment-list({id: motion.id})">
+              {{ motion.getAmendments().length }} <translate>Amendments</translate><br>
+            </a>
             <button ng-if="motion.isAllowed('can_create_amendment')" ng-click="newAmendment()" class="btn btn-default btn-sm">
               <i class="fa fa-plus"></i>
               <translate>New amendment</translate>

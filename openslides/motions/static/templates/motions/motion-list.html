@@ -284,7 +284,7 @@
       </div>
       <!-- additional content column -->
       <div class="col-xs-4 content" ng-style="{'width': isSelectMode ? 'calc(50% - 120px)' : 'calc(50% - 70px)'}">
-        <div style="width: 50%;" class="optional">
+        <div style="width: 45%;" class="optional">
           <small>
             <!-- Category dropdown for manage user -->
             <div os-perms="motions.can_manage" ng-show="categories.length > 0"
@@ -415,7 +415,7 @@
             </span>
           </div>
         </div>
-        <div style="width: 10%;" class="pull-right">
+        <div style="width: 15%;" class="pull-right">
           <div class="centered" ng-if="(motion.agenda_item.speakers | filter: {'begin_time': null}).length"
             uib-tooltip="{{ (motion.agenda_item.speakers | filter: {'begin_time': null}).length }} {{ 'speakers' | translate }}"
             tooltip-class="nobr">

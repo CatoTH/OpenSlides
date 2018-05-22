@@ -2232,7 +2232,29 @@ angular.module('OpenSlidesApp.motions.site', [
         // set initial values for form model by create deep copy of motion object
         // so list/detail view is not updated while editing
         var motion = Motion.get(motionId);
-        $scope.model = angular.copy(motion);
+        // We need to clone this by hand. angular and lodash are not capable of keeping
+        // crossreferences out.
+        $scope.model = {
+            id: motion.id,
+            parent_id: motion.parent_id,
+            identifier: motion.identifier,
+            title: motion.getTitle(),
+            text: motion.getText(),
+            reason: motion.getReason(),
+            submitters_id: _.map(motion.submitters_id),
+            supporters_id: _.map(motion.supporters_id),
+            tags_id: _.map(motion.tags_id),
+            state_id: motion.state_id,
+            recommendation_id: motion.recommendation_id,
+            origin: motion.origin,
+            workflow_id: motion.workflow_id,
+            comments: _.clone(motion.comments),
+            attachments_id: _.map(motion.attachments_id),
+            active_version: motion.active_version,
+            agenda_item_id: motion.agenda_item_id,
+            category_id: motion.category_id,
+            motion_block_id: motion.motion_block_id,
+        };
         $scope.model.disable_versioning = false;
         $scope.model.more = false;
         if (motion.isParagraphBasedAmendment()) {
@@ -2283,9 +2305,9 @@ angular.module('OpenSlidesApp.motions.site', [
         $scope.$on('$destroy', editingStoppedCallback);
 
         // Save motion
-        $scope.save = function (motion, gotoDetailView) {
+        $scope.save = function (model, gotoDetailView) {
             if ($scope.model.paragraphNo !== undefined) {
-                var parentMotion = $scope.model.getParentMotion();
+                var parentMotion = motion.getParentMotion();
                 var orig_paragraphs = parentMotion.getTextParagraphs(parentMotion.active_version, false);
                 $scope.model.amendment_paragraphs = orig_paragraphs.map(function (_, idx) {
                     return (idx === $scope.model.paragraphNo ? $scope.model.text : null);
@@ -2293,9 +2315,9 @@ angular.module('OpenSlidesApp.motions.site', [
             }
 
             // inject the changed motion (copy) object back into DS store
-            Motion.inject(motion);
+            Motion.inject(model);
             // save changed motion object on server
-            Motion.save(motion).then(
+            Motion.save(model).then(
                 function(success) {
                     if (gotoDetailView) {
                         $state.go('motions.motion.detail', {id: success.id});
@@ -2305,7 +2327,7 @@ angular.module('OpenSlidesApp.motions.site', [
                 function (error) {
                     // save error: revert all changes by restore
                     // (refresh) original motion object from server
-                    Motion.refresh(motion);
+                    Motion.refresh(model);
                     $scope.alert = ErrorMessage.forAlert(error);
                 }
             );
@@ -2437,11 +2459,13 @@ angular.module('OpenSlidesApp.motions.site', [
     'ngDialog',
     'MotionCommentForm',
     'MotionChangeRecommendation',
+    'MotionPdfExport',
     'AmendmentCsvExport',
+    'gettextCatalog',
     'gettext',
     function ($scope, $sessionStorage, $state, Motion, MotionComment, MotionForm,
         PersonalNoteManager, ngDialog, MotionCommentForm, MotionChangeRecommendation,
-        AmendmentCsvExport, gettext) {
+        MotionPdfExport, AmendmentCsvExport, gettextCatalog, gettext) {
         if ($scope.motionId) {
             $scope.leadMotion = Motion.get($scope.motionId);
         }
@@ -2588,6 +2612,17 @@ angular.module('OpenSlidesApp.motions.site', [
                 paragraphText = amendment.getText();
             }
             ngDialog.open(MotionForm.getDialog(null, amendment.getParentMotion(), paragraphNo, paragraphText));
+        };
+
+        $scope.amendmentPdfExport = function (motions) {
+            var filename;
+            if ($scope.leadMotion) {
+                filename = gettextCatalog.getString('Amendments to') + ' ' +
+                    $scope.leadMotion.getTitle();
+            } else {
+                filename = gettextCatalog.getString('Amendments');
+            }
+            MotionPdfExport.exportAmendments(motions, filename);
         };
 
         $scope.exportCsv = function (motions) {
