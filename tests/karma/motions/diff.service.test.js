@@ -643,6 +643,15 @@ describe('linenumbering', function () {
       var diff = diffService.diff(before, after);
       expect(diff).toBe('elitr<del>. einsetzt. VERSCHLUCKT noch die sog.</del><ins>, Einfügung durch Änderung der</ins> Gleichbleibend<del> (Wird gelöscht).</del><ins>, einsetzt.</ins>');
     });
+
+    it('does not fall back to block level replacement when BRs are inserted/deleted', function() {
+      var before = '<p>Lorem ipsum dolor sit amet, consetetur <br>sadipscing elitr.<br>Bavaria ipsum dolor sit amet o’ha wea nia ausgähd<br>kummt nia hoam i hob di narrisch gean</p>',
+          after = '<p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr. Sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua..<br>\n' +
+              'Bavaria ipsum dolor sit amet o’ha wea nia ausgähd<br>\n' +
+              'Autonomie erfährt ihre Grenzen</p>';
+      var diff = diffService.diff(before, after);
+      expect(diff).toBe('<p>Lorem ipsum dolor sit amet, consetetur <del><br></del>sadipscing elitr.<ins> Sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua..</ins><br>Bavaria ipsum dolor sit amet o’ha wea nia ausgähd<br><del>kummt nia hoam i hob di narrisch gean</del><ins>Autonomie erfährt ihre Grenzen</ins></p>');
+    })
   });
 
   describe('ignoring line numbers', function () {

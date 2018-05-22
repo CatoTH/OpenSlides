@@ -1218,22 +1218,6 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
          * @private
          */
         this._diffDetectBrokenDiffHtml = function(html) {
-            // If a regular HTML tag is enclosed by INS/DEL, the HTML is broken
-            var match = html.match(/<(ins|del)><[^>]*><\/(ins|del)>/gi);
-            if (match !== null && match.length > 0) {
-                return true;
-            }
-
-            // Opening tags, followed by </del> or </ins>, indicate broken HTML (if it's not a <ins> / <del>)
-            var brokenRegexp = /<(\w+)[^>]*><\/(ins|del)>/gi,
-                result;
-            while ((result = brokenRegexp.exec(html)) !== null) {
-                if (result[1].toLowerCase() !== 'ins' && result[1].toLowerCase() !== 'del') {
-                    return true;
-                }
-            }
-
-
             // If other HTML tags are contained within INS/DEL (e.g. "<ins>Test</p></ins>"), let's better be cautious
             // The "!!(found=...)"-construction is only used to make jshint happy :)
             var findDel = /<del>(.*?)<\/del>/gi,
