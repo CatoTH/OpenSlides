@@ -209,7 +209,6 @@
       | toArray
       | orderByEmptyLast: sort.column : sort.reverse)
       | limitTo : pagination.itemsPerPage : pagination.limitBegin"
-      ng-mouseover="amendment.hover=true" ng-mouseleave="amendment.hover=false"
       ng-class="{'projected': amendment.isProjected().length}">
 
       <!-- select column -->
@@ -321,7 +320,7 @@
             </small>
           </div>
           <!-- hover menu -->
-          <div ng-if="amendment.isAllowed('update')" ng-class="{'hiddenDiv': !amendment.hover}">
+          <div ng-if="amendment.isAllowed('update')">
             <small>
               <span ng-if="amendment.isAllowed('update')">
                 <a href="" ng-click="openDialog(amendment)" translate>Edit</a>
