@@ -727,7 +727,8 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 '&bdquo;': '„',
                 '&ldquo;': '“',
                 '&bull;': '•',
-                '&sect;': '§'
+                '&sect;': '§',
+                '&eacute;': 'é'
             };
 
             html = html.replace(/\s+<\/P>/gi, '</P>').replace(/\s+<\/DIV>/gi, '</DIV>').replace(/\s+<\/LI>/gi, '</LI>');
