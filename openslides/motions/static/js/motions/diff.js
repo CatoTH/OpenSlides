@@ -772,6 +772,12 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
          * @param {string} diffHtml
          */
         this.detectAffectedLineRange = function (diffHtml) {
+            var cacheKey = lineNumberingService.djb2hash(diffHtml),
+                cached = diffCache.get(cacheKey);
+            if (!angular.isUndefined(cached)) {
+                return cached;
+            }
+
             var fragment = this.htmlToFragment(diffHtml);
 
             this._insertInternalLineMarkers(fragment);
@@ -805,10 +811,13 @@ angular.module('OpenSlidesApp.motions.diff', ['OpenSlidesApp.motions.lineNumberi
                 }
             }
 
-            return {
+            var range = {
                 "from": parseInt(lastLineNumberBefore.getAttribute("data-line-number")),
                 "to": parseInt(firstLineNumberAfter.getAttribute("data-line-number"))
             };
+
+            diffCache.put(cacheKey, range);
+            return range;
         };
 
         /**
