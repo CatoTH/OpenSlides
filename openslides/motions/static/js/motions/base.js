@@ -339,7 +339,16 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getTextInLineRange: function (versionId, line_from, line_to, highlight) {
                     var lineLength = Config.get('motions_line_length').value,
-                        html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength),
+                        htmlRaw = this.getVersion(versionId).text;
+
+                    var cacheKey = 'getTextInLineRange ' + line_from + ' ' + line_to + ' ' + highlight + ' ' +
+                        lineNumberingService.djb2hash(htmlRaw),
+                        cached = diffCache.get(cacheKey);
+                    if (!angular.isUndefined(cached)) {
+                        return cached;
+                    }
+
+                    var html = lineNumberingService.insertLineNumbers(htmlRaw, lineLength),
                         data;
 
                     try {
@@ -357,6 +366,8 @@ angular.module('OpenSlidesApp.motions', [
                     html = diffService.addCSSClassToFirstTag(data.outerContextStart + data.innerContextStart, "merge-before") +
                         data.html + data.innerContextEnd + data.outerContextEnd;
                     html = lineNumberingService.insertLineNumbers(html, lineLength, highlight, null, line_from);
+
+                    diffCache.put(cacheKey, html);
 
                     return html;
                 },
