@@ -1451,8 +1451,8 @@ angular.module('OpenSlidesApp.motions', [
                             return false;
                         }
                         return (otherChange.id !== obj.id && (
-                            (otherChange.line_from >= obj.line_from && otherChange.line_from <= obj.line_to) ||
-                            (otherChange.line_to >= obj.line_from && otherChange.line_to <= obj.line_to) ||
+                            (otherChange.line_from >= obj.line_from && otherChange.line_from < obj.line_to) ||
+                            (otherChange.line_to > obj.line_from && otherChange.line_to <= obj.line_to) ||
                             (otherChange.line_from < obj.line_from && otherChange.line_to > obj.line_to)
                         ));
                     });
