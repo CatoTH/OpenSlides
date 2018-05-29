@@ -431,6 +431,7 @@ angular.module('OpenSlidesApp.motions', [
                         }
                     });
 
+
                     allChanges.forEach(function(change) {
                         html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, 1);
                         html = diffService.replaceLines(html, change.text, change.line_from, change.line_to);
@@ -482,13 +483,29 @@ angular.module('OpenSlidesApp.motions', [
                             }
                             break;
                         case 'diff':
-                            var changes = this.getTextChangeRecommendations(versionId, 'ASC');
+                            var amendments_crs = this.getTextChangeRecommendations(versionId, 'ASC').map(function (cr) {
+                                return cr.getUnifiedChangeObject();
+                            }).concat(
+                                this.getParagraphBasedAmendmentsForDiffView().map(function (amendment) {
+                                    return amendment.getUnifiedChangeObject();
+                                })
+                            );
+                            amendments_crs.sort(function (change1, change2) {
+                                if (change1.line_from > change2.line_from) {
+                                    return 1;
+                                } else if (change1.line_from < change2.line_from) {
+                                    return -1;
+                                } else {
+                                    return 0;
+                                }
+                            });
+
                             text = '';
-                            for (var i = 0; i < changes.length; i++) {
-                                text += this.getTextBetweenChanges(versionId, (i === 0 ? null : changes[i - 1]), changes[i], highlight);
-                                text += changes[i].getDiff(this, versionId, highlight);
+                            for (var i = 0; i < amendments_crs.length; i++) {
+                                text += this.getTextBetweenChanges(versionId, (i === 0 ? null : amendments_crs[i - 1]), amendments_crs[i], highlight);
+                                text += amendments_crs[i].getDiff(this, versionId, highlight);
                             }
-                            text += this.getTextRemainderAfterLastChange(versionId, changes);
+                            text += this.getTextRemainderAfterLastChange(versionId, amendments_crs);
 
                             if (!lineBreaks) {
                                 text = lineNumberingService.stripLineNumbers(text);
