@@ -2625,6 +2625,7 @@ angular.module('OpenSlidesApp.motions.site', [
             } else {
                 filename = gettextCatalog.getString('Amendments');
             }
+            filename += '.pdf';
             MotionPdfExport.exportAmendments(motions, filename);
         };
 
