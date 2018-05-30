@@ -70,6 +70,7 @@ Motions:
 - Split up 'can_see_and_manage_comments' permission in two seperate
   ones [#3565].
 - Added (shortened) motion title to motion block slide [#3700].
+- Allow to specify the first line number of a motion.
 
 Elections:
 - Added pagination for list view [#3393].

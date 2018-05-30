@@ -621,6 +621,17 @@ angular.module('OpenSlidesApp.motions.site', [
                         hideExpression: '!model.more'
                     });
                 }
+                // origin
+                formFields.push({
+                    key: 'first_line_number',
+                    type: 'input',
+                    templateOptions: {
+                        label: gettextCatalog.getString('First line number'),
+                    },
+                    hideExpression: function($viewValue, $modelValue, scope) {
+                        return isParagraphBasedAmendment || !scope.model.more;
+                    }
+                });
                 // workflows
                 if (workflows.length > 1) {
                     formFields.push({
@@ -2247,6 +2258,7 @@ angular.module('OpenSlidesApp.motions.site', [
             state_id: motion.state_id,
             recommendation_id: motion.recommendation_id,
             origin: motion.origin,
+            first_line_number: motion.first_line_number,
             workflow_id: motion.workflow_id,
             comments: _.clone(motion.comments),
             attachments_id: _.map(motion.attachments_id),

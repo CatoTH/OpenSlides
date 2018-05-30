@@ -320,12 +320,14 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getTextWithLineBreaks: function (versionId, highlight, callback) {
                     var lineLength = Config.get('motions_line_length').value,
+                        firstLine = this.first_line_number,
                         html = this.getVersion(versionId).text;
 
-                    return lineNumberingService.insertLineNumbers(html, lineLength, highlight, callback);
+                    return lineNumberingService.insertLineNumbers(html, lineLength, highlight, callback, firstLine);
                 },
                 getTextBetweenChanges: function (versionId, change1, change2, highlight) {
-                    var line_from = (change1 ? change1.line_to : 1),
+                    var firstLine = this.first_line_number,
+                        line_from = (change1 ? change1.line_to : firstLine),
                         line_to = (change2 ? change2.line_from : null);
 
                     if (line_from > line_to) {
@@ -339,16 +341,17 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getTextInLineRange: function (versionId, line_from, line_to, highlight) {
                     var lineLength = Config.get('motions_line_length').value,
+                        firstLine = this.first_line_number,
                         htmlRaw = this.getVersion(versionId).text;
 
-                    var cacheKey = 'getTextInLineRange ' + line_from + ' ' + line_to + ' ' + highlight + ' ' +
+                    var cacheKey = 'getTextInLineRange ' + line_from + ' ' + line_to + ' ' + firstLine + ' ' + highlight + ' ' +
                         lineNumberingService.djb2hash(htmlRaw),
                         cached = diffCache.get(cacheKey);
                     if (!angular.isUndefined(cached)) {
                         return cached;
                     }
 
-                    var html = lineNumberingService.insertLineNumbers(htmlRaw, lineLength),
+                    var html = lineNumberingService.insertLineNumbers(htmlRaw, lineLength, null, null, firstLine),
                         data;
 
                     try {
@@ -380,7 +383,8 @@ angular.module('OpenSlidesApp.motions', [
                     }
 
                     var lineLength = Config.get('motions_line_length').value,
-                        html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength),
+                        firstLine = this.first_line_number,
+                        html = lineNumberingService.insertLineNumbers(this.getVersion(versionId).text, lineLength, null, null, firstLine),
                         data;
 
                     try {
@@ -407,6 +411,7 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 _getTextWithChanges: function (versionId, highlight, lineBreaks, recommendation_filter, amendment_filter) {
                     var lineLength = Config.get('motions_line_length').value,
+                        firstLine = this.first_line_number,
                         html = this.getVersion(versionId).text,
                         change_recommendations = this.getTextChangeRecommendations(versionId, 'DESC'),
                         amendments = this.getParagraphBasedAmendments();
@@ -433,12 +438,12 @@ angular.module('OpenSlidesApp.motions', [
 
 
                     allChanges.forEach(function(change) {
-                        html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, 1);
+                        html = lineNumberingService.insertLineNumbers(html, lineLength, null, null, firstLine);
                         html = diffService.replaceLines(html, change.text, change.line_from, change.line_to);
                     });
 
                     if (lineBreaks) {
-                        html = lineNumberingService.insertLineNumbers(html, lineLength, highlight, null, 1);
+                        html = lineNumberingService.insertLineNumbers(html, lineLength, highlight, null, firstLine);
                     }
 
                     return html;
@@ -1360,7 +1365,8 @@ angular.module('OpenSlidesApp.motions', [
                 },
                 getDiff: function(motion, version, highlight) {
                     var lineLength = Config.get('motions_line_length').value,
-                        html = lineNumberingService.insertLineNumbers(motion.getVersion(version).text, lineLength),
+                        firstLine = motion.first_line_number,
+                        html = lineNumberingService.insertLineNumbers(motion.getVersion(version).text, lineLength, null, null, firstLine),
                         data, oldText;
 
                     try {
