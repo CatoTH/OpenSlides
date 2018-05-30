@@ -502,7 +502,12 @@ angular.module('OpenSlidesApp.motions', [
 
                             text = '';
                             for (var i = 0; i < amendments_crs.length; i++) {
-                                text += this.getTextBetweenChanges(versionId, (i === 0 ? null : amendments_crs[i - 1]), amendments_crs[i], highlight);
+                                if (i===0) {
+                                    text += this.getTextBetweenChanges(versionId, null, amendments_crs[0], highlight);
+                                } else if (amendments_crs[i - 1].line_to < amendments_crs[i].line_from) {
+                                    text += this.getTextBetweenChanges(versionId, amendments_crs[i - 1], amendments_crs[i], highlight);
+
+                                }
                                 text += amendments_crs[i].getDiff(this, versionId, highlight);
                             }
                             text += this.getTextRemainderAfterLastChange(versionId, amendments_crs);
