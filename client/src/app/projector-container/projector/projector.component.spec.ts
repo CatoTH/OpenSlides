@@ -13,9 +13,13 @@ describe('ProjectorComponent', () => {
     }));
 
     beforeEach(() => {
-        fixture = TestBed.createComponent(ProjectorComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
+        try {
+            fixture = TestBed.createComponent(ProjectorComponent);
+            component = fixture.componentInstance;
+            fixture.detectChanges();
+        } catch (e) {
+            console.log(e);
+        }
     });
 
     it('should create', () => {
