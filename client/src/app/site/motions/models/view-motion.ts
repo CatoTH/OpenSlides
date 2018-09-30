@@ -190,7 +190,7 @@ export class ViewMotion extends BaseViewModel {
         this._state = state;
 
         // TODO: Should be set using a a config variable
-        this.lnMode = LineNumbering.None;
+        this.lnMode = LineNumbering.Outside;
         this.crMode = ChangeReco.Original;
         this.lineLength = 80;
 

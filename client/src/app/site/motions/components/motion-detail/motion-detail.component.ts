@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatExpansionPanel } from '@angular/material';
+import { MatDialog, MatExpansionPanel } from '@angular/material';
 
 import { BaseComponent } from '../../../../base.component';
 import { Category } from '../../../../shared/models/motions/category';
@@ -13,7 +13,11 @@ import { DataStoreService } from '../../../../core/services/data-store.service';
 import { TranslateService } from '@ngx-translate/core';
 import { Motion } from '../../../../shared/models/motions/motion';
 import { BehaviorSubject } from 'rxjs';
-import { SafeHtml } from '@angular/platform-browser';
+import { LineRange } from '../../services/diff.service';
+import {
+    MotionChangeRecommendationComponent,
+    MotionChangeRecommendationComponentData
+} from '../motion-change-recommendation/motion-change-recommendation.component';
 
 /**
  * Component for the motion detail view
@@ -69,6 +73,11 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
     public motionCopy: ViewMotion;
 
     /**
+     * The change recommendations of this motion.
+     */
+    public changeRecommendations: any[]; // @TODO Create a data type
+
+    /**
      * Subject for the Categories
      */
     public categoryObserver: BehaviorSubject<Array<Category>>;
@@ -90,7 +99,9 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * @param router to navigate back to the motion list and to an existing motion
      * @param route determine if this is a new or an existing motion
      * @param formBuilder For reactive forms. Form Group and Form Control
+     * @param dialogService For opening dialogs
      * @param repo: Motion Repository
+     * @param DS: The DataStoreService
      * @param translate: Translation Service
      */
     public constructor(
@@ -98,6 +109,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
         private router: Router,
         private route: ActivatedRoute,
         private formBuilder: FormBuilder,
+        private dialogService: MatDialog,
         private repo: MotionRepositoryService,
         private DS: DataStoreService,
         protected translate: TranslateService
@@ -216,7 +228,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
     /**
      * get the formated motion text from the repository.
      */
-    public getFormattedText(): SafeHtml {
+    public getFormattedText(): string {
         return this.repo.formatMotion(
             this.motion.id,
             this.motion.crMode,
@@ -301,6 +313,33 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      */
     public setChangeRecoMode(mode: number): void {
         this.motion.crMode = mode;
+    }
+
+    /**
+     * In the original version, a line number range has been selected in order to create a new change recommendation
+     *
+     * @param lineRange
+     */
+    public createChangeRecommendation(lineRange: LineRange): void {
+        const data: MotionChangeRecommendationComponentData = {
+            editChangeRecommendation: false,
+            newChangeRecommendation: true,
+            lineRange: lineRange,
+            motion: this.motion
+        };
+        this.dialogService.open(MotionChangeRecommendationComponent, {
+            height: '400px',
+            width: '600px',
+            data: data
+        });
+    }
+
+    /**
+     * In the original version, a change-recommendation-annotation has been clicked
+     * -> Go to the diff view and scroll to the change recommendation
+     */
+    public gotoChangeRecommendation(changeRecommendation: any): void {
+        // @TODO
     }
 
     /**

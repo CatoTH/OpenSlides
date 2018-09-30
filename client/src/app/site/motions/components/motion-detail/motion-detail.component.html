@@ -279,7 +279,12 @@
              [class.line-numbers-none]="isLineNumberingNone()"
              [class.line-numbers-inline]="isLineNumberingInline()"
              [class.line-numbers-outside]="isLineNumberingOutside()">
-            <div [innerHtml]="getFormattedText()"></div>
+            <div osMotionDetailOriginalAndChangeRecommendations
+                 [html]="getFormattedText()"
+                 [changeRecommendations]="changeRecommendations"
+                 (createChangeRecommendation)="createChangeRecommendation($event)"
+                 (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
+            ></div>
         </div>
         <mat-form-field *ngIf="motion && editMotion" class="wide-form">
             <textarea matInput placeholder='Motion Text' formControlName='text' [value]='motionCopy.text'></textarea>

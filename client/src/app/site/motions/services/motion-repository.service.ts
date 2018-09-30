@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 import { BaseRepository } from '../../base/base-repository';
 import { DataStoreService } from '../../../core/services/data-store.service';
 import { LinenumberingService } from './linenumbering.service';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DiffService, LineRange } from './diff.service';
 
 /**
  * Repository Services for motions (and potentially categories)
@@ -40,7 +40,7 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
         DS: DataStoreService,
         private dataSend: DataSendService,
         private readonly lineNumbering: LinenumberingService,
-        private readonly sanitizer: DomSanitizer
+        private readonly diff: DiffService
     ) {
         super(DS, Motion, [Category, User, Workflow]);
     }
@@ -119,7 +119,7 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
      * @param lineLength the current line
      * @param highlightLine the currently highlighted line (default: none)
      */
-    public formatMotion(id: number, crMode: number, lineLength: number, highlightLine?: number): SafeHtml {
+    public formatMotion(id: number, crMode: number, lineLength: number, highlightLine?: number): string {
         const targetMotion = this.getViewModel(id);
 
         if (targetMotion && targetMotion.text) {
@@ -143,9 +143,21 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
                     break;
             }
 
-            return this.sanitizer.bypassSecurityTrustHtml(motionText);
+            return motionText;
         } else {
             return null;
         }
+    }
+
+    public extractMotionLineRange(id: number, lineRange: LineRange): string {
+        const origHtml = this.formatMotion(id, 0, 80);
+        const extracted = this.diff.extractRangeByLineNumbers(origHtml, lineRange.from, lineRange.to);
+        return (
+            extracted.outerContextStart +
+            extracted.innerContextStart +
+            extracted.html +
+            extracted.innerContextEnd +
+            extracted.outerContextEnd
+        );
     }
 }

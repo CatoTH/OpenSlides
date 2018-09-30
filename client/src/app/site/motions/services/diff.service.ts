@@ -99,7 +99,7 @@ interface ExtractedContent {
 /**
  * An object specifying a range of line numbers.
  */
-interface LineRange {
+export interface LineRange {
     /**
      * The first line number to be included.
      */

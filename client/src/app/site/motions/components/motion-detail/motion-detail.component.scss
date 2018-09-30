@@ -103,6 +103,20 @@ mat-expansion-panel {
     }
 }
 
+@mixin addChangeRecommendationBtn {
+    cursor: pointer;
+    content: '\f067';
+    width: 14px;
+    height: 14px;
+    border-radius: 0.25em;
+    font-family: FontAwesome;
+    font-size: 12px;
+    color: white;
+    line-height: 16px;
+    text-align: center;
+    background-color: #337ab7;
+}
+
 .desktop-view {
     .desktop-left {
         width: 30%;
@@ -211,6 +225,15 @@ mat-expansion-panel {
                 color: gray;
                 font-size: 12px;
                 font-weight: normal;
+            }
+
+            &.selectable:hover:before,
+            &.selected:before {
+                position: absolute;
+                top: 4px;
+                left: 20px;
+                display: inline-block;
+                @include addChangeRecommendationBtn();
             }
         }
     }
