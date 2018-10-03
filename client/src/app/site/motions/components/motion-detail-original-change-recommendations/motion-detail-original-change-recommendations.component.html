@@ -1,5 +1,5 @@
 <div class="text"></div>
-<ul class="change-recommendation-list">
+<ul class="change-recommendation-list" *ngIf="showChangeRecommendations">
     <li *ngFor="let reco of changeRecommendations"
         [title]="reco.getTitle()"
         [style.top]="calcRecoTop(reco)"

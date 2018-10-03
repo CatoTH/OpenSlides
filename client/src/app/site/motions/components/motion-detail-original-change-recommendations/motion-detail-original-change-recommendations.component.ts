@@ -1,4 +1,14 @@
-import { ElementRef, Renderer2, OnInit, Output, EventEmitter, Input, Component } from '@angular/core';
+import {
+    ElementRef,
+    Renderer2,
+    OnInit,
+    Output,
+    EventEmitter,
+    Input,
+    Component,
+    OnChanges,
+    SimpleChanges
+} from '@angular/core';
 import { LineRange, ModificationType } from '../../services/diff.service';
 import { ViewChangeReco } from '../../models/view-change-reco';
 
@@ -26,11 +36,9 @@ import { ViewChangeReco } from '../../models/view-change-reco';
     templateUrl: './motion-detail-original-change-recommendations.component.html',
     styleUrls: ['./motion-detail-original-change-recommendations.component.scss']
 })
-export class MotionDetailOriginalChangeRecommendationsComponent implements OnInit {
+export class MotionDetailOriginalChangeRecommendationsComponent implements OnInit, OnChanges {
     private element: Element;
     private selectedFrom: number = null;
-    private _changeRecommendations: ViewChangeReco[] = [];
-    private _html: string;
 
     @Output()
     public createChangeRecommendation: EventEmitter<LineRange> = new EventEmitter<LineRange>();
@@ -39,20 +47,12 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
     public gotoChangeRecommendation: EventEmitter<ViewChangeReco> = new EventEmitter<ViewChangeReco>();
 
     @Input()
-    public set html(html: string) {
-        this._html = html;
-        this.update();
-    }
+    public html: string;
 
     @Input()
-    public set changeRecommendations(changeRecos: ViewChangeReco[]) {
-        this._changeRecommendations = changeRecos;
-        this.update();
-    }
+    public changeRecommendations: ViewChangeReco[];
 
-    public get changeRecommendations(): ViewChangeReco[] {
-        return this._changeRecommendations;
-    }
+    public showChangeRecommendations = false;
 
     /**
      * @param {Renderer2} renderer
@@ -68,7 +68,7 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
             // Not yet initialized
             return;
         }
-        this.element.innerHTML = this._html;
+        this.element.innerHTML = this.html;
 
         this.startCreating();
     }
@@ -79,7 +79,7 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
      */
     private getAffectedLineNumbers(): number[] {
         const affectedLines = [];
-        this._changeRecommendations.forEach((change: ViewChangeReco) => {
+        this.changeRecommendations.forEach((change: ViewChangeReco) => {
             for (let j = change.line_from; j < change.line_to; j++) {
                 affectedLines.push(j);
             }
@@ -216,7 +216,6 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
      */
     public ngOnInit(): void {
         const nativeElement = <Element>this.el.nativeElement;
-        console.log(nativeElement, nativeElement.querySelector('.text'));
         this.element = <Element>nativeElement.querySelector('.text');
 
         this.renderer.listen(this.el.nativeElement, 'click', (ev: MouseEvent) => {
@@ -233,6 +232,20 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
             }
         });
 
+        this.update();
+
+        // The positioning of the change recommendations depends on the rendered HTML
+        // If we show it right away, there will be nasty Angular warnings about changed values, as the position
+        // is changing while the DOM updates
+        window.setTimeout(() => {
+            this.showChangeRecommendations = true;
+        }, 1);
+    }
+
+    /**
+     * @param changes
+     */
+    public ngOnChanges(changes: SimpleChanges): void {
         this.update();
     }
 }
