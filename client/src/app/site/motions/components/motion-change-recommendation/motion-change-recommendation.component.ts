@@ -1,9 +1,9 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { LineRange } from '../../services/diff.service';
-import { MAT_DIALOG_DATA } from '@angular/material';
-import { ViewMotion } from '../../models/view-motion';
-import { MotionRepositoryService } from '../../services/motion-repository.service';
+import { Component, Inject } from '@angular/core';
+import { LineRange, ModificationType } from '../../services/diff.service';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
+import { ViewChangeReco } from '../../models/view-change-reco';
 
 /**
  * Data that needs to be provided to the MotionChangeRecommendationComponent dialog
@@ -12,7 +12,7 @@ export interface MotionChangeRecommendationComponentData {
     editChangeRecommendation: boolean;
     newChangeRecommendation: boolean;
     lineRange: LineRange;
-    motion: ViewMotion;
+    changeRecommendation: ViewChangeReco;
 }
 
 /**
@@ -39,21 +39,21 @@ export interface MotionChangeRecommendationComponentData {
     templateUrl: './motion-change-recommendation.component.html',
     styleUrls: ['./motion-change-recommendation.component.scss']
 })
-export class MotionChangeRecommendationComponent implements OnInit {
+export class MotionChangeRecommendationComponent {
     /**
      * Determine if the change recommendation is edited
      */
-    public editMotion = false;
+    public editReco = false;
 
     /**
      * Determine if the change recommendation is new
      */
-    public newMotion = false;
+    public newReco = false;
 
     /**
-     * The motion this change recommendation is intended for
+     * The change recommendation
      */
-    public motion: ViewMotion;
+    public changeReco: ViewChangeReco;
 
     /**
      * The line range affected by this change recommendation
@@ -65,14 +65,34 @@ export class MotionChangeRecommendationComponent implements OnInit {
      */
     public contentForm: FormGroup;
 
+    /**
+     * The replacement types for the radio group
+     * @TODO translate
+     */
+    public replacementTypes = [
+        {
+            value: ModificationType.TYPE_REPLACEMENT,
+            title: 'Replacement'
+        },
+        {
+            value: ModificationType.TYPE_INSERTION,
+            title: 'Insertion'
+        },
+        {
+            value: ModificationType.TYPE_DELETION,
+            title: 'Deletion'
+        }
+    ];
+
     public constructor(
         @Inject(MAT_DIALOG_DATA) public data: MotionChangeRecommendationComponentData,
         private formBuilder: FormBuilder,
-        private repo: MotionRepositoryService
+        private repo: ChangeRecommendationRepositoryService,
+        private dialogRef: MatDialogRef<MotionChangeRecommendationComponent>
     ) {
-        this.editMotion = data.editChangeRecommendation;
-        this.newMotion = data.newChangeRecommendation;
-        this.motion = data.motion;
+        this.editReco = data.editChangeRecommendation;
+        this.newReco = data.newChangeRecommendation;
+        this.changeReco = data.changeRecommendation;
         this.lineRange = data.lineRange;
 
         this.createForm();
@@ -82,21 +102,38 @@ export class MotionChangeRecommendationComponent implements OnInit {
      * Creates the forms for the Motion and the MotionVersion
      */
     public createForm(): void {
-        if (this.newMotion) {
-            this.contentForm = this.formBuilder.group({
-                text: [this.repo.extractMotionLineRange(this.motion.id, this.lineRange), Validators.required]
-            });
-        } else {
-            this.contentForm = this.formBuilder.group({
-                text: ['@TODO', Validators.required]
-            });
-        }
+        this.contentForm = this.formBuilder.group({
+            text: [this.changeReco.text, Validators.required],
+            diffType: [this.changeReco.type, Validators.required]
+        });
     }
 
     public saveChangeRecommendation(): void {
-        console.log('saving');
-        console.log(this.contentForm.controls.text.value);
-    }
+        this.changeReco.updateChangeReco(
+            this.contentForm.controls.diffType.value,
+            this.contentForm.controls.text.value
+        );
 
-    public ngOnInit(): void {}
+        if (this.newReco) {
+            this.repo.createByViewModel(this.changeReco).subscribe(response => {
+                console.log(response);
+                if (response.id) {
+                    this.dialogRef.close(response);
+                } else {
+                    // @TODO Sho an error message
+                }
+            });
+        } else {
+            /*
+            this.repo.update(fromForm, this.motionCopy).subscribe(response => {
+                // if the motion was successfully updated, change the edit mode.
+                // TODO: Show errors if there appear here
+                if (response.id) {
+                    this.editMotion = false;
+                }
+            });
+            Update
+            */
+        }
+    }
 }

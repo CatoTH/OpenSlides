@@ -11,7 +11,9 @@ import { Observable } from 'rxjs';
 import { BaseRepository } from '../../base/base-repository';
 import { DataStoreService } from '../../../core/services/data-store.service';
 import { LinenumberingService } from './linenumbering.service';
-import { DiffService, LineRange } from './diff.service';
+import { DiffService, LineRange, ModificationType } from './diff.service';
+import { ViewChangeReco } from '../models/view-change-reco';
+import { MotionChangeReco } from '../../../shared/models/motions/motion-change-reco';
 
 /**
  * Repository Services for motions (and potentially categories)
@@ -159,5 +161,17 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
             extracted.innerContextEnd +
             extracted.outerContextEnd
         );
+    }
+
+    public createChangeRecommendationTemplate(motionId: number, lineRange: LineRange): ViewChangeReco {
+        const changeReco = new MotionChangeReco();
+        changeReco.line_from = lineRange.from;
+        changeReco.line_to = lineRange.to;
+        changeReco.type = ModificationType.TYPE_REPLACEMENT;
+        changeReco.text = this.extractMotionLineRange(motionId, lineRange);
+        changeReco.rejected = false;
+        changeReco.motion_id = motionId;
+
+        return new ViewChangeReco(changeReco);
     }
 }

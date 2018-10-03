@@ -103,20 +103,6 @@ mat-expansion-panel {
     }
 }
 
-@mixin addChangeRecommendationBtn {
-    cursor: pointer;
-    content: '\f067';
-    width: 14px;
-    height: 14px;
-    border-radius: 0.25em;
-    font-family: FontAwesome;
-    font-size: 12px;
-    color: white;
-    line-height: 16px;
-    text-align: center;
-    background-color: #337ab7;
-}
-
 .desktop-view {
     .desktop-left {
         width: 30%;
@@ -233,7 +219,12 @@ mat-expansion-panel {
                 top: 4px;
                 left: 20px;
                 display: inline-block;
-                @include addChangeRecommendationBtn();
+                cursor: pointer;
+                content: '';
+                width: 16px;
+                height: 16px;
+                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" fill="%23337ab7"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+                background-size: 16px 16px;
             }
         }
     }

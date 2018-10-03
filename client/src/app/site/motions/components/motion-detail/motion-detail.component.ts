@@ -325,7 +325,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
             editChangeRecommendation: false,
             newChangeRecommendation: true,
             lineRange: lineRange,
-            motion: this.motion
+            changeRecommendation: this.repo.createChangeRecommendationTemplate(this.motion.id, lineRange)
         };
         this.dialogService.open(MotionChangeRecommendationComponent, {
             height: '400px',

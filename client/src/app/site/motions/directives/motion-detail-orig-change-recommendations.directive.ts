@@ -71,17 +71,16 @@ export class MotionDetailOrigChangeRecommendationsDirective implements OnInit {
     private clickedLineNumber(lineNumber: number): void {
         if (this.selectedFrom === null) {
             this.selectedFrom = lineNumber;
-            console.log(this.selectedFrom);
         } else {
             if (lineNumber > this.selectedFrom) {
                 this.createChangeRecommendation.emit({
                     from: this.selectedFrom,
-                    to: lineNumber
+                    to: lineNumber + 1
                 });
             } else {
                 this.createChangeRecommendation.emit({
                     from: lineNumber,
-                    to: this.selectedFrom
+                    to: this.selectedFrom + 1
                 });
             }
             this.selectedFrom = null;
