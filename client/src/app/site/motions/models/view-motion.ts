@@ -7,13 +7,13 @@ import { BaseModel } from '../../../shared/models/base/base-model';
 import { BaseViewModel } from '../../base/base-view-model';
 import { TranslateService } from '@ngx-translate/core';
 
-export enum LineNumbering {
+export enum LineNumberingMode {
     None,
     Inside,
     Outside
 }
 
-enum ChangeReco {
+export enum ChangeRecoMode {
     Original,
     Change,
     Diff,
@@ -36,16 +36,16 @@ export class ViewMotion extends BaseViewModel {
     private _state: WorkflowState;
 
     /**
-     * Indicates the LineNumbering Mode.
+     * Indicates the LineNumberingMode Mode.
      * Needs to be accessed from outside
      */
-    public lnMode: LineNumbering;
+    public lnMode: LineNumberingMode;
 
     /**
      * Indicates the Change reco Mode.
      * Needs to be accessed from outside
      */
-    public crMode: ChangeReco;
+    public crMode: ChangeRecoMode;
 
     /**
      * Indicates the maximum line length as defined in the configuration.
@@ -190,8 +190,8 @@ export class ViewMotion extends BaseViewModel {
         this._state = state;
 
         // TODO: Should be set using a a config variable
-        this.lnMode = LineNumbering.Outside;
-        this.crMode = ChangeReco.Original;
+        this.lnMode = LineNumberingMode.Outside;
+        this.crMode = ChangeRecoMode.Original;
         this.lineLength = 80;
 
         this.highlightedLine = null;

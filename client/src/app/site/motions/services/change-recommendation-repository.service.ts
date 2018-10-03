@@ -90,4 +90,15 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<ViewCh
         changeReco.patchValues(update);
         return <Observable<MotionChangeReco>>this.dataSend.updateModel(changeReco, 'patch');
     }
+
+    /**
+     * return the Observable of all change recommendations belonging to the given motion
+     */
+    public getChangeRecosOfMotionObservable(motion_id: number): Observable<ViewChangeReco[]> {
+        return this.viewModelListSubject.asObservable().pipe(
+            map((recos: ViewChangeReco[]) => {
+                return recos.filter(reco => reco.motion_id === motion_id);
+            })
+        );
+    }
 }

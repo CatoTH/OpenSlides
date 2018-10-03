@@ -64,4 +64,8 @@ export class ViewChangeReco extends BaseViewModel {
     public get text(): string {
         return this._changeReco ? this._changeReco.text : null;
     }
+
+    public get motion_id(): number {
+        return this._changeReco ? this._changeReco.motion_id : null;
+    }
 }

@@ -7,7 +7,7 @@ import { BaseComponent } from '../../../../base.component';
 import { Category } from '../../../../shared/models/motions/category';
 import { ViewportService } from '../../../../core/services/viewport.service';
 import { MotionRepositoryService } from '../../services/motion-repository.service';
-import { LineNumbering, ViewMotion } from '../../models/view-motion';
+import { ChangeRecoMode, LineNumberingMode, ViewMotion } from '../../models/view-motion';
 import { User } from '../../../../shared/models/users/user';
 import { DataStoreService } from '../../../../core/services/data-store.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -18,6 +18,9 @@ import {
     MotionChangeRecommendationComponent,
     MotionChangeRecommendationComponentData
 } from '../motion-change-recommendation/motion-change-recommendation.component';
+import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
+import { ViewChangeReco } from '../../models/view-change-reco';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 /**
  * Component for the motion detail view
@@ -73,9 +76,9 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
     public motionCopy: ViewMotion;
 
     /**
-     * The change recommendations of this motion.
+     * All change recommendations to this motion
      */
-    public changeRecommendations: any[]; // @TODO Create a data type
+    public changeRecommendations: ViewChangeReco[];
 
     /**
      * Subject for the Categories
@@ -101,7 +104,9 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * @param formBuilder For reactive forms. Form Group and Form Control
      * @param dialogService For opening dialogs
      * @param repo: Motion Repository
+     * @param changeRecoRepo: Change Recommendation Repository
      * @param DS: The DataStoreService
+     * @param sanitizer: For making HTML SafeHTML
      * @param translate: Translation Service
      */
     public constructor(
@@ -111,7 +116,9 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
         private formBuilder: FormBuilder,
         private dialogService: MatDialog,
         private repo: MotionRepositoryService,
+        private changeRecoRepo: ChangeRecommendationRepositoryService,
         private DS: DataStoreService,
+        private sanitizer: DomSanitizer,
         protected translate: TranslateService
     ) {
         super();
@@ -131,6 +138,11 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
                 this.repo.getViewModelObservable(params.id).subscribe(newViewMotion => {
                     this.motion = newViewMotion;
                 });
+                this.changeRecoRepo
+                    .getChangeRecosOfMotionObservable(parseInt(params.id, 10))
+                    .subscribe((recos: ViewChangeReco[]) => {
+                        this.changeRecommendations = recos;
+                    });
             });
         }
         // Initial Filling of the Subjects
@@ -228,13 +240,20 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
     /**
      * get the formated motion text from the repository.
      */
-    public getFormattedText(): string {
+    public getFormattedTextPlain(): string {
         return this.repo.formatMotion(
             this.motion.id,
             this.motion.crMode,
             this.motion.lineLength,
             this.motion.highlightedLine
         );
+    }
+
+    /**
+     * get the formated motion text from the repository, as SafeHTML for [innerHTML]
+     */
+    public getFormattedText(): SafeHtml {
+        return this.sanitizer.bypassSecurityTrustHtml(this.getFormattedTextPlain());
     }
 
     /**
@@ -282,7 +301,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * Sets the motions line numbering mode
      * @param mode Needs to fot to the enum defined in ViewMotion
      */
-    public setLineNumberingMode(mode: LineNumbering): void {
+    public setLineNumberingMode(mode: LineNumberingMode): void {
         this.motion.lnMode = mode;
     }
 
@@ -290,21 +309,21 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * Returns true if no line numbers are to be shown.
      */
     public isLineNumberingNone(): boolean {
-        return this.motion.lnMode === LineNumbering.None;
+        return this.motion.lnMode === LineNumberingMode.None;
     }
 
     /**
      * Returns true if the line numbers are to be shown within the text with no line breaks.
      */
     public isLineNumberingInline(): boolean {
-        return this.motion.lnMode === LineNumbering.Inside;
+        return this.motion.lnMode === LineNumberingMode.Inside;
     }
 
     /**
      * Returns true if the line numbers are to be shown to the left of the text.
      */
     public isLineNumberingOutside(): boolean {
-        return this.motion.lnMode === LineNumbering.Outside;
+        return this.motion.lnMode === LineNumberingMode.Outside;
     }
 
     /**
@@ -313,6 +332,13 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      */
     public setChangeRecoMode(mode: number): void {
         this.motion.crMode = mode;
+    }
+
+    /**
+     * Returns true if the original version (including change recommendation annotation) is to be shown
+     */
+    public isRecoModeOriginal(): boolean {
+        return this.motion.crMode === ChangeRecoMode.Original;
     }
 
     /**
@@ -338,7 +364,8 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * In the original version, a change-recommendation-annotation has been clicked
      * -> Go to the diff view and scroll to the change recommendation
      */
-    public gotoChangeRecommendation(changeRecommendation: any): void {
+    public gotoChangeRecommendation(changeRecommendation: ViewChangeReco): void {
+        alert('go to change recommendation: ' + changeRecommendation.getTitle());
         // @TODO
     }
 

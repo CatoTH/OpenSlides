@@ -1,0 +1,24 @@
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { MotionDetailOriginalChangeRecommendationsComponent } from './motion-detail-original-change-recommendations.component';
+
+describe('MotionDetailOriginalChangeRecommendationsComponent', () => {
+    let component: MotionDetailOriginalChangeRecommendationsComponent;
+    let fixture: ComponentFixture<MotionDetailOriginalChangeRecommendationsComponent>;
+
+    beforeEach(async(() => {
+        TestBed.configureTestingModule({
+            declarations: [MotionDetailOriginalChangeRecommendationsComponent]
+        }).compileComponents();
+    }));
+
+    beforeEach(() => {
+        fixture = TestBed.createComponent(MotionDetailOriginalChangeRecommendationsComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
+});

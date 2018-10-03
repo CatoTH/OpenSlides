@@ -279,12 +279,14 @@
              [class.line-numbers-none]="isLineNumberingNone()"
              [class.line-numbers-inline]="isLineNumberingInline()"
              [class.line-numbers-outside]="isLineNumberingOutside()">
-            <div osMotionDetailOriginalAndChangeRecommendations
-                 [html]="getFormattedText()"
+            <os-motion-detail-original-change-recommendations
+                 *ngIf="isLineNumberingOutside() && isRecoModeOriginal()"
+                 [html]="getFormattedTextPlain()"
                  [changeRecommendations]="changeRecommendations"
                  (createChangeRecommendation)="createChangeRecommendation($event)"
                  (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
-            ></div>
+            ></os-motion-detail-original-change-recommendations>
+            <div *ngIf="!isLineNumberingOutside() || !isRecoModeOriginal()" [innerHTML]="getFormattedText()"></div>
         </div>
         <mat-form-field *ngIf="motion && editMotion" class="wide-form">
             <textarea matInput placeholder='Motion Text' formControlName='text' [value]='motionCopy.text'></textarea>
