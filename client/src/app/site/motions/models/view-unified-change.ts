@@ -33,4 +33,14 @@ export interface ViewUnifiedChange {
      * Returns the new version of the text, as it would be if this change was to be adopted.
      */
     getChangeNewText(): string;
+
+    /**
+     * True, if accepted. False, if rejected or undecided.
+     */
+    isAccepted(): boolean;
+
+    /**
+     * True, if rejected. False, if accepted or undecided.
+     */
+    isRejected(): boolean;
 }

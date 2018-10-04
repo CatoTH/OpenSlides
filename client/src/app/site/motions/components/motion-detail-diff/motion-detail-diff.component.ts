@@ -1,9 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ViewMotion } from '../../models/view-motion';
-import { ViewUnifiedChange } from '../../models/view-unified-change';
+import { ViewUnifiedChange, ViewUnifiedChangeType } from '../../models/view-unified-change';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MotionRepositoryService } from '../../services/motion-repository.service';
 import { LineRange } from '../../services/diff.service';
+import { ViewChangeReco } from '../../models/view-change-reco';
+import { MatButtonToggleChange } from '@angular/material';
+import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
 
 /**
  * This component displays the original motion text with the change blocks inside.
@@ -33,7 +36,13 @@ export class MotionDetailDiffComponent implements OnInit {
     @Input()
     public changes: ViewUnifiedChange[];
 
-    public constructor(private sanitizer: DomSanitizer, private repo: MotionRepositoryService) {}
+    public admin = true; // @TODO
+
+    public constructor(
+        private sanitizer: DomSanitizer,
+        private motionRepo: MotionRepositoryService,
+        private recoRepo: ChangeRecommendationRepositoryService
+    ) {}
 
     public ngOnInit(): void {}
 
@@ -57,7 +66,7 @@ export class MotionDetailDiffComponent implements OnInit {
             return '';
         }
 
-        const html = this.repo.extractMotionLineRange(this.motion.id, lineRange, true);
+        const html = this.motionRepo.extractMotionLineRange(this.motion.id, lineRange, true);
 
         return this.sanitizer.bypassSecurityTrustHtml(html);
     }
@@ -76,7 +85,7 @@ export class MotionDetailDiffComponent implements OnInit {
      * @param {ViewUnifiedChange} change
      */
     public getDiff(change: ViewUnifiedChange): SafeHtml {
-        const html = this.repo.getChangeDiff(this.motion, change);
+        const html = this.motionRepo.getChangeDiff(this.motion, change);
         return this.sanitizer.bypassSecurityTrustHtml(html);
     }
 
@@ -84,7 +93,82 @@ export class MotionDetailDiffComponent implements OnInit {
      * Returns the remainder text of the motion after the last change
      */
     public getTextRemainderAfterLastChange(): SafeHtml {
-        const html = this.repo.getTextRemainderAfterLastChange(this.motion, this.changes);
+        const html = this.motionRepo.getTextRemainderAfterLastChange(this.motion, this.changes);
         return this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+
+    /**
+     * Returns true if the change is a Change Recommendation
+     *
+     * @param {ViewUnifiedChange} change
+     */
+    public isRecommendation(change: ViewUnifiedChange): boolean {
+        return change.getChangeType() === ViewUnifiedChangeType.TYPE_CHANGE_RECOMMENDATION;
+    }
+
+    /**
+     * Returns accepted, rejected or an empty string depending on the state of this change.
+     *
+     * @param change
+     */
+    public getAcceptanceValue(change: ViewUnifiedChange): string {
+        if (change.isAccepted()) {
+            return 'accepted';
+        }
+        if (change.isRejected()) {
+            return 'rejected';
+        }
+        return '';
+    }
+
+    /**
+     * Returns true if the change is a Change Recommendation
+     *
+     * @param {ViewUnifiedChange} change
+     */
+    public isAmendment(change: ViewUnifiedChange): boolean {
+        return change.getChangeType() === ViewUnifiedChangeType.TYPE_AMENDMENT;
+    }
+
+    /**
+     * Sets a change recommendation to accepted or rejected.
+     * The template has to make sure only to pass change recommendations to this method.
+     *
+     * @param {MatButtonToggleChange} event
+     * @param {ViewChangeReco} change
+     */
+    public setAcceptanceValue(event: MatButtonToggleChange, change: ViewChangeReco): void {
+        if (event.value === 'accepted') {
+            this.recoRepo.setAccepted(change).subscribe(() => {}); // Subscribe to trigger HTTP request
+        }
+        if (event.value === 'rejected') {
+            this.recoRepo.setRejected(change).subscribe(() => {}); // Subscribe to trigger HTTP request
+        }
+    }
+
+    /**
+     * Deletes a change recommendation.
+     * The template has to make sure only to pass change recommendations to this method.
+     *
+     * @param {ViewChangeReco} reco
+     * @param {MouseEvent} $event
+     */
+    public deleteChangeRecommendation(reco: ViewChangeReco, $event: MouseEvent): void {
+        this.recoRepo.delete(reco).subscribe(() => {}); // Subscribe to trigger HTTP request
+        $event.stopPropagation();
+        $event.preventDefault();
+    }
+
+    /**
+     * Edits a change recommendation.
+     * The template has to make sure only to pass change recommendations to this method.
+     *
+     * @param {ViewChangeReco} reco
+     * @param {MouseEvent} $event
+     */
+    public editChangeRecommendation(reco: ViewChangeReco, $event: MouseEvent): void {
+        alert('Edit!'); // @TODO
+        $event.stopPropagation();
+        $event.preventDefault();
     }
 }

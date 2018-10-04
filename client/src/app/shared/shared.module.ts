@@ -16,7 +16,8 @@ import {
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatButtonToggleModule
 } from '@angular/material';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatChipsModule } from '@angular/material';
@@ -83,6 +84,7 @@ library.add(fas);
         MatChipsModule,
         MatTooltipModule,
         MatRadioModule,
+        MatButtonToggleModule,
         FontAwesomeModule,
         TranslateModule.forChild(),
         RouterModule,
@@ -112,6 +114,7 @@ library.add(fas);
         MatChipsModule,
         MatTooltipModule,
         MatRadioModule,
+        MatButtonToggleModule,
         NgxMatSelectSearchModule,
         FontAwesomeModule,
         TranslateModule,

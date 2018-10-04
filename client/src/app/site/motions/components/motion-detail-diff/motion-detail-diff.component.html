@@ -12,44 +12,29 @@
                 <i class="fa fa-warning" title="This change collides with another one."></i>
             </div>
             <div class="action-row">
-                <!--
-                <span ng-if="motion.isAllowed('can_manage')"> @TODO
-                -->
-                <!--
-                    <div class="btn-group" data-toggle="buttons" ng-if="change.type == 'recommendation'">
-                        <label class="btn btn-sm btn-default"
-                               ng-class="{active: change.accepted, disabled: change.getAcceptedCollissions().length > 0}"
-                               title="Not rejected" ng-click="change.setAccepted($event)">
-                            <input type="radio" name="changeRecommendationRejected[{{ change.id }}]" value="0"
-                                   ng-disabled="change.getAcceptedCollissions().length > 0"
-                                   ng-change="change.saveStatus()" ng-model="change.rejected" ng-checked="change.accepted == true">
-                            <i class="fa fa-thumbs-up"></i>
-                        </label>
-                        <label class="btn btn-sm btn-default" ng-class="{active: change.rejected}"
-                               title="Rejected" ng-click="change.setRejected($event)">
-                            <input type="radio" name="changeRecommendationRejected[{{ change.id }}]" value="1"
-                               ng-change="change.saveStatus()" ng-model="change.rejected" ng-checked="change.rejected == true">
-                            <i class="fa fa-thumbs-down"></i>
-                        </label>
-                    </div>
-                    <button class="btn btn-default btn-sm pull-right btn-delete"
-                            ng-if="change.type == 'recommendation'"
-                            ng-bootbox-confirm="Are you sure you want to delete this change recommendation?"
-                            ng-bootbox-confirm-action="viewChangeRecommendations.delete(change.original.id)"
-                            title="translate">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                    <button class="btn btn-default btn-sm pull-right btn-edit"
-                            ng-if="change.type == 'recommendation'"
-                            ng-click="createChangeRecommendation.editTextDialog(change.original)"
-                            title="translate">
-                        <i class="fa fa-pencil"></i>
-                    </button>
-                    -->
+                <ng-container *ngIf="admin">
+                    <mat-button-toggle-group aria-label="Font Style"
+                                             *ngIf="isRecommendation(change)"
+                                             [value]="getAcceptanceValue(change)"
+                                             (change)="setAcceptanceValue($event, change)">
+                        <mat-button-toggle value="accepted" [disabled]="hasCollissions(change)">
+                            <fa-icon icon="thumbs-up"></fa-icon>
+                        </mat-button-toggle>
+                        <mat-button-toggle value="rejected">
+                            <fa-icon icon="thumbs-down"></fa-icon>
+                        </mat-button-toggle>
+                    </mat-button-toggle-group>
 
-                <!--
-                </span>
-                -->
+                    <button mat-icon-button *ngIf="isRecommendation(change)"
+                            (click)="deleteChangeRecommendation(change, $event)">
+                        <fa-icon icon="trash"></fa-icon>
+                    </button>
+
+                    <button mat-icon-button *ngIf="isRecommendation(change)"
+                            (click)="editChangeRecommendation(change, $event)">
+                        <fa-icon icon="pencil-alt"></fa-icon>
+                    </button>
+                </ng-container>
 
                 <!--
                     <a ng-if="change.type == 'amendment'" ui-sref="motions.motion.detail({id: change.original.id})"
@@ -60,11 +45,9 @@
                     </a>
                     -->
             </div>
-            <!--
-            <div class="status-row" ng-if="!motion.isAllowed('can_manage') && change.rejected">
-                <i class="grey"><translate>Rejected</translate>:</i>
+            <div class="status-row" *ngIf="!admin && change.isRejected()">
+                <i class="grey">Rejected:</i>
             </div>
-            -->
 
             <div class="motion-text motion-text-diff line-numbers-outside"
                  [innerHTML]="getDiff(change)"></div>

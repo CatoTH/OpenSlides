@@ -89,4 +89,12 @@ export class ViewChangeReco extends BaseViewModel implements ViewUnifiedChange {
     public getChangeNewText(): string {
         return this.text;
     }
+
+    public isAccepted(): boolean {
+        return !this.rejected;
+    }
+
+    public isRejected(): boolean {
+        return this.rejected;
+    }
 }

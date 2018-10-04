@@ -61,6 +61,11 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<ViewCh
         );
     }
 
+    /**
+     * Creates this view wrapper based on an actual Change Recommendation model
+     *
+     * @param {MotionChangeReco} model
+     */
     protected createViewModel(model: MotionChangeReco): ViewChangeReco {
         return new ViewChangeReco(model);
     }
@@ -100,5 +105,31 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<ViewCh
                 return recos.filter(reco => reco.motion_id === motion_id);
             })
         );
+    }
+
+    /**
+     * Sets a change recommendation to accepted.
+     *
+     * @param {ViewChangeReco} change
+     */
+    public setAccepted(change: ViewChangeReco): Observable<MotionChangeReco> {
+        const changeReco = change.changeRecommendation;
+        changeReco.patchValues({
+            rejected: false
+        });
+        return <Observable<MotionChangeReco>>this.dataSend.updateModel(changeReco, 'patch');
+    }
+
+    /**
+     * Sets a change recommendation to rejected.
+     *
+     * @param {ViewChangeReco} change
+     */
+    public setRejected(change: ViewChangeReco): Observable<MotionChangeReco> {
+        const changeReco = change.changeRecommendation;
+        changeReco.patchValues({
+            rejected: true
+        });
+        return <Observable<MotionChangeReco>>this.dataSend.updateModel(changeReco, 'patch');
     }
 }

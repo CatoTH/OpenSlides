@@ -278,7 +278,6 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
         }
 
         oldText = this.lineNumbering.insertLineNumbers(oldText, lineLength, null, null, change.getLineFrom());
-        console.log('new text: ', change.getChangeNewText());
         let diff = this.diff.diff(oldText, change.getChangeNewText());
 
         // If an insertion makes the line longer than the line length limit, we need two line breaking runs:

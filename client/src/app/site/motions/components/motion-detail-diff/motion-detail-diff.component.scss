@@ -1,0 +1,50 @@
+/* Diffbox */
+.diff-box {
+    background-color: #f9f9f9;
+    border: solid 1px #eee;
+    border-radius: 3px;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-right: 155px;
+
+    &:hover {
+        background-color: #f0f0f0;
+
+        .action-row {
+            opacity: 1;
+        }
+    }
+
+    .action-row {
+        font-size: 0.8em;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        float: right;
+        width: 150px;
+        text-align: right;
+        margin-right: -150px;
+        opacity: 0.5;
+
+        .btn-delete {
+            margin-left: 5px;
+            color: red;
+        }
+
+        .btn-edit {
+            margin-left: 5px;
+        }
+
+        .btn-amend-info {
+            margin-left: 5px;
+            min-width: 68px;
+        }
+    }
+    .status-row {
+        font-style: italic;
+        color: gray;
+
+        & > *:after {
+            content: ':';
+        }
+    }
+}
