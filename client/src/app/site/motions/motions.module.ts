@@ -8,6 +8,7 @@ import { MotionDetailComponent } from './components/motion-detail/motion-detail.
 import { CategoryListComponent } from './components/category-list/category-list.component';
 import { MotionChangeRecommendationComponent } from './components/motion-change-recommendation/motion-change-recommendation.component';
 import { MotionDetailOriginalChangeRecommendationsComponent } from './components/motion-detail-original-change-recommendations/motion-detail-original-change-recommendations.component';
+import { MotionDetailDiffComponent } from './components/motion-detail-diff/motion-detail-diff.component';
 
 @NgModule({
     imports: [CommonModule, MotionsRoutingModule, SharedModule],
@@ -16,7 +17,8 @@ import { MotionDetailOriginalChangeRecommendationsComponent } from './components
         MotionDetailComponent,
         CategoryListComponent,
         MotionChangeRecommendationComponent,
-        MotionDetailOriginalChangeRecommendationsComponent
+        MotionDetailOriginalChangeRecommendationsComponent,
+        MotionDetailDiffComponent
     ],
     entryComponents: [MotionChangeRecommendationComponent]
 })

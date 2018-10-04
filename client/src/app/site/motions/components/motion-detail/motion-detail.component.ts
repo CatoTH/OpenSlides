@@ -21,6 +21,7 @@ import {
 import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
 import { ViewChangeReco } from '../../models/view-change-reco';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ViewUnifiedChange } from '../../models/view-unified-change';
 
 /**
  * Component for the motion detail view
@@ -79,6 +80,11 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * All change recommendations to this motion
      */
     public changeRecommendations: ViewChangeReco[];
+
+    /**
+     * All change recommendations AND amendments, sorted by line number.
+     */
+    public allChangingObjects: ViewUnifiedChange[];
 
     /**
      * Subject for the Categories
@@ -142,6 +148,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
                     .getChangeRecosOfMotionObservable(parseInt(params.id, 10))
                     .subscribe((recos: ViewChangeReco[]) => {
                         this.changeRecommendations = recos;
+                        this.recalcUnifiedChanges();
                     });
             });
         }
@@ -158,6 +165,24 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
             }
             if (newModel instanceof Category) {
                 this.categoryObserver.next(DS.getAll(Category));
+            }
+        });
+    }
+
+    /**
+     * Merges amendments and change recommendations and sorts them by the line numbers.
+     * Called each time one of these arrays changes.
+     */
+    private recalcUnifiedChanges(): void {
+        // @TODO implement amendments
+        this.allChangingObjects = this.changeRecommendations;
+        this.allChangingObjects.sort((a: ViewUnifiedChange, b: ViewUnifiedChange) => {
+            if (a.getLineFrom() < b.getLineFrom()) {
+                return -1;
+            } else if (a.getLineFrom() > b.getLineFrom()) {
+                return 1;
+            } else {
+                return 0;
             }
         });
     }
@@ -339,6 +364,13 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      */
     public isRecoModeOriginal(): boolean {
         return this.motion.crMode === ChangeRecoMode.Original;
+    }
+
+    /**
+     * Returns true if the diff version is to be shown
+     */
+    public isRecoModeDiff(): boolean {
+        return this.motion.crMode === ChangeRecoMode.Diff;
     }
 
     /**

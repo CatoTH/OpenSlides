@@ -1,0 +1,76 @@
+<!-- The actual diff view -->
+<div class="motion-text-with-diffs">
+    <div *ngFor="let change of changes; let i = index">
+        <div class="motion-text original-text line-numbers-outside"
+             *ngIf="i === 0 || changes[i - 1].getLineTo() < change.getLineFrom()"
+             [innerHTML]="getTextBetweenChanges(changes[i - 1], change)"></div>
+
+        <div [class.collides]="hasCollissions(change)"
+             class="diff-box diff-box-{{ change.id }} clearfix">
+            <div class="collission-hint" *ngIf="hasCollissions(change)">
+                <!-- @TODO Title should be a tooltip -->
+                <i class="fa fa-warning" title="This change collides with another one."></i>
+            </div>
+            <div class="action-row">
+                <!--
+                <span ng-if="motion.isAllowed('can_manage')"> @TODO
+                -->
+                <!--
+                    <div class="btn-group" data-toggle="buttons" ng-if="change.type == 'recommendation'">
+                        <label class="btn btn-sm btn-default"
+                               ng-class="{active: change.accepted, disabled: change.getAcceptedCollissions().length > 0}"
+                               title="Not rejected" ng-click="change.setAccepted($event)">
+                            <input type="radio" name="changeRecommendationRejected[{{ change.id }}]" value="0"
+                                   ng-disabled="change.getAcceptedCollissions().length > 0"
+                                   ng-change="change.saveStatus()" ng-model="change.rejected" ng-checked="change.accepted == true">
+                            <i class="fa fa-thumbs-up"></i>
+                        </label>
+                        <label class="btn btn-sm btn-default" ng-class="{active: change.rejected}"
+                               title="Rejected" ng-click="change.setRejected($event)">
+                            <input type="radio" name="changeRecommendationRejected[{{ change.id }}]" value="1"
+                               ng-change="change.saveStatus()" ng-model="change.rejected" ng-checked="change.rejected == true">
+                            <i class="fa fa-thumbs-down"></i>
+                        </label>
+                    </div>
+                    <button class="btn btn-default btn-sm pull-right btn-delete"
+                            ng-if="change.type == 'recommendation'"
+                            ng-bootbox-confirm="Are you sure you want to delete this change recommendation?"
+                            ng-bootbox-confirm-action="viewChangeRecommendations.delete(change.original.id)"
+                            title="translate">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                    <button class="btn btn-default btn-sm pull-right btn-edit"
+                            ng-if="change.type == 'recommendation'"
+                            ng-click="createChangeRecommendation.editTextDialog(change.original)"
+                            title="translate">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    -->
+
+                <!--
+                </span>
+                -->
+
+                <!--
+                    <a ng-if="change.type == 'amendment'" ui-sref="motions.motion.detail({id: change.original.id})"
+                       uib-tooltip="Open amendment"
+                       class="btn btn-default btn-sm pull-right btn-amend-info">
+                        <i class="fa fa-info"></i>
+                        {{ change.original.identifier }}
+                    </a>
+                    -->
+            </div>
+            <!--
+            <div class="status-row" ng-if="!motion.isAllowed('can_manage') && change.rejected">
+                <i class="grey"><translate>Rejected</translate>:</i>
+            </div>
+            -->
+
+            <div class="motion-text motion-text-diff line-numbers-outside"
+                 [innerHTML]="getDiff(change)"></div>
+        </div>
+    </div>
+
+    <div class="motion-text original-text line-numbers-outside"
+         [innerHTML]="getTextRemainderAfterLastChange()"></div>
+</div>

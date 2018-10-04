@@ -13,7 +13,7 @@ import { LineRange, ModificationType } from '../../services/diff.service';
 import { ViewChangeReco } from '../../models/view-change-reco';
 
 /**
- * This directive displays the original motion text with annotated change commendations (not yet implemented)
+ * This component displays the original motion text with annotated change commendations (not yet implemented)
  * and a method to create new change recommendations from the line numbers to the left of the text.
  *
  * The line numbers are provided within the pre-rendered HTML, so we have to work with raw HTML and native HTML elements.

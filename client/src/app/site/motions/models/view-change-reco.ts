@@ -2,6 +2,7 @@ import { BaseViewModel } from '../../base/base-view-model';
 import { MotionChangeReco } from '../../../shared/models/motions/motion-change-reco';
 import { BaseModel } from '../../../shared/models/base/base-model';
 import { ModificationType } from '../services/diff.service';
+import { ViewUnifiedChange, ViewUnifiedChangeType } from './view-unified-change';
 
 /**
  * Change recommendation class for the View
@@ -10,7 +11,7 @@ import { ModificationType } from '../services/diff.service';
  * Provides "safe" access to variables and functions in {@link MotionChangeReco}
  * @ignore
  */
-export class ViewChangeReco extends BaseViewModel {
+export class ViewChangeReco extends BaseViewModel implements ViewUnifiedChange {
     private _changeReco: MotionChangeReco;
 
     public get id(): number {
@@ -67,5 +68,25 @@ export class ViewChangeReco extends BaseViewModel {
 
     public get motion_id(): number {
         return this._changeReco ? this._changeReco.motion_id : null;
+    }
+
+    public getChangeId(): string {
+        return 'recommendation-' + this.id.toString(10);
+    }
+
+    public getChangeType(): ViewUnifiedChangeType {
+        return ViewUnifiedChangeType.TYPE_CHANGE_RECOMMENDATION;
+    }
+
+    public getLineFrom(): number {
+        return this.line_from;
+    }
+
+    public getLineTo(): number {
+        return this.line_to;
+    }
+
+    public getChangeNewText(): string {
+        return this.text;
     }
 }
