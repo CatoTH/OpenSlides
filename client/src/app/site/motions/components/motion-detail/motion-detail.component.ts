@@ -102,6 +102,11 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
     public supporterObserver: BehaviorSubject<Array<User>>;
 
     /**
+     * Value for os-motion-detail-diff: when this is set, that component scrolls to the given change
+     */
+    public scrollToChange: ViewUnifiedChange = null;
+
+    /**
      * Constuct the detail view.
      *
      * @param vp the viewport service
@@ -397,8 +402,8 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
      * -> Go to the diff view and scroll to the change recommendation
      */
     public gotoChangeRecommendation(changeRecommendation: ViewChangeReco): void {
-        alert('go to change recommendation: ' + changeRecommendation.getTitle());
-        // @TODO
+        this.scrollToChange = changeRecommendation;
+        this.setChangeRecoMode(ChangeRecoMode.Diff);
     }
 
     /**

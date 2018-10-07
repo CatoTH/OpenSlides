@@ -289,7 +289,11 @@
                 ></os-motion-detail-original-change-recommendations>
                 <div *ngIf="!isLineNumberingOutside() || !isRecoModeOriginal()" [innerHTML]="getFormattedText()"></div>
             </div>
-            <os-motion-detail-diff *ngIf="isRecoModeDiff()" [motion]="motion" [changes]="allChangingObjects"></os-motion-detail-diff>
+            <os-motion-detail-diff *ngIf="isRecoModeDiff()"
+                                   [motion]="motion"
+                                   [changes]="allChangingObjects"
+                                   [scrollToChange]="scrollToChange"
+            ></os-motion-detail-diff>
         </ng-container>
         <mat-form-field *ngIf="motion && editMotion" class="wide-form">
             <textarea matInput placeholder='Motion Text' formControlName='text' [value]='motionCopy.text'></textarea>

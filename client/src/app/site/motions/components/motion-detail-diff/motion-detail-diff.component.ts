@@ -1,12 +1,16 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input } from '@angular/core';
 import { ViewMotion } from '../../models/view-motion';
 import { ViewUnifiedChange, ViewUnifiedChangeType } from '../../models/view-unified-change';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MotionRepositoryService } from '../../services/motion-repository.service';
 import { LineRange } from '../../services/diff.service';
 import { ViewChangeReco } from '../../models/view-change-reco';
-import { MatButtonToggleChange } from '@angular/material';
+import { MatButtonToggleChange, MatDialog } from '@angular/material';
 import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
+import {
+    MotionChangeRecommendationComponent,
+    MotionChangeRecommendationComponentData
+} from '../motion-change-recommendation/motion-change-recommendation.component';
 
 /**
  * This component displays the original motion text with the change blocks inside.
@@ -22,6 +26,7 @@ import { ChangeRecommendationRepositoryService } from '../../services/change-rec
  *  <os-motion-detail-diff
  *       [motion]="motion"
  *       [changes]="changes"
+ *       [scrollToChange]="change"
  * ></os-motion-detail-diff>
  * ```
  */
@@ -30,21 +35,23 @@ import { ChangeRecommendationRepositoryService } from '../../services/change-rec
     templateUrl: './motion-detail-diff.component.html',
     styleUrls: ['./motion-detail-diff.component.scss']
 })
-export class MotionDetailDiffComponent implements OnInit {
+export class MotionDetailDiffComponent implements AfterViewInit {
     @Input()
     public motion: ViewMotion;
     @Input()
     public changes: ViewUnifiedChange[];
+    @Input()
+    public scrollToChange: ViewUnifiedChange;
 
     public admin = true; // @TODO
 
     public constructor(
         private sanitizer: DomSanitizer,
         private motionRepo: MotionRepositoryService,
-        private recoRepo: ChangeRecommendationRepositoryService
+        private recoRepo: ChangeRecommendationRepositoryService,
+        private dialogService: MatDialog,
+        private el: ElementRef
     ) {}
-
-    public ngOnInit(): void {}
 
     /**
      * Returns the part of this motion between two change objects
@@ -167,8 +174,37 @@ export class MotionDetailDiffComponent implements OnInit {
      * @param {MouseEvent} $event
      */
     public editChangeRecommendation(reco: ViewChangeReco, $event: MouseEvent): void {
-        alert('Edit!'); // @TODO
         $event.stopPropagation();
         $event.preventDefault();
+
+        const data: MotionChangeRecommendationComponentData = {
+            editChangeRecommendation: true,
+            newChangeRecommendation: false,
+            lineRange: {
+                from: reco.getLineFrom(),
+                to: reco.getLineTo()
+            },
+            changeRecommendation: reco
+        };
+        this.dialogService.open(MotionChangeRecommendationComponent, {
+            height: '400px',
+            width: '600px',
+            data: data
+        });
+    }
+
+    /**
+     * Scrolls to the native element specified by [scrollToChange]
+     */
+    private onScrollToChangeChanged(): void {
+        const element = <HTMLElement>this.el.nativeElement;
+        const target = element.querySelector('[data-change-id="' + this.scrollToChange.getChangeId() + '"]');
+        target.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    public ngAfterViewInit(): void {
+        if (this.scrollToChange) {
+            window.setTimeout(this.onScrollToChangeChanged.bind(this), 50);
+        }
     }
 }

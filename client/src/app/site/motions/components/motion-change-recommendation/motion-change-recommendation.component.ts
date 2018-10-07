@@ -116,24 +116,20 @@ export class MotionChangeRecommendationComponent {
 
         if (this.newReco) {
             this.repo.createByViewModel(this.changeReco).subscribe(response => {
-                console.log(response);
                 if (response.id) {
                     this.dialogRef.close(response);
                 } else {
-                    // @TODO Sho an error message
+                    // @TODO Show an error message
                 }
             });
         } else {
-            /*
-            this.repo.update(fromForm, this.motionCopy).subscribe(response => {
-                // if the motion was successfully updated, change the edit mode.
-                // TODO: Show errors if there appear here
+            this.repo.update(this.changeReco.changeRecommendation, this.changeReco).subscribe(response => {
                 if (response.id) {
-                    this.editMotion = false;
+                    this.dialogRef.close(response);
+                } else {
+                    // @TODO Show an error message
                 }
             });
-            Update
-            */
         }
     }
 }

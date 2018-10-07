@@ -50,6 +50,7 @@
             </div>
 
             <div class="motion-text motion-text-diff line-numbers-outside"
+                 [attr.data-change-id]="change.getChangeId()"
                  [innerHTML]="getDiff(change)"></div>
         </div>
     </div>
