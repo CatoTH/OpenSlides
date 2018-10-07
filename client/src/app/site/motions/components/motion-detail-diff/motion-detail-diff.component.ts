@@ -3,7 +3,7 @@ import { ViewMotion } from '../../models/view-motion';
 import { ViewUnifiedChange, ViewUnifiedChangeType } from '../../models/view-unified-change';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MotionRepositoryService } from '../../services/motion-repository.service';
-import { LineRange } from '../../services/diff.service';
+import { LineRange, ModificationType } from '../../services/diff.service';
 import { ViewChangeReco } from '../../models/view-change-reco';
 import { MatButtonToggleChange, MatDialog } from '@angular/material';
 import { ChangeRecommendationRepositoryService } from '../../services/change-recommendation-repository.service';
@@ -129,12 +129,39 @@ export class MotionDetailDiffComponent implements AfterViewInit {
     }
 
     /**
-     * Returns true if the change is a Change Recommendation
+     * Returns true if the change is an Amendment
      *
      * @param {ViewUnifiedChange} change
      */
     public isAmendment(change: ViewUnifiedChange): boolean {
         return change.getChangeType() === ViewUnifiedChangeType.TYPE_AMENDMENT;
+    }
+
+    /**
+     * Returns true if the change is a Change Recommendation
+     *
+     * @param {ViewUnifiedChange} change
+     */
+    public isChangeRecommendation(change: ViewUnifiedChange): boolean {
+        return change.getChangeType() === ViewUnifiedChangeType.TYPE_CHANGE_RECOMMENDATION;
+    }
+
+    /**
+     * Gets the name of the modification type
+     *
+     * @param change
+     */
+    public getRecommendationTypeName(change: ViewChangeReco): string {
+        switch (change.type) {
+            case ModificationType.TYPE_REPLACEMENT:
+                return 'Replacement';
+            case ModificationType.TYPE_INSERTION:
+                return 'Insertion';
+            case ModificationType.TYPE_DELETION:
+                return 'Deletion';
+            default:
+                return '@UNKNOWN@';
+        }
     }
 
     /**
@@ -196,15 +223,23 @@ export class MotionDetailDiffComponent implements AfterViewInit {
     /**
      * Scrolls to the native element specified by [scrollToChange]
      */
-    private onScrollToChangeChanged(): void {
+    private scrollToChangeElement(change: ViewUnifiedChange): void {
         const element = <HTMLElement>this.el.nativeElement;
-        const target = element.querySelector('[data-change-id="' + this.scrollToChange.getChangeId() + '"]');
+        const target = element.querySelector('[data-change-id="' + change.getChangeId() + '"]');
         target.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    public scrollToChangeClicked(change: ViewUnifiedChange, $event: MouseEvent): void {
+        $event.preventDefault();
+        $event.stopPropagation();
+        this.scrollToChangeElement(change);
     }
 
     public ngAfterViewInit(): void {
         if (this.scrollToChange) {
-            window.setTimeout(this.onScrollToChangeChanged.bind(this), 50);
+            window.setTimeout(() => {
+                this.scrollToChangeElement(this.scrollToChange);
+            }, 50);
         }
     }
 }

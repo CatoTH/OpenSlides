@@ -274,6 +274,7 @@ export class MotionDetailComponent extends BaseComponent implements OnInit {
         return this.repo.formatMotion(
             this.motion.id,
             this.motion.crMode,
+            this.allChangingObjects,
             this.motion.lineLength,
             this.motion.highlightedLine
         );

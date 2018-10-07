@@ -6,7 +6,7 @@ import { User } from '../../../shared/models/users/user';
 import { Category } from '../../../shared/models/motions/category';
 import { Workflow } from '../../../shared/models/motions/workflow';
 import { WorkflowState } from '../../../shared/models/motions/workflow-state';
-import { ViewMotion } from '../models/view-motion';
+import { ChangeRecoMode, ViewMotion } from '../models/view-motion';
 import { Observable } from 'rxjs';
 import { BaseRepository } from '../../base/base-repository';
 import { DataStoreService } from '../../../core/services/data-store.service';
@@ -112,42 +112,100 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
     }
 
     /**
+     * Applies all given changes to the motion and returns the (line-numbered) text
+     *
+     * @param {ViewMotion} motion
+     * @param {ViewUnifiedChange[]} changes
+     * @param {number} lineLength
+     * @param {number} highlightLine
+     */
+    private getTextWithChanges(
+        motion: ViewMotion,
+        changes: ViewUnifiedChange[],
+        lineLength: number,
+        highlightLine: number
+    ): string {
+        let html = motion.text;
+
+        // Changes need to be applied from the bottom up, to prevent conflicts with changing line numbers.
+        changes.sort((change1: ViewUnifiedChange, change2: ViewUnifiedChange) => {
+            if (change1.getLineFrom() < change2.getLineFrom()) {
+                return 1;
+            } else if (change1.getLineFrom() > change2.getLineFrom()) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
+        changes.forEach((change: ViewUnifiedChange) => {
+            html = this.lineNumbering.insertLineNumbers(html, lineLength, null, null, 1);
+            html = this.diff.replaceLines(html, change.getChangeNewText(), change.getLineFrom(), change.getLineTo());
+        });
+
+        html = this.lineNumbering.insertLineNumbers(html, lineLength, highlightLine, null, 1);
+
+        return html;
+    }
+
+    /**
      * Format the motion text using the line numbering and change
      * reco algorithm.
-     *
-     * TODO: Call DiffView Service here.
      *
      * Can be called from detail view and exporter
      * @param id Motion ID - will be pulled from the repository
      * @param crMode indicator for the change reco mode
+     * @param changes all change recommendations and amendments, sorted by line number
      * @param lineLength the current line
      * @param highlightLine the currently highlighted line (default: none)
      */
-    public formatMotion(id: number, crMode: number, lineLength: number, highlightLine?: number): string {
+    public formatMotion(
+        id: number,
+        crMode: ChangeRecoMode,
+        changes: ViewUnifiedChange[],
+        lineLength: number,
+        highlightLine?: number
+    ): string {
         const targetMotion = this.getViewModel(id);
 
         if (targetMotion && targetMotion.text) {
-            let motionText = targetMotion.text;
-            motionText = this.lineNumbering.insertLineNumbers(motionText, lineLength, highlightLine);
-
-            // TODO : Use Diff Service here.
-            //        this will(currently) append the previous changes.
-            //        update
             switch (crMode) {
-                case 0: // Original
-                    break;
-                case 1: // Changed Version
-                    motionText += ' and get changed version';
-                    break;
-                case 2: // Diff Version
-                    motionText += ' and get diff version';
-                    break;
-                case 3: // Final Version
-                    motionText += ' and final version';
-                    break;
+                case ChangeRecoMode.Original:
+                    return this.lineNumbering.insertLineNumbers(targetMotion.text, lineLength, highlightLine);
+                case ChangeRecoMode.Changed:
+                    return this.getTextWithChanges(targetMotion, changes, lineLength, highlightLine);
+                case ChangeRecoMode.Diff:
+                    let text = '';
+                    changes.forEach((change: ViewUnifiedChange, idx: number) => {
+                        if (idx === 0) {
+                            text += this.extractMotionLineRange(
+                                id,
+                                {
+                                    from: 1,
+                                    to: change.getLineFrom()
+                                },
+                                true
+                            );
+                        } else if (changes[idx - 1].getLineTo() < change.getLineFrom()) {
+                            text += this.extractMotionLineRange(
+                                id,
+                                {
+                                    from: changes[idx - 1].getLineTo(),
+                                    to: change.getLineFrom()
+                                },
+                                true
+                            );
+                        }
+                        text += this.getChangeDiff(targetMotion, change, highlightLine);
+                    });
+                    text += this.getTextRemainderAfterLastChange(targetMotion, changes, highlightLine);
+                    return text;
+                case ChangeRecoMode.Final:
+                    const appliedChanges: ViewUnifiedChange[] = changes.filter(change => change.isAccepted());
+                    return this.getTextWithChanges(targetMotion, appliedChanges, lineLength, highlightLine);
             }
 
-            return motionText;
+            return null;
         } else {
             return null;
         }
@@ -162,7 +220,7 @@ export class MotionRepositoryService extends BaseRepository<ViewMotion, Motion> 
      */
     public extractMotionLineRange(id: number, lineRange: LineRange, lineNumbers: boolean): string {
         // @TODO flexible line numbers
-        const origHtml = this.formatMotion(id, 0, 80);
+        const origHtml = this.formatMotion(id, ChangeRecoMode.Original, [], 80);
         const extracted = this.diff.extractRangeByLineNumbers(origHtml, lineRange.from, lineRange.to);
         let html =
             extracted.outerContextStart +

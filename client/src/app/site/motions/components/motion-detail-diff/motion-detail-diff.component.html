@@ -1,3 +1,54 @@
+<!-- A summary of all changes -->
+<section class="change-recommendation-overview">
+    <strong>
+        Summary of changes:
+    </strong>
+
+    <!--
+    <button os-perms="motions.can_manage" class="btn btn-sm btn-default pull-right"
+        uib-tooltip="{{ 'Note: You have to reject all change recommendations if the plenum does not follow the recommendation. This does not affect amendments.' | translate }}"
+        ng-click="viewChangeRecommendations.rejectAllChangeRecommendations(motion)">
+      <i class="fa fa-thumbs-down"></i>
+      <translate>Reject all change recommendations</translate>
+    </button>
+    -->
+
+    <ul *ngIf="changes.length > 0">
+        <li *ngFor="let change of changes">
+          <a href='' (click)="scrollToChangeClicked(change, $event)"
+             [class.amendment]="isAmendment(change)"
+             [class.recommendation]="isChangeRecommendation(change)">
+            <span *ngIf="change.getLineFrom() >= change.getLineTo() - 1" class="line-number">
+                Line {{ change.getLineFrom() }}<span *ngIf="isChangeRecommendation(change)"></span>
+            </span>
+            <span *ngIf="change.getLineFrom() < change.getLineTo() - 1" class="line-number">
+                Line {{ change.getLineFrom() }} -
+                    {{ change.getLineTo() - 1 }}<span *ngIf="isChangeRecommendation(change)"></span>
+            </span>
+            <span *ngIf="isChangeRecommendation(change)">(Change recommendation)</span>
+            <span *ngIf="isAmendment(change)">@TODO Identifier</span>
+            <span class="operation" *ngIf="isChangeRecommendation(change)">–
+                {{ getRecommendationTypeName(change) }}
+                <!-- @TODO
+                <span ng-if="change.original.getType(motion.getVersion(version).text) == 3">
+                  { change.other_description }
+                </span>
+                -->
+            </span>
+            <span class="status">
+                <ng-container *ngIf="change.isRejected()">Rejected</ng-container>
+                <ng-container *ngIf="change.isAccepted() && isAmendment(change)">Accepted</ng-container>
+            </span>
+          </a>
+        </li>
+    </ul>
+
+    <div *ngIf="changes.length === 0" class="no-changes">
+        No change recommendations yet
+    </div>
+</section>
+
+
 <!-- The actual diff view -->
 <div class="motion-text-with-diffs">
     <div *ngFor="let change of changes; let i = index">

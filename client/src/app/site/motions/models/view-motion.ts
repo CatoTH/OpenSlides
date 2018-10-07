@@ -15,7 +15,7 @@ export enum LineNumberingMode {
 
 export enum ChangeRecoMode {
     Original,
-    Change,
+    Changed,
     Diff,
     Final
 }
