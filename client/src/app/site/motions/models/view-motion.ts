@@ -565,7 +565,7 @@ export class ViewMotion extends BaseAgendaViewModel implements Searchable {
     public getSlide(configService: ConfigService): ProjectorElementBuildDeskriptor {
         const slideOptions = [];
 
-        if (true /* TODO: Has this motion a CR or Amendment */) {
+        if (!this.isParagraphBasedAmendment() && !this.isStatuteAmendment()) {
             slideOptions.push({
                 key: 'mode',
                 displayName: 'Mode',
