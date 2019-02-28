@@ -15,6 +15,7 @@ import { ViewWorkflow } from './view-workflow';
 import { ViewCategory } from './view-category';
 import { ViewMotionBlock } from './view-motion-block';
 import { BaseViewModel } from 'app/site/base/base-view-model';
+import { ConfigService } from 'app/core/ui-services/config.service';
 
 /**
  * The line numbering mode for the motion detail view.
@@ -561,26 +562,30 @@ export class ViewMotion extends BaseAgendaViewModel implements Searchable {
         return this.amendment_paragraphs.length > 0;
     }
 
-    public getSlide(): ProjectorElementBuildDeskriptor {
+    public getSlide(configService: ConfigService): ProjectorElementBuildDeskriptor {
+        const slideOptions = [];
+
+        if (true /* TODO: Has this motion a CR or Amendment */) {
+            slideOptions.push({
+                key: 'mode',
+                displayName: 'Mode',
+                default: configService.instant('motions_recommendation_text_mode'),
+                choices: [
+                    { value: 'original', displayName: 'Original' },
+                    { value: 'changed', displayName: 'Changed' },
+                    { value: 'diff', displayName: 'Diff' },
+                    { value: 'agreed', displayName: 'Agreed' }
+                ]
+            });
+        }
+
         return {
             getBasicProjectorElement: options => ({
                 name: Motion.COLLECTIONSTRING,
                 id: this.id,
                 getIdentifiers: () => ['name', 'id']
             }),
-            slideOptions: [
-                {
-                    key: 'mode',
-                    displayName: 'Mode',
-                    default: 'original',
-                    choices: [
-                        { value: 'original', displayName: 'Original' },
-                        { value: 'changed', displayName: 'Changed' },
-                        { value: 'diff', displayName: 'Diff' },
-                        { value: 'agreed', displayName: 'Agreed' }
-                    ]
-                }
-            ],
+            slideOptions: slideOptions,
             projectionDefaultName: 'motions',
             getDialogTitle: this.getAgendaTitle
         };
