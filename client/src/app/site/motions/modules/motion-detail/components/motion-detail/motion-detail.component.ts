@@ -23,6 +23,10 @@ import {
     MotionChangeRecommendationComponentData,
     MotionChangeRecommendationComponent
 } from '../motion-change-recommendation/motion-change-recommendation.component';
+import {
+    MotionTitleChangeRecommendationComponentData,
+    MotionTitleChangeRecommendationComponent
+} from '../motion-title-change-recommendation/motion-title-change-recommendation.component';
 import { MotionPdfExportService } from 'app/site/motions/services/motion-pdf-export.service';
 import { MotionBlockRepositoryService } from 'app/core/repositories/motions/motion-block-repository.service';
 import { MotionFilterListService } from 'app/site/motions/services/motion-filter-list.service';
@@ -564,7 +568,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
 
         this.allChangingObjects = [];
         if (this.changeRecommendations) {
-            this.changeRecommendations.forEach((change: ViewUnifiedChange): void => {
+            this.changeRecommendations.forEach((change: ViewMotionChangeRecommendation): void => {
                 this.allChangingObjects.push(change);
             });
         }
@@ -846,7 +850,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
      */
     public getFormattedTextPlain(): string {
         // Prevent this.allChangingObjects to be reordered from within formatMotion
-        const changes: ViewUnifiedChange[] = Object.assign([], this.allChangingObjects);
+        const changes: ViewUnifiedChange[] = Object.assign([], this.getAllTextChangingObjects());
         return this.repo.formatMotion(this.motion.id, this.crMode, changes, this.lineLength, this.highlightedLine);
     }
 
@@ -910,6 +914,18 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
         return this.allChangingObjects.filter(change => {
             return change.showInFinalView();
         });
+    }
+
+    public getAllTextChangingObjects(): ViewUnifiedChange[] {
+        return this.allChangingObjects.filter((obj: ViewUnifiedChange) => !obj.isTitleChange());
+    }
+
+    public getTitleChangingObject(): ViewUnifiedChange {
+        return this.allChangingObjects.find((obj: ViewUnifiedChange) => obj.isTitleChange());
+    }
+
+    public getTitleWithChanges(): string {
+        return this.repo.getTitleWithChanges(this.motion, this.getTitleChangingObject(), this.crMode);
     }
 
     /**
@@ -1030,6 +1046,23 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
             )
         };
         this.dialogService.open(MotionChangeRecommendationComponent, {
+            height: '400px',
+            width: '600px',
+            data: data,
+            disableClose: true
+        });
+    }
+
+    /**
+     * In the original version, the title has been clicked to create a new change recommendation
+     */
+    public createTitleChangeRecommendation(): void {
+        const data: MotionTitleChangeRecommendationComponentData = {
+            editChangeRecommendation: false,
+            newChangeRecommendation: true,
+            changeRecommendation: this.repo.createTitleChangeRecommendationTemplate(this.motion.id, this.lineLength)
+        };
+        this.dialogService.open(MotionTitleChangeRecommendationComponent, {
             height: '400px',
             width: '600px',
             data: data,

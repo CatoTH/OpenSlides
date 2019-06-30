@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { Category } from 'app/shared/models/motions/category';
-import { ChangeRecoMode, ViewMotion, MotionTitleInformation } from 'app/site/motions/models/view-motion';
+import { ChangeRecoMode, MotionTitleInformation, ViewMotion } from 'app/site/motions/models/view-motion';
 import { CollectionStringMapperService } from '../../core-services/collection-string-mapper.service';
 import { ConfigService } from 'app/core/ui-services/config.service';
 import { DataSendService } from '../../core-services/data-send.service';
@@ -149,6 +149,23 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             return titleInformation.identifier + ': ' + titleInformation.title;
         } else {
             return titleInformation.title;
+        }
+    };
+
+    public getTitleWithChanges = (motion: ViewMotion, change: ViewUnifiedChange, crMode: ChangeRecoMode): string => {
+        if (change) {
+            if (crMode === ChangeRecoMode.Changed) {
+                return change.getChangeNewText();
+            } else if (
+                (crMode === ChangeRecoMode.Final || crMode === ChangeRecoMode.ModifiedFinal) &&
+                !change.isRejected()
+            ) {
+                return change.getChangeNewText();
+            } else {
+                return motion.title;
+            }
+        } else {
+            return motion.title;
         }
     };
 
@@ -646,6 +663,29 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
         changeReco.line_to = lineRange.to;
         changeReco.type = ModificationType.TYPE_REPLACEMENT;
         changeReco.text = this.extractMotionLineRange(motionId, lineRange, false, lineLength, null);
+        changeReco.rejected = false;
+        changeReco.motion_id = motionId;
+
+        return new ViewMotionChangeRecommendation(changeReco);
+    }
+
+    /**
+     * Creates a {@link ViewMotionChangeRecommendation} object to change the title, based on the motion ID.
+     * This object is not saved yet and does not yet have any changed title. It's meant to populate the UI form.
+     *
+     * @param {number} motionId
+     * @param {number} lineLength
+     */
+    public createTitleChangeRecommendationTemplate(
+        motionId: number,
+        lineLength: number
+    ): ViewMotionChangeRecommendation {
+        const targetMotion = this.getViewModel(motionId);
+        const changeReco = new MotionChangeRecommendation();
+        changeReco.line_from = 0;
+        changeReco.line_to = 0;
+        changeReco.type = ModificationType.TYPE_REPLACEMENT;
+        changeReco.text = targetMotion.title;
         changeReco.rejected = false;
         changeReco.motion_id = motionId;
 

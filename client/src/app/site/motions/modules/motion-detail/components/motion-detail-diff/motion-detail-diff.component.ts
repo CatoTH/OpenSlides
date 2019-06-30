@@ -12,6 +12,10 @@ import {
     MotionChangeRecommendationComponent,
     MotionChangeRecommendationComponentData
 } from '../motion-change-recommendation/motion-change-recommendation.component';
+import {
+    MotionTitleChangeRecommendationComponent,
+    MotionTitleChangeRecommendationComponentData
+} from '../motion-title-change-recommendation/motion-title-change-recommendation.component';
 import { MotionRepositoryService } from 'app/core/repositories/motions/motion-repository.service';
 import { PromptService } from 'app/core/ui-services/prompt.service';
 import { ViewMotion, LineNumberingMode } from 'app/site/motions/models/view-motion';
@@ -228,6 +232,14 @@ export class MotionDetailDiffComponent extends BaseViewComponent implements Afte
         return change.getChangeType() === ViewUnifiedChangeType.TYPE_CHANGE_RECOMMENDATION;
     }
 
+    public getAllTextChangingObjects(): ViewUnifiedChange[] {
+        return this.changes.filter((obj: ViewUnifiedChange) => !obj.isTitleChange());
+    }
+
+    public getTitleChangingObject(): ViewUnifiedChange {
+        return this.changes.find((obj: ViewUnifiedChange) => obj.isTitleChange());
+    }
+
     /**
      * Sets a change recommendation to accepted or rejected.
      * The template has to make sure only to pass change recommendations to this method.
@@ -295,6 +307,23 @@ export class MotionDetailDiffComponent extends BaseViewComponent implements Afte
             changeRecommendation: reco
         };
         this.dialogService.open(MotionChangeRecommendationComponent, {
+            height: '400px',
+            width: '600px',
+            data: data,
+            disableClose: true
+        });
+    }
+
+    public editTitleChangeRecommendation(reco: ViewMotionChangeRecommendation, $event: MouseEvent): void {
+        $event.stopPropagation();
+        $event.preventDefault();
+
+        const data: MotionTitleChangeRecommendationComponentData = {
+            editChangeRecommendation: true,
+            newChangeRecommendation: false,
+            changeRecommendation: reco
+        };
+        this.dialogService.open(MotionTitleChangeRecommendationComponent, {
             height: '400px',
             width: '600px',
             data: data,

@@ -13,6 +13,7 @@ import { MotionPollComponent } from './components/motion-poll/motion-poll.compon
 import { MotionDetailOriginalChangeRecommendationsComponent } from './components/motion-detail-original-change-recommendations/motion-detail-original-change-recommendations.component';
 import { MotionDetailDiffComponent } from './components/motion-detail-diff/motion-detail-diff.component';
 import { MotionChangeRecommendationComponent } from './components/motion-change-recommendation/motion-change-recommendation.component';
+import { MotionTitleChangeRecommendationComponent } from './components/motion-title-change-recommendation/motion-title-change-recommendation.component';
 
 @NgModule({
     imports: [CommonModule, MotionDetailRoutingModule, SharedModule],
@@ -26,14 +27,16 @@ import { MotionChangeRecommendationComponent } from './components/motion-change-
         MotionPollDialogComponent,
         MotionDetailDiffComponent,
         MotionDetailOriginalChangeRecommendationsComponent,
-        MotionChangeRecommendationComponent
+        MotionChangeRecommendationComponent,
+        MotionTitleChangeRecommendationComponent
     ],
     entryComponents: [
         MotionCommentsComponent,
         PersonalNoteComponent,
         ManageSubmittersComponent,
         MotionPollDialogComponent,
-        MotionChangeRecommendationComponent
+        MotionChangeRecommendationComponent,
+        MotionTitleChangeRecommendationComponent
     ]
 })
 export class MotionDetailModule {}
