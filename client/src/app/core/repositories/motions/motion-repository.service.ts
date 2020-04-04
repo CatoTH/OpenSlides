@@ -813,6 +813,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
 
     /**
      * Returns all paragraphs that are affected by the given amendment as unified change objects.
+     * Only the affected part of each paragraph is returned.
      *
      * @param {ViewMotion} amendment
      * @param {number} lineLength
@@ -845,6 +846,25 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
                 }
             )
             .filter((para: ViewMotionAmendedParagraph) => para !== null);
+    }
+
+    public getAmendmentParagraphsWithOriginalLineNumbers(amendment: ViewMotion, lineLength: number): string[] {
+        const motion = amendment.parent;
+        const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
+
+        return (amendment.amendment_paragraphs || [])
+            .map(
+                (newText: string, paraNo: number): string => {
+                    if (newText === null) {
+                        return null;
+                    }
+
+                    const origText = baseParagraphs[paraNo],
+                        diff = this.diff.diff(origText, newText);
+
+                    return diff;
+                }
+            )
     }
 
     /**

@@ -1087,12 +1087,23 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
             editChangeRecommendation: false,
             newChangeRecommendation: true,
             lineRange: lineRange,
-            changeRecommendation: this.changeRecoRepo.createChangeRecommendationTemplate(
+            changeRecommendation: null
+        };
+        if (this.motion.isParagraphBasedAmendment()) {
+            const lineNumberedParagraphs = this.repo.getAmendmentParagraphsWithOriginalLineNumbers(this.motion, this.lineLength);
+            data.changeRecommendation = this.changeRecoRepo.createAmendmentChangeRecommendationTemplate(
+                this.motion,
+                lineNumberedParagraphs,
+                lineRange,
+                this.lineLength
+            )
+        } else {
+            data.changeRecommendation = this.changeRecoRepo.createMotionChangeRecommendationTemplate(
                 this.motion,
                 lineRange,
                 this.lineLength
             )
-        };
+        }
         this.dialogService.open(MotionChangeRecommendationDialogComponent, {
             ...mediumDialogSettings,
             data: data

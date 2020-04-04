@@ -172,7 +172,7 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
      * @param {LineRange} lineRange
      * @param {number} lineLength
      */
-    public createChangeRecommendationTemplate(
+    public createMotionChangeRecommendationTemplate(
         motion: ViewMotion,
         lineRange: LineRange,
         lineLength: number
@@ -181,13 +181,51 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         changeReco.line_from = lineRange.from;
         changeReco.line_to = lineRange.to;
         changeReco.type = ModificationType.TYPE_REPLACEMENT;
+        changeReco.text = this.diffService.extractMotionLineRange(motion.text, lineRange, false, lineLength, null);
         changeReco.rejected = false;
         changeReco.motion_id = motion.id;
-        if (motion.isParagraphBasedAmendment()) {
-            changeReco.text = '<div>TODO</div>'; // @TODO
-        } else {
-            changeReco.text = this.diffService.extractMotionLineRange(motion.text, lineRange, false, lineLength, null);
-        }
+
+        return new ViewMotionChangeRecommendation(changeReco);
+    }
+
+    /**
+     * Creates a {@link ViewMotionChangeRecommendation} object based on the amendment ID, the precalculated
+     * paragraphs (because we don't have access to motion-repository serice here) and the given lange range.
+     * This object is not saved yet and does not yet have any changed HTML. It's meant to populate the UI form.
+     *
+     * @param {ViewMotion} amendment
+     * @param {string[]} lineNumberedParagraphs
+     * @param {LineRange} lineRange
+     * @param {number} lineLength
+     */
+    public createAmendmentChangeRecommendationTemplate(
+        amendment: ViewMotion,
+        lineNumberedParagraphs: string[],
+        lineRange: LineRange,
+        lineLength: number
+    ): ViewMotionChangeRecommendation {
+        // This should result in the same text as saved in the amendment_paragraphs-fields,
+        // but including line numbers relative to the original motion text.
+        const consolidatedText = lineNumberedParagraphs
+            .map((paragraph: string) => {
+                return this.diffService.diffHtmlToFinalText(paragraph);
+            }).join("\n");
+
+        const extracted = this.diffService.extractRangeByLineNumbers(consolidatedText, lineRange.from, lineRange.to);
+        const extractedHtml =
+            extracted.outerContextStart +
+            extracted.innerContextStart +
+            extracted.html +
+            extracted.innerContextEnd +
+            extracted.outerContextEnd;
+
+        const changeReco = new MotionChangeRecommendation();
+        changeReco.line_from = lineRange.from;
+        changeReco.line_to = lineRange.to;
+        changeReco.type = ModificationType.TYPE_REPLACEMENT;
+        changeReco.rejected = false;
+        changeReco.motion_id = amendment.id;
+        changeReco.text = extractedHtml;
 
         return new ViewMotionChangeRecommendation(changeReco);
     }
