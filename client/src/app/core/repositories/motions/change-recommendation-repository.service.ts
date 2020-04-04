@@ -180,9 +180,13 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         changeReco.line_from = lineRange.from;
         changeReco.line_to = lineRange.to;
         changeReco.type = ModificationType.TYPE_REPLACEMENT;
-        changeReco.text = this.diffService.extractMotionLineRange(motion.text, lineRange, false, lineLength, null);
         changeReco.rejected = false;
         changeReco.motion_id = motion.id;
+        if (motion.isParagraphBasedAmendment()) {
+            changeReco.text = '<div>TODO</div>'; // @TODO
+        } else {
+            changeReco.text = this.diffService.extractMotionLineRange(motion.text, lineRange, false, lineLength, null);
+        }
 
         return new ViewMotionChangeRecommendation(changeReco);
     }

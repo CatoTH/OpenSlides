@@ -15,10 +15,11 @@ import { LineRange, ModificationType } from 'app/core/ui-services/diff.service';
 import { ViewMotionChangeRecommendation } from 'app/site/motions/models/view-motion-change-recommendation';
 
 /**
- * This component displays the original motion text with annotated change commendations
- * and a method to create new change recommendations from the line numbers to the left of the text.
- * It's called from motion-details for displaying the whole motion text as well as from the diff view to show the
- * unchanged parts of the motion.
+ * This component displays either the original motion text or the original amendment diff text
+ * with annotated change commendations and a method to create new change recommendations
+ * from the line numbers to the left of the text.
+ * It's called from motion-details for displaying the whole motion text as well as from the
+ * motion's or amendment's diff view to show the unchanged parts of the motion.
  *
  * The line numbers are provided within the pre-rendered HTML, so we have to work with raw HTML
  * and native HTML elements.

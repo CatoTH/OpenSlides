@@ -909,6 +909,30 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
     }
 
     /**
+     * This returns the plain HTML of a changed area in an amendment, including its context,
+     * for the purpose of piping it into <motion-detail-original-change-recommendations>.
+     * This component works with plain HTML, hence we are composing plain HTML here, too.
+     *
+     * @param {DiffLinesInParagraph} paragraph
+     * @returns {string}
+     *
+     * TODO: Seems to be directly duplicated in the slide
+     */
+    public getAmendmentDiffTextWithContext(paragraph: DiffLinesInParagraph): string {
+        return (
+            '<div class="paragraphcontext">' +
+            paragraph.textPre +
+            '</div>' +
+            '<div>' +
+            paragraph.text +
+            '</div>' +
+            '<div class="paragraphcontext">' +
+            paragraph.textPost +
+            '</div>'
+        );
+    }
+
+    /**
      * If `this.motion` is an amendment, this returns the list of all changed paragraphs.
      * TODO: Cleanup: repo function could be injected part of the model, to have easier access
      *

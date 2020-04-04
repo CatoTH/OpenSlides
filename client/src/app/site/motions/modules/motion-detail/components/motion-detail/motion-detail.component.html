@@ -530,7 +530,6 @@
                     [matMenuTriggerFor]="changeRecoMenu"
                     *ngIf="
                         motion &&
-                        !motion.isParagraphBasedAmendment() &&
                         ((allChangingObjects && allChangingObjects.length) || motion.modified_final_version)
                     "
                 >
@@ -896,10 +895,18 @@
                     {{ 'Line' | translate }} {{ paragraph.diffLineFrom }} - {{ paragraph.diffLineTo - 1 }}:
                 </h3>
 
-                <!-- TODO: Seems to be directly duplicated in the slide -->
-                <div class="paragraphcontext" [innerHtml]="paragraph.textPre | trust: 'html'"></div>
-                <div [innerHtml]="paragraph.text | trust: 'html'"></div>
-                <div class="paragraphcontext" [innerHtml]="paragraph.textPost | trust: 'html'"></div>
+                <os-motion-detail-original-change-recommendations
+                    *ngIf="isLineNumberingOutside() && isRecoMode(ChangeRecoMode.Original)"
+                    [html]="getAmendmentDiffTextWithContext(paragraph)"
+                    [changeRecommendations]="changeRecommendations"
+                    (createChangeRecommendation)="createChangeRecommendation($event)"
+                    (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
+                ></os-motion-detail-original-change-recommendations>
+                <div
+                    *ngIf="!isLineNumberingOutside() || !isRecoMode(ChangeRecoMode.Original)"
+                    [outerHTML]="getAmendmentDiffTextWithContext(paragraph) | trust: 'html'"
+                ></div><!-- the <div> element is only a placeholder -> outerHTML to replace it -->
+
             </div>
         </div>
         <div *ngIf="!motion.diffLines">
@@ -953,7 +960,10 @@
     </div>
 </mat-menu>
 
-<!-- Diff View Menu -->
+<!-- Diff View Menu
+     For motions, all items are available if there are changing objects. The final print template only after is has been created.
+     For paragraph-based amendments, only the original and the diff version is available.
+-->
 <mat-menu #changeRecoMenu="matMenu">
     <button
         mat-menu-item
@@ -966,7 +976,7 @@
         mat-menu-item
         (click)="setChangeRecoMode(ChangeRecoMode.Changed)"
         [ngClass]="{ selected: crMode === ChangeRecoMode.Changed }"
-        *ngIf="allChangingObjects && allChangingObjects.length"
+        *ngIf="!motion.isParagraphBasedAmendment() && allChangingObjects && allChangingObjects.length"
     >
         {{ 'Changed version' | translate }}
     </button>
@@ -982,13 +992,13 @@
         mat-menu-item
         (click)="setChangeRecoMode(ChangeRecoMode.Final)"
         [ngClass]="{ selected: crMode === ChangeRecoMode.Final }"
-        *ngIf="allChangingObjects && allChangingObjects.length"
+        *ngIf="!motion.isParagraphBasedAmendment() && allChangingObjects && allChangingObjects.length"
     >
         {{ 'Final version' | translate }}
     </button>
     <button
         mat-menu-item
-        *ngIf="motion && motion.modified_final_version"
+        *ngIf="motion && motion.modified_final_version && !motion.isParagraphBasedAmendment()"
         (click)="setChangeRecoMode(ChangeRecoMode.ModifiedFinal)"
         [ngClass]="{ selected: crMode === ChangeRecoMode.ModifiedFinal }"
     >
