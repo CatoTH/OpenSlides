@@ -209,7 +209,8 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         const consolidatedText = lineNumberedParagraphs
             .map((paragraph: string) => {
                 return this.diffService.diffHtmlToFinalText(paragraph);
-            }).join("\n");
+            })
+            .join('\n');
 
         const extracted = this.diffService.extractRangeByLineNumbers(consolidatedText, lineRange.from, lineRange.to);
         const extractedHtml =

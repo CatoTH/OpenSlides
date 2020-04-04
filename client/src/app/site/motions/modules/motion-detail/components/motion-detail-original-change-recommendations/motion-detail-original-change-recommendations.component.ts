@@ -1,4 +1,5 @@
 import {
+    ChangeDetectorRef,
     Component,
     ElementRef,
     EventEmitter,
@@ -25,6 +26,12 @@ import { ViewMotionChangeRecommendation } from 'app/site/motions/models/view-mot
  * and native HTML elements.
  *
  * It takes the styling from the parent component.
+ *
+ * Special hints regarding amendments:
+ * When used for paragraph-based amendments, this component is embedded once for each paragraph. Hence,
+ * not all changeRecommendations provided are relevant for this paragraph (as we put the decision about
+ * which changeRecommendations are relevant in this component, not the caller).
+ * TODO: Right now, only change recommendations affecting only one paragraph are supported
  *
  * ## Examples
  *
@@ -64,12 +71,24 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
 
     public can_manage = false;
 
+    // Calculated from the embedded line numbers after the text has been set.
+    // Hint: this numbering refers to the actual lines, not the line number markers;
+    // hence, if maxLineNo === 10, line no. 10 is still visible. This is semantically different from the diff algorithms.
+    private minLineNo: number = null;
+    private maxLineNo: number = null;
+
     /**
      * @param {Renderer2} renderer
      * @param {ElementRef} el
+     * @param {ChangeDetectorRef} cd
      * @param {OperatorService} operator
      */
-    public constructor(private renderer: Renderer2, private el: ElementRef, private operator: OperatorService) {
+    public constructor(
+        private renderer: Renderer2,
+        private el: ElementRef,
+        private cd: ChangeDetectorRef,
+        private operator: OperatorService
+    ) {
         this.operator.getUserObservable().subscribe(this.onPermissionsChanged.bind(this));
     }
 
@@ -108,7 +127,21 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
     }
 
     public getTextChangeRecommendations(): ViewMotionChangeRecommendation[] {
-        return this.changeRecommendations.filter(reco => !reco.isTitleChange());
+        return this.changeRecommendations
+            .filter(reco => !reco.isTitleChange())
+            .filter(reco => reco.line_from >= this.minLineNo && reco.line_from <= this.maxLineNo);
+    }
+
+    private setLineNumberCache() {
+        Array.from(this.element.querySelectorAll('.os-line-number')).forEach((lineNumberEl: Element) => {
+            const lineNumber = parseInt(lineNumberEl.getAttribute('data-line-number'), 10);
+            if (this.minLineNo === null || lineNumber < this.minLineNo) {
+                this.minLineNo = lineNumber;
+            }
+            if (this.maxLineNo === null || lineNumber > this.maxLineNo) {
+                this.maxLineNo = lineNumber;
+            }
+        });
     }
 
     /**
@@ -283,7 +316,9 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
         // If we show it right away, there will be nasty Angular warnings about changed values, as the position
         // is changing while the DOM updates
         window.setTimeout(() => {
+            this.setLineNumberCache();
             this.showChangeRecommendations = true;
+            this.cd.detectChanges();
         }, 1);
     }
 

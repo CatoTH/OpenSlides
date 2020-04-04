@@ -852,19 +852,16 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
         const motion = amendment.parent;
         const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
 
-        return (amendment.amendment_paragraphs || [])
-            .map(
-                (newText: string, paraNo: number): string => {
-                    if (newText === null) {
-                        return null;
-                    }
+        return (amendment.amendment_paragraphs || []).map((newText: string, paraNo: number): string => {
+            if (newText === null) {
+                return null;
+            }
 
-                    const origText = baseParagraphs[paraNo],
-                        diff = this.diff.diff(origText, newText);
+            const origText = baseParagraphs[paraNo],
+                diff = this.diff.diff(origText, newText);
 
-                    return diff;
-                }
-            )
+            return diff;
+        });
     }
 
     /**
