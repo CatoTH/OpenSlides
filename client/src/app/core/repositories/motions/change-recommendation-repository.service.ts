@@ -50,6 +50,7 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
      * @param {CollectionStringMapperService} mapperService Maps collection strings to classes
      * @param {ViewModelStoreService} viewModelStoreService
      * @param {TranslateService} translate
+     * @param {RelationManagerService} relationManager
      * @param {DiffService} diffService
      */
     public constructor(
@@ -103,7 +104,7 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
     /**
      * Synchronously getting the change recommendations of the corresponding motion.
      *
-     * @param motionId the id of the target motion
+     * @param motion_id the id of the target motion
      * @returns the array of change recommendations to the motions.
      */
     public getChangeRecoOfMotion(motion_id: number): ViewMotionChangeRecommendation[] {

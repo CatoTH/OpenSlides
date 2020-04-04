@@ -576,7 +576,7 @@ export class MotionPdfService {
         if (motion.isParagraphBasedAmendment()) {
             // this is logically redundant with the formation of amendments in the motion-detail html.
             // Should be refactored in a way that a service returns the correct html for both cases
-            for (const paragraph of this.motionRepo.getAmendmentParagraphs(motion, lineLength, false)) {
+            for (const paragraph of this.motionRepo.getAmendmentParagraphLines(motion, lineLength, false)) {
                 if (paragraph.diffLineTo === paragraph.diffLineFrom + 1) {
                     motionText += `<h3>
                         ${this.translate.instant('Line')} ${paragraph.diffLineFrom}:

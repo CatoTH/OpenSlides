@@ -416,25 +416,25 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
      * @param repo Motion Repository
      * @param changeRecoRepo Change Recommendation Repository
      * @param statuteRepo: Statute Paragraph Repository
-     * @param mediafileRepo Mediafile Repository
-     * @param DS The DataStoreService
      * @param configService The configuration provider
      * @param promptService ensure safe deletion
      * @param pdfExport export the motion to pdf
      * @param personalNoteService: personal comments and favorite marker
      * @param linenumberingService The line numbering service
      * @param categoryRepo Repository for categories
-     * @param viewModelStore accessing view models
-     * @param categoryRepo access the category repository
      * @param userRepo Repository for users
      * @param notifyService: NotifyService work with notification
      * @param tagRepo
-     * @param mediaFilerepo
      * @param workflowRepo
      * @param blockRepo
      * @param itemRepo
      * @param motionSortService
-     * @param motionFilterListService
+     * @param amendmentSortService
+     * @param motionFilterService
+     * @param amendmentFilterService
+     * @param cd ChangeDetectorRef
+     * @param pollDialog
+     * @param motionPollService
      */
     public constructor(
         title: Title,
@@ -940,7 +940,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
      * @returns {DiffLinesInParagraph[]}
      */
     public getAmendmentParagraphs(includeUnchanged: boolean): DiffLinesInParagraph[] {
-        return this.repo.getAmendmentParagraphs(this.motion, this.lineLength, includeUnchanged);
+        return this.repo.getAmendmentParagraphLines(this.motion, this.lineLength, includeUnchanged);
     }
 
     /**
@@ -1353,7 +1353,8 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
     /**
      * Adds or removes a tag to the current motion
      *
-     * @param id Motion tag id
+     * @param {MouseEvent} event
+     * @param {number} id Motion tag id
      */
     public setTag(event: MouseEvent, id: number): void {
         event.stopPropagation();
@@ -1521,7 +1522,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
      * Function to handle leaving persons and
      * recognize if there is no other person editing the same motion anymore.
      *
-     * @param senderId The id of the sender who has left the editing-view.
+     * @param senderName The name of the sender who has left the editing-view.
      */
     private recognizeOtherWorkerOnMotion(senderName: string): void {
         this.otherWorkOnMotion = this.otherWorkOnMotion.filter(value => value !== senderName);

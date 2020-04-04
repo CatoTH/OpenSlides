@@ -2138,7 +2138,7 @@ export class DiffService {
      * @param {number} lineLength the line length
      * @return {DiffLinesInParagraph|null}
      */
-    public getAmendmentParagraphsLinesByMode(
+    public getAmendmentParagraphsLines(
         paragraphNo: number,
         origText: string,
         newText: string,

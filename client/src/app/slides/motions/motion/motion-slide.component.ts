@@ -412,7 +412,7 @@ export class MotionSlideComponent extends BaseMotionSlideComponent<MotionSlideDa
                         return null;
                     }
                     // Hint: can be either DiffLinesInParagraph or null, if no changes are made
-                    return this.diff.getAmendmentParagraphsLinesByMode(
+                    return this.diff.getAmendmentParagraphsLines(
                         paraNo,
                         baseParagraphs[paraNo],
                         newText,

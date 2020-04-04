@@ -201,11 +201,14 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
      * @param DS The DataStore
      * @param mapperService Maps collection strings to classes
      * @param dataSend sending changed objects
+     * @param viewModelStoreService ViewModelStoreService
+     * @param translate
+     * @param relationManager
      * @param httpService OpenSlides own Http service
      * @param lineNumbering Line numbering for motion text
      * @param diff Display changes in motion text as diff.
-     * @param personalNoteService service fo personal notes
      * @param config ConfigService (subscribe to sorting config)
+     * @param operator
      */
     public constructor(
         DS: DataStoreService,
@@ -322,7 +325,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             ownKey: 'diffLines',
             get: (motion: Motion, viewMotion: ViewMotion) => {
                 if (viewMotion.parent) {
-                    return this.getAmendmentParagraphs(viewMotion, this.motionLineLength, false);
+                    return this.getAmendmentParagraphLines(viewMotion, this.motionLineLength, false);
                 }
             },
             getCacheObjectToCheck: (viewMotion: ViewMotion) => viewMotion.parent
@@ -376,7 +379,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
     /**
      * Set the state of motions in bulk
      *
-     * @param viewMotion target motion
+     * @param viewMotions target motions
      * @param stateId the number that indicates the state
      */
     public async setMultiState(viewMotions: ViewMotion[], stateId: number): Promise<void> {
@@ -390,7 +393,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
     /**
      * Set the motion blocks of motions in bulk
      *
-     * @param viewMotion target motion
+     * @param viewMotions target motions
      * @param motionblockId the number that indicates the motion block
      */
     public async setMultiMotionBlock(viewMotions: ViewMotion[], motionblockId: number): Promise<void> {
@@ -404,7 +407,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
     /**
      * Set the category of motions in bulk
      *
-     * @param viewMotion target motion
+     * @param viewMotions target motions
      * @param categoryId the number that indicates the category
      */
     public async setMultiCategory(viewMotions: ViewMotion[], categoryId: number): Promise<void> {
@@ -760,14 +763,14 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
     }
 
     /**
-     * Returns all paragraphs that are affected by the given amendment in diff-format
+     * Returns all paragraph lines that are affected by the given amendment in diff-format, including context
      *
      * @param {ViewMotion} amendment
      * @param {number} lineLength
      * @param {boolean} includeUnchanged
      * @returns {DiffLinesInParagraph}
      */
-    public getAmendmentParagraphs(
+    public getAmendmentParagraphLines(
         amendment: ViewMotion,
         lineLength: number,
         includeUnchanged: boolean
@@ -779,7 +782,7 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             .map(
                 (newText: string, paraNo: number): DiffLinesInParagraph => {
                     if (newText !== null) {
-                        return this.diff.getAmendmentParagraphsLinesByMode(
+                        return this.diff.getAmendmentParagraphsLines(
                             paraNo,
                             baseParagraphs[paraNo],
                             newText,
