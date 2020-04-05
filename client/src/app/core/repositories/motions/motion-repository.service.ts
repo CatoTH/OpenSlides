@@ -325,7 +325,14 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             ownKey: 'diffLines',
             get: (motion: Motion, viewMotion: ViewMotion) => {
                 if (viewMotion.parent) {
-                    return this.getAmendmentParagraphLines(viewMotion, this.motionLineLength, false);
+                    // @TODO Are change recommendations for amendments relevant here?
+                    return this.getAmendmentParagraphLines(
+                        viewMotion,
+                        this.motionLineLength,
+                        ChangeRecoMode.Original,
+                        [],
+                        false
+                    );
                 }
             },
             getCacheObjectToCheck: (viewMotion: ViewMotion) => viewMotion.parent
@@ -762,23 +769,81 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
         } as ParagraphToChoose;
     }
 
+    public applyChangesToAmendment(
+        amendment: ViewMotion,
+        lineLength: number,
+        changes: ViewMotionChangeRecommendation[]
+    ): string[] {
+        const motion = amendment.parent;
+        const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
+
+        // Changes need to be applied from the bottom up, to prevent conflicts with changing line numbers.
+        changes.sort((change1: ViewUnifiedChange, change2: ViewUnifiedChange) => {
+            if (change1.getLineFrom() < change2.getLineFrom()) {
+                return 1;
+            } else if (change1.getLineFrom() > change2.getLineFrom()) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
+        return amendment.amendment_paragraphs.map((newText: string, paraNo: number) => {
+            let paragraph: string;
+            if (newText === null) {
+                paragraph = baseParagraphs[paraNo];
+            } else {
+                // Add line numbers to newText, relative to the baseParagraph, by creating a diff
+                // to the line numbered base version any applying it right away
+                const diff = this.diff.diff(baseParagraphs[paraNo], newText);
+                paragraph = this.diff.diffHtmlToFinalText(diff);
+            }
+
+            const affected: LineNumberRange = this.lineNumbering.getLineNumberRange(paragraph);
+
+            changes.forEach((change: ViewMotionChangeRecommendation) => {
+                // Hint: this assumes that change recommendations only affect one specific paragraph, not multiple
+                if (change.line_from >= affected.from && change.line_from < affected.to) {
+                    paragraph = this.diff.replaceLines(paragraph, change.text, change.line_from, change.line_to);
+
+                    // Reapply relative line numbers
+                    const diff = this.diff.diff(baseParagraphs[paraNo], paragraph);
+                    paragraph = this.diff.diffHtmlToFinalText(diff);
+                }
+            });
+
+            return paragraph;
+        });
+    }
+
     /**
      * Returns all paragraph lines that are affected by the given amendment in diff-format, including context
      *
      * @param {ViewMotion} amendment
      * @param {number} lineLength
+     * @param {ChangeRecoMode} crMode
+     * @param {ViewMotionChangeRecommendation[]} changeRecommendations
      * @param {boolean} includeUnchanged
      * @returns {DiffLinesInParagraph}
      */
     public getAmendmentParagraphLines(
         amendment: ViewMotion,
         lineLength: number,
+        crMode: ChangeRecoMode,
+        changeRecommendations: ViewMotionChangeRecommendation[],
         includeUnchanged: boolean
     ): DiffLinesInParagraph[] {
         const motion = amendment.parent;
         const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
 
-        return (amendment.amendment_paragraphs || [])
+        let amendmentParagraphs;
+        if (crMode === ChangeRecoMode.Changed) {
+            amendmentParagraphs = this.applyChangesToAmendment(amendment, lineLength, changeRecommendations); // @TODO Filter ChangeRecos
+        } else {
+            amendmentParagraphs = amendment.amendment_paragraphs || [];
+        }
+
+        return amendmentParagraphs
             .map(
                 (newText: string, paraNo: number): DiffLinesInParagraph => {
                     if (newText !== null) {
@@ -848,19 +913,30 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             .filter((para: ViewMotionAmendedParagraph) => para !== null);
     }
 
-    public getAmendmentParagraphsWithOriginalLineNumbers(amendment: ViewMotion, lineLength: number): string[] {
+    /**
+     * For unchanged paragraphs, this returns the original motion paragraph, including line numbers.
+     * For changed paragraphs, this returns the content of the amendment_paragraphs-field,
+     *     but including line numbers relative to the original motion line numbers,
+     *     so they can be used for the amendment change recommendations
+     *
+     * @param {ViewMotion} amendment
+     * @param {number} lineLength
+     * @returns {string[]}
+     */
+    public getAllAmendmentParagraphsWithOriginalLineNumbers(amendment: ViewMotion, lineLength: number): string[] {
         const motion = amendment.parent;
         const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
 
         return (amendment.amendment_paragraphs || []).map((newText: string, paraNo: number): string => {
+            const origText = baseParagraphs[paraNo];
+
             if (newText === null) {
-                return null;
+                return origText;
             }
 
-            const origText = baseParagraphs[paraNo],
-                diff = this.diff.diff(origText, newText);
+            const diff = this.diff.diff(origText, newText);
 
-            return diff;
+            return this.diff.diffHtmlToFinalText(diff);
         });
     }
 

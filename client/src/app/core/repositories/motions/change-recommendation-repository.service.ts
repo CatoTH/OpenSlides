@@ -204,13 +204,7 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         lineRange: LineRange,
         lineLength: number
     ): ViewMotionChangeRecommendation {
-        // This should result in the same text as saved in the amendment_paragraphs-fields,
-        // but including line numbers relative to the original motion text.
-        const consolidatedText = lineNumberedParagraphs
-            .map((paragraph: string) => {
-                return this.diffService.diffHtmlToFinalText(paragraph);
-            })
-            .join('\n');
+        const consolidatedText = lineNumberedParagraphs.join('\n');
 
         const extracted = this.diffService.extractRangeByLineNumbers(consolidatedText, lineRange.from, lineRange.to);
         const extractedHtml =

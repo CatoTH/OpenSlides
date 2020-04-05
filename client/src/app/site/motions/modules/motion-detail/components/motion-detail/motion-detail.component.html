@@ -874,7 +874,7 @@
                 <span>{{ 'No changes at the text.' | translate }}</span>
             </div>
             <div
-                *ngFor="let paragraph of getAmendmentParagraphs(showAmendmentContext)"
+                *ngFor="let paragraph of getAmendmentParagraphs()"
                 class="motion-text motion-text-diff amendment-view"
                 [class.line-numbers-none]="isLineNumberingNone()"
                 [class.line-numbers-inline]="isLineNumberingInline()"
@@ -896,14 +896,14 @@
                 </h3>
 
                 <os-motion-detail-original-change-recommendations
-                    *ngIf="isLineNumberingOutside() && isRecoMode(ChangeRecoMode.Original)"
+                    *ngIf="isLineNumberingOutside() && (isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
                     [html]="getAmendmentDiffTextWithContext(paragraph)"
                     [changeRecommendations]="changeRecommendations"
                     (createChangeRecommendation)="createChangeRecommendation($event)"
                     (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
                 ></os-motion-detail-original-change-recommendations>
                 <div
-                    *ngIf="!isLineNumberingOutside() || !isRecoMode(ChangeRecoMode.Original)"
+                    *ngIf="!isLineNumberingOutside() || !(isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
                     [outerHTML]="getAmendmentDiffTextWithContext(paragraph) | trust: 'html'"
                 ></div><!-- the <div> element is only a placeholder -> outerHTML to replace it -->
 
@@ -976,7 +976,7 @@
         mat-menu-item
         (click)="setChangeRecoMode(ChangeRecoMode.Changed)"
         [ngClass]="{ selected: crMode === ChangeRecoMode.Changed }"
-        *ngIf="!motion.isParagraphBasedAmendment() && allChangingObjects && allChangingObjects.length"
+        *ngIf="allChangingObjects && allChangingObjects.length"
     >
         {{ 'Changed version' | translate }}
     </button>

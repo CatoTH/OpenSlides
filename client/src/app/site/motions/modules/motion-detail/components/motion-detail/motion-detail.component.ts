@@ -936,11 +936,16 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
      * If `this.motion` is an amendment, this returns the list of all changed paragraphs.
      * TODO: Cleanup: repo function could be injected part of the model, to have easier access
      *
-     * @param {boolean} includeUnchanged
      * @returns {DiffLinesInParagraph[]}
      */
-    public getAmendmentParagraphs(includeUnchanged: boolean): DiffLinesInParagraph[] {
-        return this.repo.getAmendmentParagraphLines(this.motion, this.lineLength, includeUnchanged);
+    public getAmendmentParagraphs(): DiffLinesInParagraph[] {
+        return this.repo.getAmendmentParagraphLines(
+            this.motion,
+            this.lineLength,
+            this.crMode,
+            this.changeRecommendations,
+            this.showAmendmentContext
+        );
     }
 
     /**
@@ -1090,7 +1095,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
             changeRecommendation: null
         };
         if (this.motion.isParagraphBasedAmendment()) {
-            const lineNumberedParagraphs = this.repo.getAmendmentParagraphsWithOriginalLineNumbers(
+            const lineNumberedParagraphs = this.repo.getAllAmendmentParagraphsWithOriginalLineNumbers(
                 this.motion,
                 this.lineLength
             );
