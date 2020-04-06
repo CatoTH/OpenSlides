@@ -948,6 +948,10 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
         );
     }
 
+    public getAmendmentParagraphLinesTitle(paragraph: DiffLinesInParagraph): string {
+        return this.repo.getAmendmentParagraphLinesTitle(paragraph);
+    }
+
     /**
      * get the diff html from the statute amendment, as SafeHTML for [innerHTML]
      *

@@ -876,6 +876,20 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             .filter((para: DiffLinesInParagraph) => para !== null);
     }
 
+    public getAmendmentParagraphLinesTitle(paragraph: DiffLinesInParagraph): string {
+        if (paragraph.diffLineTo === paragraph.diffLineFrom + 1) {
+            return this.translate.instant('Line') + ' ' + paragraph.diffLineFrom.toString(10);
+        } else {
+            return (
+                this.translate.instant('Line') +
+                ' ' +
+                paragraph.diffLineFrom.toString(10) +
+                ' - ' +
+                (paragraph.diffLineTo - 1).toString(10)
+            );
+        }
+    }
+
     /**
      * Returns all paragraphs that are affected by the given amendment as unified change objects.
      * Only the affected part of each paragraph is returned.

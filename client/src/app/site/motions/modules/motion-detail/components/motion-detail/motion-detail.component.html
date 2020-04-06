@@ -881,19 +881,7 @@
                 [class.line-numbers-outside]="isLineNumberingOutside()"
                 [class.amendment-context]="showAmendmentContext"
             >
-                <!-- TODO: everything here is required for PDF as well. Should be in a service -->
-                <h3
-                    *ngIf="paragraph.diffLineTo === paragraph.diffLineFrom + 1 && !showAmendmentContext"
-                    class="amendment-line-header"
-                >
-                    {{ 'Line' | translate }} {{ paragraph.diffLineFrom }}:
-                </h3>
-                <h3
-                    *ngIf="paragraph.diffLineTo !== paragraph.diffLineFrom + 1 && !showAmendmentContext"
-                    class="amendment-line-header"
-                >
-                    {{ 'Line' | translate }} {{ paragraph.diffLineFrom }} - {{ paragraph.diffLineTo - 1 }}:
-                </h3>
+                <h3 class="amendment-line-header">{{ getAmendmentParagraphLinesTitle(paragraph) }}</h3>
 
                 <os-motion-detail-original-change-recommendations
                     *ngIf="isLineNumberingOutside() && (isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"

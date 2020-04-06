@@ -585,16 +585,7 @@ export class MotionPdfService {
                 false
             );
             for (const paragraph of amendmentParas) {
-                if (paragraph.diffLineTo === paragraph.diffLineFrom + 1) {
-                    motionText += `<h3>
-                        ${this.translate.instant('Line')} ${paragraph.diffLineFrom}:
-                    </h3>`;
-                } else {
-                    motionText += `<h3>
-                        ${this.translate.instant('Line')} ${paragraph.diffLineFrom} - ${paragraph.diffLineTo - 1}:
-                    </h3>`;
-                }
-
+                motionText += '<h3>' + this.motionRepo.getAmendmentParagraphLinesTitle(paragraph) + '</h3>';
                 motionText += `<div class="paragraphcontext">${paragraph.textPre}</div>`;
                 motionText += paragraph.text;
                 motionText += `<div class="paragraphcontext">${paragraph.textPost}</div>`;
