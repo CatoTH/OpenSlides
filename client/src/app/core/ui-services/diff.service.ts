@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-import { LinenumberingService } from './linenumbering.service';
+import { LineNumberedString, LinenumberingService } from './linenumbering.service';
 import { ViewUnifiedChange } from '../../shared/models/motions/view-unified-change';
 
 const ELEMENT_NODE = 1;
@@ -2203,20 +2203,18 @@ export class DiffService {
      * Returns the HTML with the changes, optionally with a highlighted line.
      * The original motion needs to be provided.
      *
-     * @param {string} motionHtml
+     * @param {LineNumberedString} html
      * @param {ViewUnifiedChange} change
      * @param {number} lineLength
      * @param {number} highlight
      * @returns {string}
      */
     public getChangeDiff(
-        motionHtml: string,
+        html: LineNumberedString,
         change: ViewUnifiedChange,
         lineLength: number,
         highlight?: number
     ): string {
-        const html = this.lineNumberingService.insertLineNumbers(motionHtml, lineLength);
-
         let data, oldText;
 
         try {
@@ -2261,14 +2259,14 @@ export class DiffService {
     /**
      * Returns the remainder text of the motion after the last change
      *
-     * @param {string} motionHtml
+     * @param {LineNumberedString} motionHtml
      * @param {ViewUnifiedChange[]} changes
      * @param {number} lineLength
      * @param {number} highlight
      * @returns {string}
      */
     public getTextRemainderAfterLastChange(
-        motionHtml: string,
+        motionHtml: LineNumberedString,
         changes: ViewUnifiedChange[],
         lineLength: number,
         highlight?: number
@@ -2280,15 +2278,14 @@ export class DiffService {
             }
         }, 0);
 
-        const numberedHtml = this.lineNumberingService.insertLineNumbers(motionHtml, lineLength, highlight);
         if (changes.length === 0) {
-            return numberedHtml;
+            return motionHtml;
         }
 
         let data;
 
         try {
-            data = this.extractRangeByLineNumbers(numberedHtml, maxLine, null);
+            data = this.extractRangeByLineNumbers(motionHtml, maxLine, null);
         } catch (e) {
             // This only happens (as far as we know) when the motion text has been altered (shortened)
             // without modifying the change recommendations accordingly.
@@ -2318,21 +2315,20 @@ export class DiffService {
     /**
      * Extracts a renderable HTML string representing the given line number range of this motion text
      *
-     * @param {string} motionText
+     * @param {LineNumberedString} motionText
      * @param {LineRange} lineRange
      * @param {boolean} lineNumbers - weather to add line numbers to the returned HTML string
      * @param {number} lineLength
      * @param {number|null} highlightedLine
      */
     public extractMotionLineRange(
-        motionText: string,
+        motionText: LineNumberedString,
         lineRange: LineRange,
         lineNumbers: boolean,
         lineLength: number,
         highlightedLine: number
     ): string {
-        const origHtml = this.lineNumberingService.insertLineNumbers(motionText, lineLength, highlightedLine);
-        const extracted = this.extractRangeByLineNumbers(origHtml, lineRange.from, lineRange.to);
+        const extracted = this.extractRangeByLineNumbers(motionText, lineRange.from, lineRange.to);
         let html =
             extracted.outerContextStart +
             extracted.innerContextStart +

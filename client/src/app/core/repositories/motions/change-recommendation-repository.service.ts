@@ -20,6 +20,7 @@ import { BaseRepository } from '../base-repository';
 import { DiffService, LineRange, ModificationType } from '../../ui-services/diff.service';
 import { ViewMotion } from '../../../site/motions/models/view-motion';
 import { ViewUnifiedChange } from '../../../shared/models/motions/view-unified-change';
+import { LinenumberingService } from '../../ui-services/linenumbering.service';
 
 /**
  * Repository Services for change recommendations
@@ -52,6 +53,7 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
      * @param {TranslateService} translate
      * @param {RelationManagerService} relationManager
      * @param {DiffService} diffService
+     * @param {LinenumberingService} lineNumbering Line numbering service
      */
     public constructor(
         DS: DataStoreService,
@@ -60,7 +62,8 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         viewModelStoreService: ViewModelStoreService,
         translate: TranslateService,
         relationManager: RelationManagerService,
-        private diffService: DiffService
+        private diffService: DiffService,
+        private lineNumbering: LinenumberingService
     ) {
         super(
             DS,
@@ -177,11 +180,13 @@ export class ChangeRecommendationRepositoryService extends BaseRepository<
         lineRange: LineRange,
         lineLength: number
     ): ViewMotionChangeRecommendation {
+        const motionText = this.lineNumbering.insertLineNumbers(motion.text, lineLength);
+
         const changeReco = new MotionChangeRecommendation();
         changeReco.line_from = lineRange.from;
         changeReco.line_to = lineRange.to;
         changeReco.type = ModificationType.TYPE_REPLACEMENT;
-        changeReco.text = this.diffService.extractMotionLineRange(motion.text, lineRange, false, lineLength, null);
+        changeReco.text = this.diffService.extractMotionLineRange(motionText, lineRange, false, lineLength, null);
         changeReco.rejected = false;
         changeReco.motion_id = motion.id;
 

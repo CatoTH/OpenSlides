@@ -37,7 +37,7 @@ import { BaseIsAgendaItemAndListOfSpeakersContentObjectRepository } from '../bas
 import { NestedModelDescriptors } from '../base-repository';
 import { CollectionStringMapperService } from '../../core-services/collection-string-mapper.service';
 import { DataSendService } from '../../core-services/data-send.service';
-import { LinenumberingService, LineNumberRange } from '../../ui-services/linenumbering.service';
+import { LineNumberedString, LinenumberingService, LineNumberRange } from '../../ui-services/linenumbering.service';
 
 type SortProperty = 'weight' | 'identifier';
 
@@ -619,11 +619,12 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
                 case ChangeRecoMode.Diff:
                     const text = [];
                     const changesToShow = changes.filter(change => change.showInDiffView());
+                    const motionText = this.lineNumbering.insertLineNumbers(targetMotion.text, lineLength);
 
                     for (let i = 0; i < changesToShow.length; i++) {
                         text.push(
                             this.diff.extractMotionLineRange(
-                                targetMotion.text,
+                                motionText,
                                 {
                                     from: i === 0 ? 1 : changesToShow[i - 1].getLineTo(),
                                     to: changesToShow[i].getLineFrom()
@@ -634,18 +635,11 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
                             )
                         );
 
-                        text.push(
-                            this.diff.getChangeDiff(targetMotion.text, changesToShow[i], lineLength, highlightLine)
-                        );
+                        text.push(this.diff.getChangeDiff(motionText, changesToShow[i], lineLength, highlightLine));
                     }
 
                     text.push(
-                        this.diff.getTextRemainderAfterLastChange(
-                            targetMotion.text,
-                            changesToShow,
-                            lineLength,
-                            highlightLine
-                        )
+                        this.diff.getTextRemainderAfterLastChange(motionText, changesToShow, lineLength, highlightLine)
                     );
                     return text.join('');
                 case ChangeRecoMode.Final:
@@ -935,9 +929,12 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
      *
      * @param {ViewMotion} amendment
      * @param {number} lineLength
-     * @returns {string[]}
+     * @returns {LineNumberedString[]}
      */
-    public getAllAmendmentParagraphsWithOriginalLineNumbers(amendment: ViewMotion, lineLength: number): string[] {
+    public getAllAmendmentParagraphsWithOriginalLineNumbers(
+        amendment: ViewMotion,
+        lineLength: number
+    ): LineNumberedString[] {
         const motion = amendment.parent;
         const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
 

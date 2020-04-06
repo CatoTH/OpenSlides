@@ -873,29 +873,40 @@
             <div class="alert alert-info" *ngIf="motion.diffLines.length === 0">
                 <span>{{ 'No changes at the text.' | translate }}</span>
             </div>
-            <div
-                *ngFor="let paragraph of getAmendmentParagraphs()"
-                class="motion-text motion-text-diff amendment-view"
-                [class.line-numbers-none]="isLineNumberingNone()"
-                [class.line-numbers-inline]="isLineNumberingInline()"
-                [class.line-numbers-outside]="isLineNumberingOutside()"
-                [class.amendment-context]="showAmendmentContext"
-            >
-                <h3 class="amendment-line-header">{{ getAmendmentParagraphLinesTitle(paragraph) }}</h3>
-
-                <os-motion-detail-original-change-recommendations
-                    *ngIf="isLineNumberingOutside() && (isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
-                    [html]="getAmendmentDiffTextWithContext(paragraph)"
-                    [changeRecommendations]="changeRecommendations"
-                    (createChangeRecommendation)="createChangeRecommendation($event)"
-                    (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
-                ></os-motion-detail-original-change-recommendations>
+            <ng-container *ngIf="!isRecoMode(ChangeRecoMode.Diff) && !isFinalEdit">
                 <div
-                    *ngIf="!isLineNumberingOutside() || !(isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
-                    [outerHTML]="getAmendmentDiffTextWithContext(paragraph) | trust: 'html'"
-                ></div><!-- the <div> element is only a placeholder -> outerHTML to replace it -->
+                    *ngFor="let paragraph of getAmendmentParagraphs()"
+                    class="motion-text motion-text-diff amendment-view"
+                    [class.line-numbers-none]="isLineNumberingNone()"
+                    [class.line-numbers-inline]="isLineNumberingInline()"
+                    [class.line-numbers-outside]="isLineNumberingOutside()"
+                    [class.amendment-context]="showAmendmentContext"
+                >
+                    <h3 class="amendment-line-header">{{ getAmendmentParagraphLinesTitle(paragraph) }}</h3>
 
-            </div>
+                    <os-motion-detail-original-change-recommendations
+                        *ngIf="isLineNumberingOutside() && (isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
+                        [html]="getAmendmentDiffTextWithContext(paragraph)"
+                        [changeRecommendations]="changeRecommendations"
+                        (createChangeRecommendation)="createChangeRecommendation($event)"
+                        (gotoChangeRecommendation)="gotoChangeRecommendation($event)"
+                    ></os-motion-detail-original-change-recommendations>
+                    <div
+                        *ngIf="!isLineNumberingOutside() || !(isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
+                        [outerHTML]="getAmendmentDiffTextWithContext(paragraph) | trust: 'html'"
+                    ></div><!-- the <div> element is only a placeholder -> outerHTML to replace it -->
+                </div>
+            </ng-container>
+
+            <os-motion-detail-diff
+                *ngIf="isRecoMode(ChangeRecoMode.Diff)"
+                [motion]="motion"
+                [changes]="getChangesForDiffMode()"
+                [scrollToChange]="scrollToChange"
+                [highlightedLine]="highlightedLine"
+                [lineNumberingMode]="lnMode"
+                (createChangeRecommendation)="createChangeRecommendation($event)"
+            ></os-motion-detail-diff>
         </div>
         <div *ngIf="!motion.diffLines">
             <span class="red-warning-text">{{
