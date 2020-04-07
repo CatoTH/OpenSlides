@@ -1101,7 +1101,8 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
         if (this.motion.isParagraphBasedAmendment()) {
             const lineNumberedParagraphs = this.repo.getAllAmendmentParagraphsWithOriginalLineNumbers(
                 this.motion,
-                this.lineLength
+                this.lineLength,
+                false
             );
             data.changeRecommendation = this.changeRecoRepo.createAmendmentChangeRecommendationTemplate(
                 this.motion,

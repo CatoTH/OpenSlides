@@ -882,7 +882,7 @@
                     [class.line-numbers-outside]="isLineNumberingOutside()"
                     [class.amendment-context]="showAmendmentContext"
                 >
-                    <h3 class="amendment-line-header">{{ getAmendmentParagraphLinesTitle(paragraph) }}</h3>
+                    <h3 class="amendment-line-header" *ngIf="!showAmendmentContext">{{ getAmendmentParagraphLinesTitle(paragraph) }}</h3>
 
                     <os-motion-detail-original-change-recommendations
                         *ngIf="isLineNumberingOutside() && (isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed))"
@@ -916,7 +916,7 @@
     </section>
 
     <!-- Show entire motion text -->
-    <div>
+    <div *ngIf="isRecoMode(ChangeRecoMode.Original) || isRecoMode(ChangeRecoMode.Changed)">
         <mat-checkbox
             (change)="showAmendmentContext = !showAmendmentContext"
             *ngIf="motion && motion.isParagraphBasedAmendment()"

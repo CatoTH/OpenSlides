@@ -132,11 +132,12 @@ export class MotionDetailDiffComponent extends BaseViewComponent implements Afte
         let baseText: LineNumberedString;
         if (this.motion.isParagraphBasedAmendment()) {
             baseText = this.motionRepo
-                .getAllAmendmentParagraphsWithOriginalLineNumbers(this.motion, this.lineLength)
+                .getAllAmendmentParagraphsWithOriginalLineNumbers(this.motion, this.lineLength, true)
                 .join('\n');
         } else {
             baseText = this.lineNumbering.insertLineNumbers(this.motion.text, this.lineLength);
         }
+
         return this.diff.extractMotionLineRange(baseText, lineRange, true, this.lineLength, this.highlightedLine);
     }
 
@@ -187,7 +188,7 @@ export class MotionDetailDiffComponent extends BaseViewComponent implements Afte
         let baseText: LineNumberedString;
         if (this.motion.isParagraphBasedAmendment()) {
             baseText = this.motionRepo
-                .getAllAmendmentParagraphsWithOriginalLineNumbers(this.motion, this.lineLength)
+                .getAllAmendmentParagraphsWithOriginalLineNumbers(this.motion, this.lineLength, true)
                 .join('\n');
         } else {
             baseText = this.lineNumbering.insertLineNumbers(this.motion.text, this.lineLength);

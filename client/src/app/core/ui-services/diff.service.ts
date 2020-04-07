@@ -1318,12 +1318,12 @@ export class DiffService {
      * - extracting line 2 to 3 results in <p class="os-split-after os-split-before">Line 2</p>
      * - extracting line 3 to null/4 results in <p class="os-split-before">Line 3</p>
      *
-     * @param {string} htmlIn
+     * @param {LineNumberedString} htmlIn
      * @param {number} fromLine
      * @param {number} toLine
      * @returns {ExtractedContent}
      */
-    public extractRangeByLineNumbers(htmlIn: string, fromLine: number, toLine: number): ExtractedContent {
+    public extractRangeByLineNumbers(htmlIn: LineNumberedString, fromLine: number, toLine: number): ExtractedContent {
         if (typeof htmlIn !== 'string') {
             throw new Error('Invalid call - extractRangeByLineNumbers expects a string as first argument');
         }

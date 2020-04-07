@@ -848,25 +848,29 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
                             lineLength
                         );
                     } else {
-                        // Nothing has changed in this paragraph
-                        if (includeUnchanged) {
-                            const paragraph_line_range = this.lineNumbering.getLineNumberRange(baseParagraphs[paraNo]);
-                            return {
-                                paragraphNo: paraNo,
-                                paragraphLineFrom: paragraph_line_range.from,
-                                paragraphLineTo: paragraph_line_range.to,
-                                diffLineFrom: paragraph_line_range.to,
-                                diffLineTo: paragraph_line_range.to,
-                                textPre: baseParagraphs[paraNo],
-                                text: '',
-                                textPost: ''
-                            } as DiffLinesInParagraph;
-                        } else {
-                            return null; // null will make this paragraph filtered out
-                        }
+                        return null; // Nothing has changed in this paragraph
                     }
                 }
             )
+            .map((diffLines: DiffLinesInParagraph, paraNo: number) => {
+                // If nothing has changed and we want to keep unchanged paragraphs for the context,
+                // return the original text in "textPre"
+                if (diffLines === null && includeUnchanged) {
+                    const paragraph_line_range = this.lineNumbering.getLineNumberRange(baseParagraphs[paraNo]);
+                    return {
+                        paragraphNo: paraNo,
+                        paragraphLineFrom: paragraph_line_range.from,
+                        paragraphLineTo: paragraph_line_range.to,
+                        diffLineFrom: paragraph_line_range.to,
+                        diffLineTo: paragraph_line_range.to,
+                        textPre: baseParagraphs[paraNo],
+                        text: '',
+                        textPost: ''
+                    } as DiffLinesInParagraph;
+                } else {
+                    return diffLines;
+                }
+            })
             .filter((para: DiffLinesInParagraph) => para !== null);
     }
 
@@ -929,11 +933,13 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
      *
      * @param {ViewMotion} amendment
      * @param {number} lineLength
+     * @param {boolean} withDiff
      * @returns {LineNumberedString[]}
      */
     public getAllAmendmentParagraphsWithOriginalLineNumbers(
         amendment: ViewMotion,
-        lineLength: number
+        lineLength: number,
+        withDiff: boolean
     ): LineNumberedString[] {
         const motion = amendment.parent;
         const baseParagraphs = this.getTextParagraphs(motion, true, lineLength);
@@ -947,7 +953,11 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
 
             const diff = this.diff.diff(origText, newText);
 
-            return this.diff.diffHtmlToFinalText(diff);
+            if (withDiff) {
+                return diff;
+            } else {
+                return this.diff.diffHtmlToFinalText(diff);
+            }
         });
     }
 
