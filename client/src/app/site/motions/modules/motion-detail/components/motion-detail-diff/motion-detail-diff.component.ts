@@ -6,8 +6,10 @@ import { Title } from '@angular/platform-browser';
 import { TranslateService } from '@ngx-translate/core';
 
 import { ChangeRecommendationRepositoryService } from 'app/core/repositories/motions/change-recommendation-repository.service';
+import { MotionRepositoryService } from 'app/core/repositories/motions/motion-repository.service';
 import { ConfigService } from 'app/core/ui-services/config.service';
 import { DiffService, LineRange } from 'app/core/ui-services/diff.service';
+import { LineNumberedString, LinenumberingService } from 'app/core/ui-services/linenumbering.service';
 import { PromptService } from 'app/core/ui-services/prompt.service';
 import { ViewUnifiedChange, ViewUnifiedChangeType } from 'app/shared/models/motions/view-unified-change';
 import { mediumDialogSettings } from 'app/shared/utils/dialog-settings';
@@ -24,8 +26,6 @@ import {
     MotionTitleChangeRecommendationDialogComponent,
     MotionTitleChangeRecommendationDialogComponentData
 } from '../motion-title-change-recommendation-dialog/motion-title-change-recommendation-dialog.component';
-import { MotionRepositoryService } from '../../../../../../core/repositories/motions/motion-repository.service';
-import { LineNumberedString, LinenumberingService } from '../../../../../../core/ui-services/linenumbering.service';
 
 /**
  * This component displays the original motion text with the change blocks inside.

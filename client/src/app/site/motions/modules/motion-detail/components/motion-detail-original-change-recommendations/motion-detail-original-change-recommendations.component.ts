@@ -132,7 +132,7 @@ export class MotionDetailOriginalChangeRecommendationsComponent implements OnIni
             .filter(reco => reco.line_from >= this.minLineNo && reco.line_from <= this.maxLineNo);
     }
 
-    private setLineNumberCache() {
+    private setLineNumberCache(): void {
         Array.from(this.element.querySelectorAll('.os-line-number')).forEach((lineNumberEl: Element) => {
             const lineNumber = parseInt(lineNumberEl.getAttribute('data-line-number'), 10);
             if (this.minLineNo === null || lineNumber < this.minLineNo) {

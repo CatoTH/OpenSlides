@@ -18,9 +18,9 @@ import {
 import { ChangeRecoMode } from 'app/site/motions/motions.constants';
 import { BaseRepository } from '../base-repository';
 import { DiffService, LineRange, ModificationType } from '../../ui-services/diff.service';
+import { LinenumberingService } from '../../ui-services/linenumbering.service';
 import { ViewMotion } from '../../../site/motions/models/view-motion';
 import { ViewUnifiedChange } from '../../../shared/models/motions/view-unified-change';
-import { LinenumberingService } from '../../ui-services/linenumbering.service';
 
 /**
  * Repository Services for change recommendations
