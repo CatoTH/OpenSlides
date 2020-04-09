@@ -325,12 +325,14 @@ export class MotionRepositoryService extends BaseIsAgendaItemAndListOfSpeakersCo
             ownKey: 'diffLines',
             get: (motion: Motion, viewMotion: ViewMotion) => {
                 if (viewMotion.parent) {
-                    // @TODO Are change recommendations for amendments relevant here?
+                    const changeRecos = viewMotion.changeRecommendations.filter(changeReco =>
+                        changeReco.showInFinalView()
+                    );
                     return this.getAmendmentParagraphLines(
                         viewMotion,
                         this.motionLineLength,
-                        ChangeRecoMode.Original,
-                        [],
+                        ChangeRecoMode.Changed,
+                        changeRecos,
                         false
                     );
                 }
