@@ -215,9 +215,20 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
     public changeRecommendations: ViewMotionChangeRecommendation[];
 
     /**
-     * All amendments to this motions
+     * All amendments to this motion
      */
     public amendments: ViewMotion[];
+
+    /**
+     * The change recommendations to amendments to this motion
+     */
+    public amendmentChangeRecos: { [amendmentId: string]: ViewMotionChangeRecommendation[] } = {};
+
+    /**
+     * The observables for the `amendmentChangeRecos` field above.
+     * Necessary to track which amendments' change recommendations we have already subscribed to.
+     */
+    public amendmentChangeRecoSubscriptions: { [amendmentId: string]: Subscription } = {};
 
     /**
      * All change recommendations AND amendments, sorted by line number.
@@ -591,6 +602,24 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
     }
 
     /**
+     * Subscribes to all new amendment's change recommendations so we can access their data for the diff view
+     */
+    private resetAmendmentChangeRecoListener(): void {
+        this.amendments.forEach((amendment: ViewMotion) => {
+            if (this.amendmentChangeRecoSubscriptions[amendment.id] === undefined) {
+                this.amendmentChangeRecoSubscriptions[
+                    amendment.id
+                ] = this.changeRecoRepo
+                    .getChangeRecosOfMotionObservable(amendment.id)
+                    .subscribe((changeRecos: ViewMotionChangeRecommendation[]): void => {
+                        this.amendmentChangeRecos[amendment.id] = changeRecos;
+                        this.recalcUnifiedChanges();
+                    });
+            }
+        });
+    }
+
+    /**
      * Merges amendments and change recommendations and sorts them by the line numbers.
      * Called each time one of these arrays changes.
      *
@@ -614,8 +643,11 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
         }
         if (this.amendments) {
             this.amendments.forEach((amendment: ViewMotion): void => {
+                const toApplyChanges = this.amendmentChangeRecos[amendment.id].filter(change =>
+                    change.showInFinalView() // The rejected change recommendations for amendments should not be considered
+                );
                 this.repo
-                    .getAmendmentAmendedParagraphs(amendment, this.lineLength)
+                    .getAmendmentAmendedParagraphs(amendment, this.lineLength, toApplyChanges)
                     .forEach((change: ViewUnifiedChange): void => {
                         this.allChangingObjects.push(change);
                     });
@@ -664,6 +696,7 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
 
                 this.repo.amendmentsTo(motionId).subscribe((amendments: ViewMotion[]): void => {
                     this.amendments = amendments;
+                    this.resetAmendmentChangeRecoListener();
                     this.recalcUnifiedChanges();
                 }),
                 this.repo
