@@ -633,11 +633,12 @@ export class MotionPdfService {
         return this.changeRecoRepo
             .getChangeRecoOfMotion(motion.id)
             .concat(
-                this.motionRepo
-                    .getAmendmentsInstantly(motion.id)
-                    .flatMap((amendment: ViewMotion) =>
-                        this.motionRepo.getAmendmentAmendedParagraphs(amendment, lineLength)
-                    )
+                this.motionRepo.getAmendmentsInstantly(motion.id).flatMap((amendment: ViewMotion) => {
+                    const changeRecos = this.changeRecoRepo
+                        .getChangeRecoOfMotion(amendment.id)
+                        .filter(reco => reco.showInFinalView());
+                    return this.motionRepo.getAmendmentAmendedParagraphs(amendment, lineLength, changeRecos);
+                })
             )
             .sort((a, b) => a.getLineFrom() - b.getLineFrom()) as ViewUnifiedChange[];
     }

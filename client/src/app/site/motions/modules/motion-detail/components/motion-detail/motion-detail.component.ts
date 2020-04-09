@@ -643,8 +643,8 @@ export class MotionDetailComponent extends BaseViewComponent implements OnInit, 
         }
         if (this.amendments) {
             this.amendments.forEach((amendment: ViewMotion): void => {
-                const toApplyChanges = this.amendmentChangeRecos[amendment.id].filter(change =>
-                    change.showInFinalView() // The rejected change recommendations for amendments should not be considered
+                const toApplyChanges = (this.amendmentChangeRecos[amendment.id] || []).filter(
+                    change => change.showInFinalView() // The rejected change recommendations for amendments should not be considered
                 );
                 this.repo
                     .getAmendmentAmendedParagraphs(amendment, this.lineLength, toApplyChanges)
